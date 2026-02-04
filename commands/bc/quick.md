@@ -96,7 +96,7 @@ Follow existing patterns from the codebase. Keep changes focused.
 ## 7. Close Task
 
 ```bash
-bd update <task-id> --status closed
+bd close <task-id>
 ```
 
 ## 8. Report Completion

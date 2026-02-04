@@ -104,7 +104,7 @@ Tasks with no blockers:
 - Create new phase: `/bc:new-phase [title]`
 - Add a todo: `/bc:todo "idea"`
 - View todos: `/bc:todos`
-- Mark task done: `bd update <task-id> --status done`
+- Mark task done: `bd close <task-id>`
 - See task details: `bd show <task-id>`
 ```
 

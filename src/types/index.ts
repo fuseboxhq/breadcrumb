@@ -43,3 +43,24 @@ export interface ProjectState {
 }
 
 export type TabType = 'phases' | 'tasks' | 'research';
+
+// Research document from /api/research
+export interface ResearchDoc {
+  id: string;
+  filename: string;
+  content: string;
+}
+
+// Sidebar navigation mode
+export type SidebarTab = 'phases' | 'ready';
+
+// Main content tab when viewing a phase
+export type ContentTab = 'plan' | 'tasks' | 'research';
+
+// Computed progress for a phase's tasks
+export interface PhaseProgress {
+  total: number;
+  done: number;
+  open: number;
+  blocked: number;
+}

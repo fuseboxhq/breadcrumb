@@ -1,6 +1,8 @@
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { PhaseList } from './PhaseList';
-import type { Phase, Project } from '../../types';
+import { SidebarTabBar } from './SidebarTabBar';
+import { ReadyTasksList } from './ReadyTasksList';
+import type { Phase, Project, BeadsIssue, PhaseProgress, SidebarTab } from '../../types';
 
 interface SidebarProps {
   projects: Project[];
@@ -10,6 +12,12 @@ interface SidebarProps {
   isPhasesLoading: boolean;
   selectedPhaseId: string | null;
   onSelectPhase: (phaseId: string) => void;
+  sidebarTab: SidebarTab;
+  onSidebarTabChange: (tab: SidebarTab) => void;
+  readyIssues: BeadsIssue[];
+  isReadyLoading: boolean;
+  onSelectReadyTask: (issue: BeadsIssue) => void;
+  progressByEpic: Map<string, PhaseProgress>;
 }
 
 export function Sidebar({
@@ -20,6 +28,12 @@ export function Sidebar({
   isPhasesLoading,
   selectedPhaseId,
   onSelectPhase,
+  sidebarTab,
+  onSidebarTabChange,
+  readyIssues,
+  isReadyLoading,
+  onSelectReadyTask,
+  progressByEpic,
 }: SidebarProps) {
   return (
     <aside className="w-80 border-r border-gray-800 flex flex-col bg-gray-950">
@@ -37,14 +51,30 @@ export function Sidebar({
         />
       </div>
 
-      {/* Phase list */}
+      {/* Tab bar */}
+      <SidebarTabBar
+        activeTab={sidebarTab}
+        onChange={onSidebarTabChange}
+        readyCount={readyIssues.length}
+      />
+
+      {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-2">
-        <PhaseList
-          phases={phases}
-          isLoading={isPhasesLoading}
-          selectedPhaseId={selectedPhaseId}
-          onSelect={onSelectPhase}
-        />
+        {sidebarTab === 'phases' ? (
+          <PhaseList
+            phases={phases}
+            isLoading={isPhasesLoading}
+            selectedPhaseId={selectedPhaseId}
+            onSelect={onSelectPhase}
+            progressByEpic={progressByEpic}
+          />
+        ) : (
+          <ReadyTasksList
+            issues={readyIssues}
+            isLoading={isReadyLoading}
+            onSelectTask={onSelectReadyTask}
+          />
+        )}
       </div>
     </aside>
   );

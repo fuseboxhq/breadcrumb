@@ -53,7 +53,7 @@ Cannot close phase. Incomplete tasks:
 Options:
   - Execute remaining tasks: /bc:execute $ARGUMENTS
   - Execute single task: /bc:execute [task-id]
-  - Mark manually done: bd update [task-id] --status done
+  - Mark manually done: bd close [task-id]
 ```
 
 ### 4. Verify Completion Criteria
@@ -75,7 +75,11 @@ Update `.planning/$ARGUMENTS.md`:
 **Completed:** [YYYY-MM-DD]
 ```
 
-3. Update tasks table to show all as done
+3. Synchronize the task table with Beads state:
+   - For each task in the `## Tasks` table, check its status in the `bd list` output
+   - If a task is closed in Beads but not `done` in the table, update it to `done`
+   - If a task is in_progress in Beads but not `in_progress` in the table, update it
+   - Log any discrepancies found and fixed
 
 4. Add completion summary (optional):
 ```markdown
@@ -87,9 +91,9 @@ Phase completed on [date]. All [N] tasks finished.
 
 ### 6. Update Beads Epic
 
-Mark the epic as done:
+Close the epic in Beads:
 ```bash
-bd update [epic-id] --status done
+bd close [epic-id]
 ```
 
 ### 7. Update STATE.md

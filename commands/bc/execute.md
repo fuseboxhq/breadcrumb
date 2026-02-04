@@ -84,6 +84,26 @@ options:
 
 If "Show me the plan first", explain the implementation approach, then ask again.
 
+### 6b. Mark Task In Progress
+
+Update Beads:
+```bash
+bd update $ARGUMENTS --status in_progress
+```
+
+Update the phase markdown task table. Using the PHASE-XX.md file identified in step 3, edit the `## Tasks` table:
+- Find the row containing `| $ARGUMENTS |`
+- Change the Status cell from `open` to `in_progress`
+
+For example, change:
+```
+| btr.1 | Scaffold project | open | Medium | - |
+```
+to:
+```
+| btr.1 | Scaffold project | in_progress | Medium | - |
+```
+
 ### 7. Implement the Task
 
 Based on the task description and context:
@@ -101,8 +121,22 @@ Run appropriate verification:
 
 ### 9. Mark Task Complete
 
+Close the task in Beads:
 ```bash
-bd update $ARGUMENTS --status done
+bd close $ARGUMENTS
+```
+
+Update the phase markdown task table. Using the PHASE-XX.md file identified in step 3, edit the `## Tasks` table:
+- Find the row containing `| $ARGUMENTS |`
+- Change the Status cell from `in_progress` (or `open`) to `done`
+
+For example, change:
+```
+| btr.1 | Scaffold project | in_progress | Medium | - |
+```
+to:
+```
+| btr.1 | Scaffold project | done | Medium | - |
 ```
 
 ### 10. Report Completion
@@ -171,9 +205,11 @@ options:
 For each ready task (respecting dependencies):
 
 1. Show: "Starting task [id]: [title]"
-2. Execute using Task Mode steps 3-9
-3. If "One at a time" mode, ask before continuing
-4. Check for newly unblocked tasks
+2. Mark task in progress: `bd update [id] --status in_progress`
+3. Update PHASE-XX.md task table: change status from `open` to `in_progress`
+4. Execute using Task Mode steps 3-9 (which includes closing in Beads and updating markdown to `done`)
+5. If "One at a time" mode, ask before continuing
+6. Check for newly unblocked tasks
 
 ### 6. Handle Failures
 

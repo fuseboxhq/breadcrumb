@@ -63,7 +63,8 @@ bd show <id>                     # View task details
 bd list                          # List all tasks
 bd create "Title" -p 0           # Create task
 bd create "Title" --parent <id>  # Create child task
-bd update <id> --status done     # Mark complete
+bd close <id>                    # Mark complete (close the issue)
+bd update <id> --status in_progress  # Mark in progress
 bd dep add <child> <parent>      # Add dependency
 ```
 

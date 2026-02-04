@@ -19,6 +19,7 @@ export function useWatchProject(projectPath: string | null) {
             queryClient.invalidateQueries({ queryKey: ['phases', projectPath] });
             queryClient.invalidateQueries({ queryKey: ['phase', projectPath] });
             queryClient.invalidateQueries({ queryKey: ['state', projectPath] });
+            queryClient.invalidateQueries({ queryKey: ['research', projectPath] });
           }
           if (data.path.includes('.beads')) {
             queryClient.invalidateQueries({ queryKey: ['issues', projectPath] });

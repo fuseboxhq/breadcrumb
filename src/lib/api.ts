@@ -1,4 +1,4 @@
-import type { Phase, BeadsIssue, Project, ProjectState } from '../types';
+import type { Phase, BeadsIssue, Project, ProjectState, ResearchDoc } from '../types';
 
 const API_BASE = '/api';
 
@@ -33,5 +33,17 @@ export async function fetchIssues(projectPath: string, epicId?: string): Promise
 export async function fetchProjectState(projectPath: string): Promise<ProjectState> {
   const response = await fetch(`${API_BASE}/state?project=${encodeURIComponent(projectPath)}`);
   if (!response.ok) throw new Error('Failed to fetch project state');
+  return response.json();
+}
+
+export async function fetchReadyIssues(projectPath: string): Promise<BeadsIssue[]> {
+  const response = await fetch(`${API_BASE}/issues/ready?project=${encodeURIComponent(projectPath)}`);
+  if (!response.ok) throw new Error('Failed to fetch ready issues');
+  return response.json();
+}
+
+export async function fetchResearch(projectPath: string): Promise<ResearchDoc[]> {
+  const response = await fetch(`${API_BASE}/research?project=${encodeURIComponent(projectPath)}`);
+  if (!response.ok) throw new Error('Failed to fetch research');
   return response.json();
 }
