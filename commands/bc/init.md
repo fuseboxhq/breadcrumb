@@ -270,13 +270,26 @@ Parse the JSON. Then apply these merges:
 
 **Hooks — merge into `hooks` object:**
 
-For each of these hook entries, check if the array already contains an entry with the same `command`. If not, append it:
+Claude Code hooks use a nested format: each hook event is an array of objects with an optional `matcher` and a `hooks` array containing the commands.
 
-- `hooks.SessionStart` array: add `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-session-start.cjs" }`
-- `hooks.Stop` array: add `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-session-end.cjs" }`
-- `hooks.PreToolUse` array: add `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-bash-guard.cjs", "matcher": "Bash" }`
+For each of these, check if the `hooks` object already contains a bc-* entry (search for `bc-session-start`, `bc-session-end`, `bc-bash-guard` in the JSON). If not present, append the entry to the appropriate array:
 
-For `hooks.statusLine`:
+- `hooks.SessionStart` array — append:
+  ```json
+  { "hooks": [{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-session-start.cjs" }] }
+  ```
+
+- `hooks.Stop` array — append:
+  ```json
+  { "hooks": [{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-session-end.cjs" }] }
+  ```
+
+- `hooks.PreToolUse` array — append (note `matcher` at top level, not inside hooks):
+  ```json
+  { "matcher": "Bash", "hooks": [{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-bash-guard.cjs" }] }
+  ```
+
+For `hooks.statusLine` (this is a direct object, NOT an array):
 - If not set → set to `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-statusline.cjs" }`
 - If already set with `bc-statusline` → leave unchanged
 - If set with something else → ask the user whether to replace it or keep existing
