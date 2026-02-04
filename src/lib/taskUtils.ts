@@ -1,20 +1,20 @@
 import type { BeadsIssue, PhaseProgress } from '../types';
 
 export const STATUS_CONFIG: Record<string, { color: string; bgColor: string; label: string; dotColor: string }> = {
-  open: { color: 'text-blue-400', bgColor: 'bg-blue-500/10 border-blue-500/20', label: 'Open', dotColor: 'bg-blue-500' },
-  in_progress: { color: 'text-yellow-400', bgColor: 'bg-yellow-500/10 border-yellow-500/20', label: 'In Progress', dotColor: 'bg-yellow-500' },
-  done: { color: 'text-green-400', bgColor: 'bg-green-500/10 border-green-500/20', label: 'Done', dotColor: 'bg-green-500' },
-  closed: { color: 'text-green-400', bgColor: 'bg-green-500/10 border-green-500/20', label: 'Done', dotColor: 'bg-green-500' },
-  blocked: { color: 'text-red-400', bgColor: 'bg-red-500/10 border-red-500/20', label: 'Blocked', dotColor: 'bg-red-500' },
-  deferred: { color: 'text-gray-400', bgColor: 'bg-gray-500/10 border-gray-500/20', label: 'Deferred', dotColor: 'bg-gray-500' },
+  open: { color: 'text-accent-text', bgColor: 'bg-accent-muted border-accent/20', label: 'Open', dotColor: 'bg-accent' },
+  in_progress: { color: 'text-status-warning', bgColor: 'bg-status-warning-muted border-status-warning/20', label: 'In Progress', dotColor: 'bg-status-warning' },
+  done: { color: 'text-status-success', bgColor: 'bg-status-success-muted border-status-success/20', label: 'Done', dotColor: 'bg-status-success' },
+  closed: { color: 'text-status-success', bgColor: 'bg-status-success-muted border-status-success/20', label: 'Done', dotColor: 'bg-status-success' },
+  blocked: { color: 'text-status-error', bgColor: 'bg-status-error-muted border-status-error/20', label: 'Blocked', dotColor: 'bg-status-error' },
+  deferred: { color: 'text-text-tertiary', bgColor: 'bg-surface-hover border-border', label: 'Deferred', dotColor: 'bg-text-tertiary' },
 };
 
 export const PRIORITY_CONFIG: Record<number, { label: string; color: string }> = {
-  0: { label: 'Critical', color: 'text-red-500' },
-  1: { label: 'High', color: 'text-orange-400' },
-  2: { label: 'Medium', color: 'text-yellow-400' },
-  3: { label: 'Low', color: 'text-gray-400' },
-  4: { label: 'Lowest', color: 'text-gray-500' },
+  0: { label: 'Critical', color: 'text-status-error' },
+  1: { label: 'High', color: 'text-status-warning' },
+  2: { label: 'Medium', color: 'text-status-warning' },
+  3: { label: 'Low', color: 'text-text-tertiary' },
+  4: { label: 'Lowest', color: 'text-text-tertiary' },
 };
 
 export function getStatusConfig(issue: BeadsIssue) {

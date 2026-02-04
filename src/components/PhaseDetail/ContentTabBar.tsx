@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import type { ContentTab } from '../../types';
 
 interface ContentTabBarProps {
@@ -15,22 +16,32 @@ const TABS: { key: ContentTab; label: string }[] = [
 
 export function ContentTabBar({ activeTab, onChange, taskCount, researchCount }: ContentTabBarProps) {
   return (
-    <div className="flex border-b border-gray-800">
+    <div className="flex border-b border-border px-4">
       {TABS.map(({ key, label }) => {
         const count = key === 'tasks' ? taskCount : key === 'research' ? researchCount : undefined;
+        const isActive = activeTab === key;
         return (
           <button
             key={key}
             onClick={() => onChange(key)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === key
-                ? 'text-white border-b-2 border-blue-500'
-                : 'text-gray-400 hover:text-gray-200'
-            }`}
+            className={clsx(
+              'relative px-3 py-2.5 text-sm font-medium transition-colors',
+              isActive
+                ? 'text-text-primary'
+                : 'text-text-tertiary hover:text-text-secondary',
+            )}
           >
             {label}
             {count !== undefined && count > 0 && (
-              <span className="ml-1.5 text-xs opacity-60">{count}</span>
+              <span className={clsx(
+                'ml-1.5 text-2xs tabular-nums',
+                isActive ? 'text-text-secondary' : 'text-text-tertiary',
+              )}>
+                {count}
+              </span>
+            )}
+            {isActive && (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent rounded-full" />
             )}
           </button>
         );

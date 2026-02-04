@@ -1,78 +1,82 @@
 import { useState } from 'react';
+import clsx from 'clsx';
+import { AlertTriangle, ChevronRight } from 'lucide-react';
 import type { BeadsIssue } from '../../types';
 import { getStatusConfig, getPriorityConfig, isBlocked } from '../../lib/taskUtils';
 import { DependencyPill } from './DependencyPill';
+import { Badge } from '../ui/Badge';
 
 interface TaskCardProps {
   issue: BeadsIssue;
   allIssues: BeadsIssue[];
 }
 
+const STATUS_VARIANT: Record<string, 'default' | 'accent' | 'success' | 'warning' | 'error'> = {
+  open: 'accent',
+  in_progress: 'warning',
+  done: 'success',
+  closed: 'success',
+  blocked: 'error',
+  deferred: 'default',
+};
+
 export function TaskCard({ issue, allIssues }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
   const status = getStatusConfig(issue);
   const priority = getPriorityConfig(issue.priority);
   const blocked = isBlocked(issue);
+  const statusKey = blocked ? 'blocked' : issue.status;
 
   return (
     <div
-      className={`border rounded-lg transition-colors ${status.bgColor} ${
-        expanded ? 'ring-1 ring-gray-700' : ''
-      }`}
+      className={clsx(
+        'border rounded-lg transition-colors bg-surface-raised',
+        expanded ? 'border-border-strong' : 'border-border',
+      )}
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-4"
+        className="w-full text-left p-3.5 group"
       >
-        {/* Top row: status dot + title + priority + type */}
-        <div className="flex items-start gap-2">
-          <span className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${status.dotColor}`} />
-          <span className="flex-1 text-sm font-medium text-gray-100">{issue.title}</span>
-          <span className={`text-xs font-mono ${priority.color}`}>P{issue.priority}</span>
-          <span className="text-xs text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded">
-            {issue.issueType}
+        <div className="flex items-start gap-2.5">
+          <span className={clsx('w-1.5 h-1.5 mt-1.5 rounded-full flex-shrink-0', status.dotColor)} />
+          <span className="flex-1 text-sm font-medium text-text-primary group-hover:text-accent-text transition-colors">
+            {issue.title}
           </span>
+          <span className={clsx('text-2xs font-mono', priority.color)}>P{issue.priority}</span>
+          <Badge variant="default">{issue.issueType}</Badge>
+          <ChevronRight className={clsx(
+            'h-3.5 w-3.5 text-text-tertiary transition-transform',
+            expanded && 'rotate-90',
+          )} />
         </div>
 
-        {/* Badges row */}
         <div className="flex items-center gap-1.5 mt-2 ml-4">
-          <span className={`text-xs px-1.5 py-0.5 rounded ${status.bgColor} ${status.color} border`}>
-            {status.label}
-          </span>
+          <Badge variant={STATUS_VARIANT[statusKey] || 'default'}>{status.label}</Badge>
           {issue.labels.map((label) => (
-            <span
-              key={label}
-              className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700"
-            >
-              {label}
-            </span>
+            <Badge key={label} variant="default">{label}</Badge>
           ))}
         </div>
 
-        {/* Blocked warning */}
         {blocked && issue.blockedBy.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 ml-4 text-xs text-red-400">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+          <div className="flex items-center gap-1.5 mt-2 ml-4 text-2xs text-status-error">
+            <AlertTriangle className="h-3 w-3" />
             <span>Blocked by {issue.blockedBy.length} task{issue.blockedBy.length > 1 ? 's' : ''}</span>
           </div>
         )}
       </button>
 
-      {/* Expanded details */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-800/50 mt-0 pt-3">
+        <div className="px-3.5 pb-3.5 border-t border-border pt-3">
           {issue.description && (
-            <p className="text-sm text-gray-300 mb-3 whitespace-pre-wrap">{issue.description}</p>
+            <p className="text-sm text-text-secondary mb-3 whitespace-pre-wrap">{issue.description}</p>
           )}
 
-          {/* Dependencies */}
           {(issue.blockedBy.length > 0 || issue.blocks.length > 0) && (
             <div className="space-y-2 mb-3">
               {issue.blockedBy.length > 0 && (
                 <div>
-                  <span className="text-xs text-gray-500 block mb-1">Blocked by:</span>
+                  <span className="text-2xs text-text-tertiary block mb-1">Blocked by:</span>
                   <div className="flex flex-wrap gap-1">
                     {issue.blockedBy.map((id) => (
                       <DependencyPill key={id} issueId={id} allIssues={allIssues} />
@@ -82,7 +86,7 @@ export function TaskCard({ issue, allIssues }: TaskCardProps) {
               )}
               {issue.blocks.length > 0 && (
                 <div>
-                  <span className="text-xs text-gray-500 block mb-1">Blocks:</span>
+                  <span className="text-2xs text-text-tertiary block mb-1">Blocks:</span>
                   <div className="flex flex-wrap gap-1">
                     {issue.blocks.map((id) => (
                       <DependencyPill key={id} issueId={id} allIssues={allIssues} />
@@ -93,9 +97,8 @@ export function TaskCard({ issue, allIssues }: TaskCardProps) {
             </div>
           )}
 
-          {/* Metadata */}
-          <div className="flex gap-4 text-xs text-gray-500">
-            <span>ID: <span className="font-mono text-gray-400">{issue.id}</span></span>
+          <div className="flex gap-4 text-2xs text-text-tertiary">
+            <span>ID: <span className="font-mono text-text-secondary">{issue.id}</span></span>
             {issue.assignee && <span>Assignee: {issue.assignee}</span>}
             <span>Created: {new Date(issue.createdAt).toLocaleDateString()}</span>
             {issue.closedAt && <span>Closed: {new Date(issue.closedAt).toLocaleDateString()}</span>}

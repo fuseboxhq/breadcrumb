@@ -7,7 +7,7 @@ interface PhasePlanTabProps {
 
 export function PhasePlanTab({ phase }: PhasePlanTabProps) {
   return (
-    <div className="max-w-4xl mx-auto p-8">
+    <div className="max-w-4xl mx-auto px-8 py-8">
       <MarkdownRenderer content={phase.content} />
     </div>
   );

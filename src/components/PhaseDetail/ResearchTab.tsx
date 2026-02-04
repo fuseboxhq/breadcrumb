@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import clsx from 'clsx';
+import { ChevronRight, FileText } from 'lucide-react';
 import type { ResearchDoc } from '../../types';
 import { MarkdownRenderer } from '../PhaseViewer/MarkdownRenderer';
 import { Spinner } from '../ui/Spinner';
+import { EmptyState } from '../ui/EmptyState';
 
 interface ResearchTabProps {
   docs: ResearchDoc[];
@@ -21,38 +24,37 @@ export function ResearchTab({ docs, isLoading }: ResearchTabProps) {
 
   if (docs.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-8 text-center text-gray-500">
-        <p className="text-lg mb-2">No research documents</p>
-        <p className="text-sm">
-          Run <code className="bg-gray-800 px-1.5 py-0.5 rounded">/bc:research &lt;task-id&gt;</code> to create research for a task.
-        </p>
-      </div>
+      <EmptyState
+        icon={<FileText className="h-5 w-5" />}
+        title="No research documents"
+        description="Run /bc:research <task-id> to create research for a task"
+        className="py-16"
+      />
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8 space-y-2">
-      <p className="text-xs text-gray-500 mb-4">Research documents for this project</p>
+    <div className="max-w-4xl mx-auto px-8 py-6 space-y-2">
+      <p className="text-2xs text-text-tertiary mb-3">Research documents for this project</p>
       {docs.map((doc) => {
         const isExpanded = expandedId === doc.id;
         return (
-          <div key={doc.id} className="border border-gray-800 rounded-lg overflow-hidden">
+          <div key={doc.id} className="border border-border rounded-lg overflow-hidden bg-surface-raised">
             <button
               onClick={() => setExpandedId(isExpanded ? null : doc.id)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-900/50 transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-surface-hover transition-colors group"
             >
-              <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span className="text-sm font-medium text-gray-200">{doc.filename}</span>
+              <ChevronRight className={clsx(
+                'h-3.5 w-3.5 text-text-tertiary transition-transform',
+                isExpanded && 'rotate-90',
+              )} />
+              <FileText className="h-3.5 w-3.5 text-text-tertiary" />
+              <span className="text-sm font-medium text-text-secondary group-hover:text-text-primary transition-colors">
+                {doc.filename}
+              </span>
             </button>
             {isExpanded && (
-              <div className="px-4 pb-4 border-t border-gray-800">
+              <div className="px-4 pb-4 border-t border-border">
                 <div className="pt-4">
                   <MarkdownRenderer content={doc.content} />
                 </div>

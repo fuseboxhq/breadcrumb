@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import type { BeadsIssue } from '../../types';
 
 interface DependencyPillProps {
@@ -14,11 +15,12 @@ export function DependencyPill({ issueId, allIssues, onClick }: DependencyPillPr
   return (
     <button
       onClick={() => onClick?.(issueId)}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md border transition-colors ${
+      className={clsx(
+        'inline-flex items-center gap-1 px-2 py-0.5 text-2xs rounded-md border transition-colors',
         isDone
-          ? 'bg-green-500/10 border-green-500/20 text-green-400'
-          : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
-      }`}
+          ? 'bg-status-success-muted border-status-success/20 text-status-success'
+          : 'bg-surface-hover border-border text-text-secondary hover:bg-surface-active',
+      )}
       title={`${issueId}: ${title}`}
     >
       <span className="font-mono">{issueId}</span>

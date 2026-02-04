@@ -4,6 +4,7 @@ import { EpicOverviewCard } from '../Tasks/EpicOverviewCard';
 import { TaskFilterBar, type TaskFilter, type TaskSort } from '../Tasks/TaskFilterBar';
 import { TaskCard } from '../Tasks/TaskCard';
 import { Spinner } from '../ui/Spinner';
+import { EmptyState } from '../ui/EmptyState';
 import { isBlocked, isDone, computeProgress } from '../../lib/taskUtils';
 
 interface PhaseTasksTabProps {
@@ -34,7 +35,6 @@ export function PhaseTasksTab({ issues, isLoading, phaseTitle, epicId }: PhaseTa
   const filteredIssues = useMemo(() => {
     let result = [...issues];
 
-    // Filter
     switch (filter) {
       case 'open':
         result = result.filter((i) => !isDone(i) && !isBlocked(i));
@@ -47,7 +47,6 @@ export function PhaseTasksTab({ issues, isLoading, phaseTitle, epicId }: PhaseTa
         break;
     }
 
-    // Sort
     result.sort((a, b) => {
       switch (sortBy) {
         case 'priority':
@@ -78,15 +77,16 @@ export function PhaseTasksTab({ issues, isLoading, phaseTitle, epicId }: PhaseTa
 
   if (issues.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-8 text-center text-gray-500">
-        <p className="text-lg mb-2">No tasks yet</p>
-        <p className="text-sm">Run <code className="bg-gray-800 px-1.5 py-0.5 rounded">/bc:plan</code> to break this phase into tasks.</p>
-      </div>
+      <EmptyState
+        title="No tasks yet"
+        description="Run /bc:plan to break this phase into tasks"
+        className="py-16"
+      />
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-8 space-y-4">
+    <div className="max-w-4xl mx-auto px-8 py-6 space-y-4">
       <EpicOverviewCard title={phaseTitle} epicId={epicId} progress={progress} />
 
       <TaskFilterBar
@@ -104,9 +104,9 @@ export function PhaseTasksTab({ issues, isLoading, phaseTitle, epicId }: PhaseTa
       </div>
 
       {filteredIssues.length === 0 && (
-        <div className="text-center text-gray-500 py-8 text-sm">
+        <p className="text-center text-text-tertiary py-8 text-sm">
           No tasks match this filter.
-        </div>
+        </p>
       )}
     </div>
   );

@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 export type TaskFilter = 'all' | 'open' | 'blocked' | 'done';
 export type TaskSort = 'priority' | 'status' | 'updated';
 
@@ -24,14 +26,15 @@ export function TaskFilterBar({ activeFilter, onFilterChange, sortBy, onSortChan
           <button
             key={key}
             onClick={() => onFilterChange(key)}
-            className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
+            className={clsx(
+              'px-2.5 py-1 text-2xs rounded-full transition-colors border',
               activeFilter === key
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                : 'text-gray-400 hover:text-gray-200 border border-transparent'
-            }`}
+                ? 'bg-accent-muted text-accent-text border-accent/30'
+                : 'text-text-tertiary hover:text-text-secondary border-transparent',
+            )}
           >
             {label}
-            <span className="ml-1 opacity-60">{counts[key]}</span>
+            <span className="ml-1 tabular-nums opacity-60">{counts[key]}</span>
           </button>
         ))}
       </div>
@@ -39,7 +42,7 @@ export function TaskFilterBar({ activeFilter, onFilterChange, sortBy, onSortChan
       <select
         value={sortBy}
         onChange={(e) => onSortChange(e.target.value as TaskSort)}
-        className="text-xs bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-300"
+        className="text-2xs bg-surface-raised border border-border rounded-md px-2 py-1 text-text-secondary focus-ring"
       >
         <option value="priority">Priority</option>
         <option value="status">Status</option>

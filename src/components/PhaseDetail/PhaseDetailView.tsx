@@ -8,18 +8,13 @@ import { PhasePlanTab } from './PhasePlanTab';
 import { PhaseTasksTab } from './PhaseTasksTab';
 import { ResearchTab } from './ResearchTab';
 import { ProgressBar } from '../ui/ProgressBar';
+import { Badge } from '../ui/Badge';
 import { Spinner } from '../ui/Spinner';
 
-const STATUS_COLORS: Record<string, string> = {
-  not_started: 'bg-gray-600 text-gray-200',
-  in_progress: 'bg-blue-600 text-blue-100',
-  complete: 'bg-green-600 text-green-100',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  not_started: 'Not Started',
-  in_progress: 'In Progress',
-  complete: 'Complete',
+const STATUS_BADGE: Record<string, { variant: 'default' | 'accent' | 'success'; label: string }> = {
+  not_started: { variant: 'default', label: 'Not Started' },
+  in_progress: { variant: 'accent', label: 'In Progress' },
+  complete: { variant: 'success', label: 'Complete' },
 };
 
 interface PhaseDetailViewProps {
@@ -54,31 +49,31 @@ export function PhaseDetailView({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full text-red-400">
-        <p>Error loading phase: {error.message}</p>
+      <div className="flex items-center justify-center h-full text-status-error">
+        <p className="text-sm">Error loading phase: {error.message}</p>
       </div>
     );
   }
 
+  const badge = STATUS_BADGE[phase.status] || STATUS_BADGE.not_started;
+
   return (
     <div className="h-full flex flex-col">
       {/* Phase header */}
-      <div className="px-8 pt-6 pb-4 border-b border-gray-800">
-        <div className="flex items-center gap-3 mb-2">
-          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[phase.status] || STATUS_COLORS.not_started}`}>
-            {STATUS_LABELS[phase.status] || phase.status}
-          </span>
-          <span className="text-sm text-gray-500 font-mono">{phase.id}</span>
+      <div className="px-8 pt-6 pb-4 border-b border-border">
+        <div className="flex items-center gap-2.5 mb-2">
+          <Badge variant={badge.variant}>{badge.label}</Badge>
+          <span className="text-2xs text-text-tertiary font-mono">{phase.id}</span>
           {phase.beadsEpic && (
-            <span className="text-sm text-gray-600 font-mono">{phase.beadsEpic}</span>
+            <span className="text-2xs text-text-tertiary font-mono">{phase.beadsEpic}</span>
           )}
           {progress.total > 0 && (
-            <span className="ml-auto text-sm text-gray-400 tabular-nums">
+            <span className="ml-auto text-sm text-text-secondary tabular-nums">
               {progress.done}/{progress.total} tasks done
             </span>
           )}
         </div>
-        <h2 className="text-xl font-semibold text-white mb-2">{phase.title}</h2>
+        <h2 className="text-lg font-semibold text-text-primary mb-2">{phase.title}</h2>
         {progress.total > 0 && (
           <div className="max-w-md">
             <ProgressBar progress={progress} size="md" />
