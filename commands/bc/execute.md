@@ -21,6 +21,14 @@ allowed-tools:
 
 Implement a task or work through all tasks in a phase.
 
+## 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.git` exists — if not: "No git repository. Run `/bc:init` first." Exit early.
+2. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+3. Check `.planning/` exists — if not: "Breadcrumb not initialized. Run `/bc:init` first." Exit early.
+
 ## Determine Mode
 
 Parse `$ARGUMENTS`:
@@ -56,6 +64,20 @@ Read the phase file to understand:
 - Research summary
 - Technical decisions
 - Related tasks
+
+### 3b. Ensure Parent Epic is Active
+
+From the phase file found in step 3, get the Beads Epic ID.
+
+Check the epic's status:
+```bash
+bd show [epic-id]
+```
+
+If the epic's status is `open`, set it to `in_progress` to unblock subtasks:
+```bash
+bd update [epic-id] --status in_progress
+```
 
 ### 4. Load Codebase Context
 
@@ -166,13 +188,27 @@ Run `bd ready` to see remaining tasks.
 
 Check `.planning/$ARGUMENTS.md` exists.
 
-### 2. Get All Tasks
+### 2. Get All Tasks and Activate Epic
+
+Read the phase file to get the Beads Epic ID.
 
 ```bash
 bd list
 ```
 
 Filter to tasks under this phase's epic.
+
+**Ensure the epic is active** so subtasks are unblocked:
+```bash
+bd show [epic-id]
+```
+
+If the epic's status is `open`, set it to `in_progress`:
+```bash
+bd update [epic-id] --status in_progress
+```
+
+This ensures subtasks appear in `bd ready`. Without this, an `open` epic blocks all its children.
 
 ### 3. Check for Ready Tasks
 

@@ -49,6 +49,7 @@ new-phase → plan → execute → close-phase
 | `/bc:todo <description>` | Add item to todo list |
 | `/bc:todos` | View and manage todo list |
 | `/bc:update` | Update breadcrumb to latest version |
+| `/bc:doctor` | Diagnose and repair setup issues |
 
 ## Philosophy
 

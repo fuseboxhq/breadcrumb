@@ -1,0 +1,126 @@
+---
+name: doctor
+description: Diagnose and repair Breadcrumb + Beads setup issues
+allowed-tools:
+  - Bash
+  - Read
+---
+
+# Breadcrumb Doctor
+
+Run a comprehensive health check on the Breadcrumb and Beads setup. Report results and suggest fixes.
+
+## Steps
+
+### 1. Git Repository
+
+Check if a git repository exists:
+```bash
+git rev-parse --git-dir 2>/dev/null
+```
+
+If missing: **FAIL** — "No git repository. Run `/bc:init` to fix."
+
+Check for commits:
+```bash
+git rev-parse HEAD 2>/dev/null
+```
+
+If no commits: **WARN** — "No commits yet. Run `/bc:init` to create initial commit."
+
+### 2. Beads Database
+
+Check `.beads/beads.db` exists:
+```bash
+ls .beads/beads.db 2>/dev/null
+```
+
+If missing: **FAIL** — "Beads not initialized. Run `/bc:init` to fix."
+
+If present, run a quick Beads health probe:
+```bash
+bd ready 2>&1
+```
+
+Check the output for warnings:
+- If contains "No git repository" → **WARN** — "Beads git integration broken"
+- If contains "Error" or "error" → **WARN** — report the error
+- If clean → **OK**
+
+### 3. Git Hooks
+
+Check if Beads hooks are installed by looking for the pre-commit hook:
+```bash
+ls .git/hooks/pre-commit 2>/dev/null
+```
+
+If missing: **WARN** — "Git hooks not installed. Fix: `bd hooks install`"
+
+### 4. Merge Driver
+
+Check merge driver is configured:
+```bash
+git config merge.beads.driver 2>/dev/null
+```
+
+If not configured: **WARN** — "Merge driver not configured. Fix: `git config merge.beads.driver \"bd merge %A %O %A %B\"`"
+
+### 5. Planning Directory
+
+Check `.planning/` exists:
+```bash
+ls .planning/ 2>/dev/null
+```
+
+If missing: **WARN** — "Planning directory not found. Run `/bc:init` to fix."
+
+Check `STATE.md` exists:
+```bash
+ls .planning/STATE.md 2>/dev/null
+```
+
+If missing: **WARN** — "STATE.md not found. Run `/bc:init` to fix."
+
+### 6. Breadcrumb Daemon
+
+Check daemon health:
+```bash
+curl -s --max-time 2 http://localhost:9999/__daemon/health
+```
+
+If not running: **INFO** — "Breadcrumb daemon not running. Run `/bc:init` to start."
+
+### 7. Project Registration
+
+If daemon is running, check this project is registered:
+```bash
+curl -s http://localhost:9999/api/projects 2>/dev/null
+```
+
+Check if current directory appears in the response.
+
+If not registered: **WARN** — "Project not registered with daemon. Run `/bc:init` to register."
+
+### 8. Report
+
+Display a summary:
+
+```
+Breadcrumb Doctor
+
+  Git repository:      [OK / FAIL]
+  Git commits:         [OK / WARN: no commits]
+  Beads database:      [OK / FAIL]
+  Beads health:        [OK / WARN: issues detected]
+  Git hooks:           [OK / WARN: not installed]
+  Merge driver:        [OK / WARN: not configured]
+  Planning directory:  [OK / WARN: missing]
+  STATE.md:            [OK / WARN: missing]
+  Daemon:              [OK / INFO: not running]
+  Project registered:  [OK / WARN: not registered]
+```
+
+If any FAIL or WARN results:
+```
+To fix most issues automatically, run: /bc:init
+```

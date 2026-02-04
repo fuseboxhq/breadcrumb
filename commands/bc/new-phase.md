@@ -22,6 +22,14 @@ Create a new phase for the project. Before creating the files, ask questions to 
 
 ## Steps
 
+### 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.git` exists — if not: "No git repository. Run `/bc:init` first." Exit early.
+2. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+3. Check `.planning/` exists — if not: "Breadcrumb not initialized. Run `/bc:init` first." Exit early.
+
 ### 1. Read Existing Context
 
 Before asking anything, gather context silently:

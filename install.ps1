@@ -160,7 +160,7 @@ Download-File "$RawUrl/skills/breadcrumb/SKILL.md" (Join-Path $SkillsDir "SKILL.
 $commands = @(
     "init", "integrate", "new-phase", "plan", "discuss-task",
     "status", "research", "close-phase", "execute",
-    "todo", "todos", "update", "quick"
+    "todo", "todos", "update", "quick", "doctor"
 )
 foreach ($cmd in $commands) {
     Download-File "$RawUrl/commands/bc/$cmd.md" (Join-Path $CommandsDir "$cmd.md")

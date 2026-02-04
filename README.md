@@ -48,7 +48,7 @@ After installation, open Claude Code in any project and run:
 /bc:init
 ```
 
-This sets up `.beads/` and `.planning/` directories, starts the daemon if needed, and registers the project with the web UI.
+This sets up git (if needed), initializes Beads with hooks and merge driver, creates `.planning/` directories, makes an initial commit, starts the daemon, and registers the project with the web UI.
 
 ### Typical workflow
 
@@ -64,7 +64,7 @@ This sets up `.beads/` and `.planning/` directories, starts the daemon if needed
 
 | Command | Description |
 |---------|-------------|
-| `/bc:init` | Initialize Breadcrumb in a project |
+| `/bc:init` | Initialize git, Beads, and Breadcrumb in a project |
 | `/bc:integrate` | Explore codebase and create CODEBASE.md context |
 | `/bc:new-phase <title>` | Create a new phase |
 | `/bc:plan PHASE-XX` | Research, clarify, and plan a phase |
@@ -77,6 +77,7 @@ This sets up `.beads/` and `.planning/` directories, starts the daemon if needed
 | `/bc:todos` | View and manage the todo list |
 | `/bc:update` | Update Breadcrumb to the latest version |
 | `/bc:quick <description>` | Quick task execution without full planning |
+| `/bc:doctor` | Diagnose and repair Breadcrumb + Beads setup issues |
 
 ## Web UI
 

@@ -1,44 +1,103 @@
 ---
 name: init
-description: Initialize Beads CLI and Breadcrumb directories for phase-based planning
+description: Initialize Beads CLI, git repository, and Breadcrumb directories for phase-based planning
 allowed-tools:
   - Bash
   - Write
   - Read
+  - Edit
 ---
 
 # Initialize Breadcrumb
 
-Set up Beads CLI, the `.planning/` directory structure, and connect to the Breadcrumb web UI.
+Set up git, Beads CLI, the `.planning/` directory structure, and connect to the Breadcrumb web UI. This command is idempotent — safe to re-run on already-initialized projects.
 
 ## Steps
 
-### 1. Check Beads CLI Installation
+### 1. Check Prerequisites
 
-Run `which bd` to check if Beads CLI is installed.
+**Check git:**
+```bash
+which git
+```
+If not found:
+```
+Git is required but not found. Install git and try again.
+```
+Stop here.
 
-If not installed, inform the user:
+**Check Beads CLI:**
+```bash
+which bd
+```
+If not found:
 ```
 Beads CLI not found. Install with:
   curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash
 ```
+Stop here.
 
-### 2. Initialize Beads
+Both must be present to proceed.
 
-If Beads is installed and `.beads/` doesn't exist, run:
+### 2. Git Repository Setup
+
+Check if a git repository exists:
+```bash
+git rev-parse --git-dir 2>/dev/null
+```
+
+**If no git repository:**
+```bash
+git init
+```
+Report: "Initialized git repository"
+
+**Check for existing commits:**
+```bash
+git rev-parse HEAD 2>/dev/null
+```
+If this fails (exit code non-zero), there are no commits yet. Remember this — we'll create an initial commit in Step 5.
+
+### 3. Beads Setup
+
+**If `.beads/` does NOT exist:**
 ```bash
 bd init
 ```
+Report: "Initialized Beads database"
 
-### 3. Create Planning Directory Structure
+**If `.beads/` already exists:**
+
+Check for legacy database issues (idempotent — succeeds silently if already migrated):
+```bash
+bd migrate --update-repo-id 2>&1 || true
+```
+
+**Then, regardless of whether `.beads/` was new or existing, run these setup commands (all idempotent):**
+
+Install git hooks:
+```bash
+bd hooks install
+```
+
+Configure merge driver for Beads JSONL files:
+```bash
+git config merge.beads.driver "bd merge %A %O %A %B"
+git config merge.beads.name "Beads JSONL merge driver"
+```
+
+Sync SQLite database with JSONL (ensures they're in agreement):
+```bash
+bd sync 2>/dev/null || true
+```
+
+### 4. Create Planning Directory Structure
 
 ```bash
 mkdir -p .planning/research
 ```
 
-### 4. Create STATE.md
-
-If `.planning/STATE.md` doesn't exist, create it:
+**If `.planning/STATE.md` doesn't exist, create it:**
 
 ```markdown
 # Project State
@@ -65,16 +124,34 @@ No phases created yet. Run `/bc:new-phase [title]` to create your first phase.
 - Close phase: `/bc:close-phase PHASE-XX`
 - Add todo: `/bc:todo "idea"`
 - View todos: `/bc:todos`
+- Diagnose issues: `/bc:doctor`
 ```
 
-### 5. Create .gitignore
-
-If `.planning/.gitignore` doesn't exist:
+**If `.planning/.gitignore` doesn't exist:**
 ```
 # Keep research but ignore temp files
 *.tmp
 *.bak
 ```
+
+### 5. Initial Commit
+
+Check if `.beads/` or `.planning/` have uncommitted changes:
+```bash
+git status --porcelain .beads/ .planning/
+```
+
+**If there are untracked or modified files in those directories:**
+```bash
+git add .beads/ .planning/
+git commit -m "Initialize Breadcrumb project with Beads task tracking"
+```
+Report: "Created initial commit with .beads/ and .planning/"
+
+**IMPORTANT:** Only stage `.beads/` and `.planning/` — never run `git add .` or `git add -A`, which could accidentally stage unrelated user files.
+
+**If everything is already committed and clean:**
+Report: "Project files already committed"
 
 ### 6. Connect to Breadcrumb Web UI
 
@@ -119,24 +196,31 @@ curl -s -X POST "http://localhost:9999/api/projects" \
   -d '{"path":"[cwd]","name":"[project-name]"}'
 ```
 
-Or register via the daemon CLI:
+### 7. Health Check
+
+Run a quick smoke test to verify Beads is working:
 ```bash
-cd "$SERVER_DIR" && pnpm daemon -- register "$(pwd)" "[project-name]"
+bd ready 2>&1
 ```
 
-### 7. Report Success
+Check the output:
+- If it contains "No git repository" or "Error" → report the warning and suggest running `bd doctor`
+- If output is clean (empty list or shows tasks) → Beads is healthy
+
+### 8. Report Success
 
 ```
 Breadcrumb initialized!
 
-Created:
-  .beads/              - Beads task database
-  .planning/           - Phase planning documents
-  .planning/research/  - Task research documents
-  .planning/STATE.md   - Project state tracking
+Setup:
+  Git repository:    [initialized / already existed]
+  Beads database:    [initialized / already existed]
+  Git hooks:         installed
+  Merge driver:      configured
+  Initial commit:    [created / skipped (already committed)]
 
-Web UI: http://localhost:9999 [running/not running]
-Project registered: [yes/no]
+Web UI: http://localhost:9999 [running / not running]
+Project registered: [yes / no]
 
 Next steps (existing codebase):
   1. Map the codebase: /bc:integrate
@@ -147,4 +231,7 @@ Next steps (new project):
   1. Create your first phase: /bc:new-phase "Setup and Configuration"
   2. Plan and execute: /bc:plan PHASE-01 → /bc:execute PHASE-01
   3. Check status: /bc:status
+
+Troubleshooting:
+  Run /bc:doctor to diagnose any issues.
 ```

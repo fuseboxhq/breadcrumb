@@ -88,7 +88,7 @@ mkdir -p "$AGENTS_DIR"
 curl -fsSL "$RAW_URL/skills/breadcrumb/SKILL.md" -o "$SKILLS_DIR/SKILL.md"
 
 # Download command files (user-invocable)
-for cmd in init integrate new-phase plan discuss-task status research close-phase execute todo todos update quick; do
+for cmd in init integrate new-phase plan discuss-task status research close-phase execute todo todos update quick doctor; do
     curl -fsSL "$RAW_URL/commands/bc/$cmd.md" -o "$COMMANDS_DIR/$cmd.md"
 done
 

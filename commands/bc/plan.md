@@ -29,6 +29,14 @@ Clarify requirements, research implementation approaches, and break down into ex
 
 ## Steps
 
+### 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.git` exists — if not: "No git repository. Run `/bc:init` first." Exit early.
+2. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+3. Check `.planning/` exists — if not: "Breadcrumb not initialized. Run `/bc:init` first." Exit early.
+
 ### 1. Validate Phase Exists
 
 Check that `.planning/$ARGUMENTS.md` exists.
@@ -130,6 +138,15 @@ If tasks have dependencies:
 ```bash
 bd dep add [dependent-task] [dependency-task]
 ```
+
+### 6b. Activate Epic
+
+Set the phase epic to `in_progress` so subtasks are unblocked for execution:
+```bash
+bd update [epic-id] --status in_progress
+```
+
+This ensures tasks appear in `bd ready` immediately after planning. Without this, the epic's `open` status blocks all children.
 
 ### 7. Update Phase File
 
