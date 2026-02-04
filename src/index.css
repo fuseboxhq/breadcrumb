@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Global resets */
+  *,
+  *::before,
+  *::after {
+    border-color: theme('colors.border.DEFAULT');
+  }
+
+  body {
+    @apply bg-surface text-text-primary font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.border.strong');
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.border.hover');
+  }
+
+  /* Selection */
+  ::selection {
+    background: theme('colors.accent.muted');
+    color: theme('colors.text-primary');
+  }
+}
+
+@layer components {
+  /* Skeleton shimmer for loading states */
+  .skeleton {
+    @apply relative overflow-hidden rounded bg-surface-hover;
+    background: linear-gradient(
+      90deg,
+      theme('colors.surface.hover') 0%,
+      theme('colors.surface.active') 50%,
+      theme('colors.surface.hover') 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  /* Focus ring for keyboard navigation */
+  .focus-ring {
+    @apply outline-none ring-2 ring-accent/50 ring-offset-1 ring-offset-surface;
+  }
+
+  /* Truncate with ellipsis */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

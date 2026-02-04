@@ -58,7 +58,7 @@ Use Motion (formerly Framer Motion) for animations, Radix UI for headless access
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| bly.1 | Install dependencies and build design system tokens | open | Medium | - |
+| bly.1 | Install dependencies and build design system tokens | done | Medium | - |
 | bly.2 | Rebuild UI primitive components with Radix and design tokens | open | Medium | bly.1 |
 | bly.3 | Redesign app shell and sidebar navigation | open | High | bly.1 |
 | bly.4 | Redesign project dashboard | open | Medium | bly.3 |
