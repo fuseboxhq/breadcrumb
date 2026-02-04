@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { motion } from 'motion/react';
 import type { BeadsIssue, PhaseProgress } from '../../types';
 import { EpicOverviewCard } from '../Tasks/EpicOverviewCard';
 import { TaskFilterBar, type TaskFilter, type TaskSort } from '../Tasks/TaskFilterBar';
@@ -97,11 +98,24 @@ export function PhaseTasksTab({ issues, isLoading, phaseTitle, epicId }: PhaseTa
         counts={counts}
       />
 
-      <div className="space-y-2">
+      <motion.div
+        className="space-y-2"
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
+      >
         {filteredIssues.map((issue) => (
-          <TaskCard key={issue.id} issue={issue} allIssues={issues} />
+          <motion.div
+            key={issue.id}
+            variants={{
+              hidden: { opacity: 0, y: 8 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
+            }}
+          >
+            <TaskCard issue={issue} allIssues={issues} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {filteredIssues.length === 0 && (
         <p className="text-center text-text-tertiary py-8 text-sm">

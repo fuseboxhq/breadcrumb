@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { motion } from 'motion/react';
 import type { ContentTab } from '../../types';
 
 interface ContentTabBarProps {
@@ -41,7 +42,11 @@ export function ContentTabBar({ activeTab, onChange, taskCount, researchCount }:
               </span>
             )}
             {isActive && (
-              <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent rounded-full" />
+              <motion.span
+                layoutId="tab-indicator"
+                className="absolute inset-x-0 -bottom-px h-0.5 bg-accent rounded-full"
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              />
             )}
           </button>
         );

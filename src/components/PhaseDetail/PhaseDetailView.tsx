@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { Phase, ContentTab } from '../../types';
 import { useIssues } from '../../hooks/useIssues';
 import { useResearch } from '../../hooks/useResearch';
@@ -89,20 +90,30 @@ export function PhaseDetailView({
         researchCount={research.length}
       />
 
-      {/* Tab content */}
+      {/* Tab content with transitions */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'plan' && <PhasePlanTab phase={phase} />}
-        {activeTab === 'tasks' && (
-          <PhaseTasksTab
-            issues={epicIssues}
-            isLoading={isIssuesLoading}
-            phaseTitle={phase.title}
-            epicId={phase.beadsEpic}
-          />
-        )}
-        {activeTab === 'research' && (
-          <ResearchTab docs={research} isLoading={isResearchLoading} />
-        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.12, ease: 'easeOut' }}
+          >
+            {activeTab === 'plan' && <PhasePlanTab phase={phase} />}
+            {activeTab === 'tasks' && (
+              <PhaseTasksTab
+                issues={epicIssues}
+                isLoading={isIssuesLoading}
+                phaseTitle={phase.title}
+                epicId={phase.beadsEpic}
+              />
+            )}
+            {activeTab === 'research' && (
+              <ResearchTab docs={research} isLoading={isResearchLoading} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

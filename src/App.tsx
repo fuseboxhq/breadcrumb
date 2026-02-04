@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { PhaseDetailView } from './components/PhaseDetail/PhaseDetailView';
 import { ProjectDashboard } from './components/Dashboard/ProjectDashboard';
@@ -55,6 +56,8 @@ export function App() {
     setContentTab('plan');
   };
 
+  const viewKey = selectedPhaseId && phase ? `phase-${selectedPhaseId}` : 'dashboard';
+
   return (
     <div className="flex h-screen bg-surface text-text-primary">
       <Sidebar
@@ -68,27 +71,47 @@ export function App() {
         onBackToDashboard={handleBackToDashboard}
         progressByEpic={progressByEpic}
       />
-      <main className="flex-1 overflow-hidden">
-        {selectedPhaseId && phase ? (
-          <PhaseDetailView
-            phase={phase}
-            projectPath={selectedProjectPath!}
-            isLoading={isPhaseLoading}
-            error={phaseError}
-            activeTab={contentTab}
-            onTabChange={setContentTab}
-          />
-        ) : (
-          <ProjectDashboard
-            projectState={projectState}
-            isStateLoading={isStateLoading}
-            phases={phases}
-            progressByEpic={progressByEpic}
-            readyIssues={readyIssues}
-            isReadyLoading={isReadyLoading}
-            onSelectPhase={handleSelectPhase}
-          />
-        )}
+      <main className="flex-1 overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          {selectedPhaseId && phase ? (
+            <motion.div
+              key={viewKey}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="h-full"
+            >
+              <PhaseDetailView
+                phase={phase}
+                projectPath={selectedProjectPath!}
+                isLoading={isPhaseLoading}
+                error={phaseError}
+                activeTab={contentTab}
+                onTabChange={setContentTab}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key={viewKey}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="h-full"
+            >
+              <ProjectDashboard
+                projectState={projectState}
+                isStateLoading={isStateLoading}
+                phases={phases}
+                progressByEpic={progressByEpic}
+                readyIssues={readyIssues}
+                isReadyLoading={isReadyLoading}
+                onSelectPhase={handleSelectPhase}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
