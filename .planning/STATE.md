@@ -6,11 +6,10 @@
 ## Active Work
 
 PHASE-01: Merge claude-planz and plan-visualizer into unified Breadcrumb project (in_progress) - 7/7 tasks closed
-PHASE-02: Dashboard UI/UX overhaul (in_progress) - 7 tasks
 
 ## Completed Phases
 
-(none yet)
+PHASE-02: Dashboard UI/UX overhaul (complete) - 7/7 tasks done
 
 ## Quick Commands
 
