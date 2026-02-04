@@ -1,10 +1,11 @@
 # Project State
 
-**Current Phase:** PHASE-02
+**Current Phase:** PHASE-03
 **Last Updated:** 2026-02-04
 
 ## Active Work
 
+PHASE-03: Universal Quick Task Tracking (in_progress)
 PHASE-01: Merge claude-planz and plan-visualizer into unified Breadcrumb project (in_progress) - 7/7 tasks closed
 
 ## Completed Phases
