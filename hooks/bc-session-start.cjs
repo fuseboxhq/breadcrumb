@@ -80,16 +80,18 @@ function checkForUpdates() {
   const script = `
     const https = require('https');
     const fs = require('fs');
-    const path = require('path');
+    const { execSync } = require('child_process');
 
     const cacheFile = ${JSON.stringify(path.join(CACHE_DIR, 'update-check.json'))};
-    const serverPkg = ${JSON.stringify(path.join(SERVER_DIR, 'package.json'))};
+    const serverDir = ${JSON.stringify(SERVER_DIR)};
 
-    let currentVersion = '0.0.0';
+    // Read installed SHA from the actual local repo HEAD
+    let installedSha = null;
     try {
-      const pkg = JSON.parse(fs.readFileSync(serverPkg, 'utf8'));
-      currentVersion = pkg.version || '0.0.0';
+      installedSha = execSync('git rev-parse --short=7 HEAD', { cwd: serverDir, encoding: 'utf8' }).trim();
     } catch {}
+
+    if (!installedSha) process.exit(0);
 
     const req = https.get('https://api.github.com/repos/fuseboxhq/breadcrumb/commits/main', {
       headers: { 'User-Agent': 'breadcrumb-update-check' },
@@ -102,29 +104,12 @@ function checkForUpdates() {
           const commit = JSON.parse(data);
           const latestSha = commit.sha ? commit.sha.slice(0, 7) : null;
 
-          // Read stored sha
-          let storedSha = null;
-          try {
-            const cache = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-            storedSha = cache.installed_sha;
-          } catch {}
-
-          // If we don't have a stored sha, store current and don't flag update
-          if (!storedSha) {
-            fs.writeFileSync(cacheFile, JSON.stringify({
-              installed_sha: latestSha,
-              latest_sha: latestSha,
-              update_available: false,
-              checkedAt: Date.now()
-            }));
-          } else {
-            fs.writeFileSync(cacheFile, JSON.stringify({
-              installed_sha: storedSha,
-              latest_sha: latestSha,
-              update_available: storedSha !== latestSha,
-              checkedAt: Date.now()
-            }));
-          }
+          fs.writeFileSync(cacheFile, JSON.stringify({
+            installed_sha: installedSha,
+            latest_sha: latestSha,
+            update_available: installedSha !== latestSha,
+            checkedAt: Date.now()
+          }));
         } catch {}
       });
     });
