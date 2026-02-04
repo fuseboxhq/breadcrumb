@@ -135,11 +135,9 @@ process.stdin.on('end', async () => {
 
     ensureDir(CACHE_DIR);
 
-    // Run all three operations concurrently
-    await Promise.all([
-      checkDaemonHealth(),
-      warmCache(projectDir)
-    ]);
+    // Daemon must be up before we can warm cache
+    await checkDaemonHealth();
+    await warmCache(projectDir);
 
     // Update check runs fully detached
     checkForUpdates();

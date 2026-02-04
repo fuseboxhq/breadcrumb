@@ -16,6 +16,14 @@ Mark a phase as complete, verify all tasks are done, and update documentation.
 
 ## Steps
 
+### 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.git` exists — if not: "No git repository. Run `/bc:init` first." Exit early.
+2. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+3. Check `.planning/` exists — if not: "Breadcrumb not initialized. Run `/bc:init` first." Exit early.
+
 ### 1. Validate Phase Exists
 
 Check that `.planning/$ARGUMENTS.md` exists.
@@ -39,10 +47,10 @@ If status is already `complete`, inform user and exit.
 
 Get all tasks under the phase's Beads epic:
 ```bash
-bd list --parent [epic-id]
+bd list
 ```
 
-Or list all and filter for tasks starting with the epic ID.
+Filter the output to tasks whose ID starts with the epic ID prefix (e.g., `btr.1`, `btr.2` for epic `btr`). Note: `bd list --parent` is not a valid Beads flag — always use `bd list` and filter manually.
 
 Check if all tasks are marked done. If not:
 ```
@@ -98,19 +106,19 @@ bd close [epic-id]
 
 ### 7. Update STATE.md
 
-Update `.planning/STATE.md`:
-- Remove this phase from "Active Work"
-- Add to completed phases list
-- Update "Current Phase" to next incomplete phase (if any)
+Read `.planning/STATE.md`, then update it:
 
-```markdown
-## Completed Phases
+- Remove this phase's line from "## Active Work"
+- Append to "## Completed Phases": `- PHASE-XX: [title] (completed [date])`
+- If `**Current Phase:**` pointed to this phase, set it to the next in-progress phase (if any), or `None`
+- Do NOT remove other active phases — there may be multiple phases in progress
 
-- PHASE-XX: [title] (completed [date])
+### 7.5. Git Commit
 
-## Active Work
-
-[Next phase or "No active phases"]
+Stage and commit the close:
+```bash
+git add .planning/$ARGUMENTS.md .planning/STATE.md
+git commit -m "Close $ARGUMENTS: [title]"
 ```
 
 ### 8. Report Success

@@ -4,6 +4,7 @@ description: Diagnose and repair Breadcrumb + Beads setup issues
 allowed-tools:
   - Bash
   - Read
+  - Glob
 ---
 
 # Breadcrumb Doctor
@@ -101,7 +102,38 @@ Check if current directory appears in the response.
 
 If not registered: **WARN** — "Project not registered with daemon. Run `/bc:init` to register."
 
-### 8. Report
+### 8. Beads CLI Version
+
+Check Beads CLI version:
+```bash
+bd --version 2>/dev/null || bd version 2>/dev/null
+```
+
+If available, report version. If outdated or erroring: **WARN** — "Beads CLI may need updating."
+
+### 9. Claude Code Hooks
+
+Check that hook scripts exist in `~/.breadcrumb/hooks/`:
+
+```bash
+ls ~/.breadcrumb/hooks/bc-statusline.cjs ~/.breadcrumb/hooks/bc-session-start.cjs ~/.breadcrumb/hooks/bc-session-end.cjs ~/.breadcrumb/hooks/bc-bash-guard.cjs 2>/dev/null
+```
+
+For each missing file: **WARN** — "Hook [name] missing. Run `/bc:update` to reinstall."
+
+### 10. Claude Code Settings
+
+Read `~/.claude/settings.json` and check:
+
+- Does `hooks.SessionStart` contain a `bc-session-start` entry? If not: **WARN**
+- Does `hooks.Stop` contain a `bc-session-end` entry? If not: **WARN**
+- Does `hooks.PreToolUse` contain a `bc-bash-guard` entry? If not: **WARN**
+- Does top-level `statusLine` reference `bc-statusline`? If not: **WARN**
+- Does `permissions.allow` contain `Bash(bd:*)`? If not: **WARN**
+
+For missing entries: "Run `/bc:init` to configure hooks and permissions."
+
+### 11. Report
 
 Display a summary:
 
@@ -112,12 +144,15 @@ Breadcrumb Doctor
   Git commits:         [OK / WARN: no commits]
   Beads database:      [OK / FAIL]
   Beads health:        [OK / WARN: issues detected]
+  Beads CLI version:   [OK: vX.X.X / WARN]
   Git hooks:           [OK / WARN: not installed]
   Merge driver:        [OK / WARN: not configured]
   Planning directory:  [OK / WARN: missing]
   STATE.md:            [OK / WARN: missing]
   Daemon:              [OK / INFO: not running]
   Project registered:  [OK / WARN: not registered]
+  Hook scripts:        [OK / WARN: missing]
+  Settings.json:       [OK / WARN: incomplete]
 ```
 
 If any FAIL or WARN results:

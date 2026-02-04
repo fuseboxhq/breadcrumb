@@ -7,6 +7,8 @@ allowed-tools:
   - Read
   - Write
   - Edit
+  - Glob
+  - Grep
   - AskUserQuestion
 ---
 
@@ -25,6 +27,14 @@ This command helps ensure you fully understand what needs to be built before wri
 - You want to validate your understanding before starting
 
 ## Steps
+
+### 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.git` exists — if not: "No git repository. Run `/bc:init` first." Exit early.
+2. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+3. Check `.planning/` exists — if not: "Breadcrumb not initialized. Run `/bc:init` first." Exit early.
 
 ### 1. Get Task Context
 
@@ -99,15 +109,23 @@ After discussion, summarize what was clarified:
 [Anything still unresolved]
 ```
 
-### 5. Update Beads Task
+### 5. Save Clarification
 
-Update the task in Beads with the clarified information:
+Write the clarification summary to `.planning/research/$ARGUMENTS-discussion.md` so it persists across sessions and is available to `/bc:execute` and `/bc:research`.
 
 ```bash
-bd update $ARGUMENTS --note "Clarified via /bc:discuss-task on [date]. See summary above."
+mkdir -p .planning/research
 ```
 
-Consider updating the task description if it was significantly clarified.
+Then write the summary to the file.
+
+### 5b. Update Beads Task
+
+Update the task in Beads with a pointer to the file:
+
+```bash
+bd update $ARGUMENTS --note "Clarified via /bc:discuss-task on [date]. See .planning/research/$ARGUMENTS-discussion.md"
+```
 
 ### 6. Suggest Next Steps
 

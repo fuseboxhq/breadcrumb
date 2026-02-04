@@ -18,6 +18,12 @@ allowed-tools:
 
 Execute a task quickly with minimal overhead.
 
+## 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+
 ## 1. Validate Input
 
 If `$ARGUMENTS` is empty or missing:

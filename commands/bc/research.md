@@ -8,6 +8,8 @@ allowed-tools:
   - WebFetch
   - Read
   - Write
+  - Glob
+  - Grep
   - AskUserQuestion
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs
@@ -32,11 +34,22 @@ Deep research on a specific Beads task. Use this when a task needs more investig
 
 ## Steps
 
+### 0. Preflight
+
+Verify the project is set up before proceeding:
+
+1. Check `.git` exists — if not: "No git repository. Run `/bc:init` first." Exit early.
+2. Check `.beads/` exists — if not: "Beads not initialized. Run `/bc:init` first." Exit early.
+3. Check `.planning/` exists — if not: "Breadcrumb not initialized. Run `/bc:init` first." Exit early.
+
 ### 1. Get Task Context
 
 Run `bd show $ARGUMENTS` to get the task title, description, and any existing notes.
 
 If the task doesn't exist, inform the user and exit.
+
+**Check for existing discussion:**
+If `.planning/research/$ARGUMENTS-discussion.md` exists, read it — this contains clarifications from `/bc:discuss-task` that should inform research.
 
 **Also check for codebase context:**
 If `.planning/CODEBASE.md` exists, read it to understand:

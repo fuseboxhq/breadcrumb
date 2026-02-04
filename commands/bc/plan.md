@@ -10,6 +10,8 @@ allowed-tools:
   - Write
   - Edit
   - Glob
+  - Grep
+  - Task
   - AskUserQuestion
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs
@@ -218,14 +220,19 @@ Update `.planning/$ARGUMENTS.md` with full content:
 
 ### 8. Update STATE.md
 
-Update `.planning/STATE.md`:
-```markdown
-**Current Phase:** $ARGUMENTS
-**Last Updated:** [date]
+Read `.planning/STATE.md`, then update it:
 
-## Active Work
+- Set `**Current Phase:**` to `$ARGUMENTS` (if not already set to another active phase)
+- Set `**Last Updated:**` to today's date
+- Under `## Active Work`, find and update this phase's line to: `$ARGUMENTS: [title] (in_progress) - [N] tasks`
+- Do NOT remove other phases' entries from Active Work
 
-$ARGUMENTS: [title] (in_progress) - [N] tasks
+### 8.5. Git Commit
+
+Stage and commit the plan:
+```bash
+git add .planning/$ARGUMENTS.md .planning/STATE.md .planning/research/
+git commit -m "Plan $ARGUMENTS: [title] - [N] tasks"
 ```
 
 ### 9. Report Summary

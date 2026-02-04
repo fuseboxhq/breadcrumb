@@ -6,6 +6,7 @@ allowed-tools:
   - Bash
   - Write
   - Read
+  - Edit
   - Glob
   - AskUserQuestion
 ---
@@ -206,18 +207,24 @@ Run `/bc:plan PHASE-XX` to break down this phase into tasks.
 
 ### 6. Update STATE.md
 
-Update `.planning/STATE.md`:
+Read `.planning/STATE.md`, then update it:
 
-```markdown
-**Current Phase:** PHASE-XX
-**Last Updated:** [date]
+- Set `**Last Updated:**` to today's date
+- Under `## Active Work`, **append** a new line for this phase (do NOT replace existing entries):
+  ```
+  PHASE-XX: [title] (not_started)
+  ```
+- If `**Current Phase:**` is `None`, set it to `PHASE-XX`
 
-## Active Work
+### 7. Git Commit
 
-PHASE-XX: [title] (not_started)
+Stage and commit the new phase files:
+```bash
+git add .planning/PHASE-XX.md .planning/STATE.md
+git commit -m "Create PHASE-XX: [title]"
 ```
 
-### 7. Report Success
+### 8. Report Success
 
 ```
 Phase created!

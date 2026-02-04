@@ -51,9 +51,6 @@ export interface ResearchDoc {
   content: string;
 }
 
-// Sidebar navigation mode
-export type SidebarTab = 'phases' | 'ready';
-
 // Main content tab when viewing a phase
 export type ContentTab = 'plan' | 'tasks' | 'research';
 

@@ -37,6 +37,7 @@ export function PhaseList({ phases, isLoading, selectedPhaseId, onSelect, progre
     <div className="space-y-1">
       {phases.map((phase) => {
         const progress = progressByEpic.get(phase.beadsEpic);
+        const readyCount = progress ? progress.total - progress.done - progress.blocked : 0;
         return (
           <button
             key={phase.id}
@@ -50,6 +51,11 @@ export function PhaseList({ phases, isLoading, selectedPhaseId, onSelect, progre
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[phase.status] || STATUS_DOT.not_started}`} />
               <span className="text-xs text-gray-500 font-mono">{phase.id}</span>
+              {readyCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-400">
+                  {readyCount} ready
+                </span>
+              )}
               {progress && progress.total > 0 && (
                 <span className="ml-auto text-xs text-gray-500 tabular-nums">
                   {progress.done}/{progress.total}

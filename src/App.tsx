@@ -9,12 +9,11 @@ import { useProjectState } from './hooks/useProjectState';
 import { useReadyIssues } from './hooks/useReadyIssues';
 import { useWatchProject } from './hooks/useWatchProject';
 import { groupProgressByEpic } from './lib/taskUtils';
-import type { SidebarTab, ContentTab, BeadsIssue } from './types';
+import type { ContentTab } from './types';
 
 export function App() {
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
-  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('phases');
   const [contentTab, setContentTab] = useState<ContentTab>('plan');
 
   const { data: projects = [] } = useProjects();
@@ -47,25 +46,7 @@ export function App() {
   // Select a phase (from sidebar or dashboard)
   const handleSelectPhase = (phaseId: string) => {
     setSelectedPhaseId(phaseId);
-    setSidebarTab('phases');
     setContentTab('plan');
-  };
-
-  // Handle clicking a ready task — navigate to its phase's tasks tab
-  const handleSelectReadyTask = (issue: BeadsIssue) => {
-    let ownerPhase;
-    if (issue.parentId) {
-      // Subtask — find the phase that owns the parent epic
-      ownerPhase = phases.find((p) => p.beadsEpic === issue.parentId);
-    } else {
-      // Epic itself — match directly
-      ownerPhase = phases.find((p) => p.beadsEpic === issue.id);
-    }
-    if (ownerPhase) {
-      setSelectedPhaseId(ownerPhase.id);
-      setSidebarTab('phases');
-      setContentTab('tasks');
-    }
   };
 
   return (
@@ -78,11 +59,6 @@ export function App() {
         isPhasesLoading={isPhasesLoading}
         selectedPhaseId={selectedPhaseId}
         onSelectPhase={handleSelectPhase}
-        sidebarTab={sidebarTab}
-        onSidebarTabChange={setSidebarTab}
-        readyIssues={readyIssues}
-        isReadyLoading={isReadyLoading}
-        onSelectReadyTask={handleSelectReadyTask}
         progressByEpic={progressByEpic}
       />
       <main className="flex-1 overflow-hidden">

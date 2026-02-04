@@ -89,6 +89,7 @@ If `.planning/CODEBASE.md` exists, read it for:
 ### 5. Load Task Research
 
 If `.planning/research/$ARGUMENTS.md` exists, read it for detailed implementation guidance.
+If `.planning/research/$ARGUMENTS-discussion.md` exists, read it for clarifications from `/bc:discuss-task`.
 
 ### 6. Confirm Before Starting
 
@@ -161,7 +162,17 @@ to:
 | btr.1 | Scaffold project | done | Medium | - |
 ```
 
-### 10. Report Completion
+### 10. Git Commit
+
+Stage and commit the changes made for this task:
+```bash
+git add -A
+git commit -m "[task-id]: [task title]"
+```
+
+Update the phase file's task table status to `done` if not already done in step 9.
+
+### 11. Report Completion
 
 ```markdown
 ## TASK COMPLETED
