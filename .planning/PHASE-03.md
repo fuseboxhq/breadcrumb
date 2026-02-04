@@ -1,6 +1,6 @@
 # Phase 03: Universal Quick Task Tracking
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-d8v
 **Created:** 2026-02-04
 
@@ -48,13 +48,13 @@ Frontend already has all data: `useIssues()` fetches all issues with labels and 
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| d8v.1 | Add Quick Tasks epic to /bc:init | open | Low | - |
-| d8v.2 | Add "Always Track Work" section to SKILL.md | open | Medium | d8v.1 |
-| d8v.3 | Improve /bc:quick command | open | Medium | d8v.1 |
-| d8v.4 | Create QuickTaskList sidebar component | open | Medium | d8v.1 |
-| d8v.5 | Update Sidebar layout with Quick Tasks section | open | Low | d8v.4 |
-| d8v.6 | Wire quick tasks data in App.tsx | open | Low | d8v.5 |
-| d8v.7 | Add Quick Tasks epic check to /bc:doctor | open | Low | - |
+| d8v.1 | Add Quick Tasks epic to /bc:init | done | Low | - |
+| d8v.2 | Add "Always Track Work" section to SKILL.md | done | Medium | d8v.1 |
+| d8v.3 | Improve /bc:quick command | done | Medium | d8v.1 |
+| d8v.4 | Create QuickTaskList sidebar component | done | Medium | d8v.1 |
+| d8v.5 | Update Sidebar layout with Quick Tasks section | done | Low | d8v.4 |
+| d8v.6 | Wire quick tasks data in App.tsx | done | Low | d8v.5 |
+| d8v.7 | Add Quick Tasks epic check to /bc:doctor | done | Low | - |
 
 ### Task Details
 

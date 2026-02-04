@@ -82,6 +82,24 @@ ls .planning/STATE.md 2>/dev/null
 
 If missing: **WARN** — "STATE.md not found. Run `/bc:init` to fix."
 
+### 5.5. Quick Tasks Epic
+
+Check if the Quick Tasks epic exists and is active:
+```bash
+bd list --label quick-tasks-epic --limit 1 2>/dev/null
+```
+
+**If no results:** **INFO** — "Quick Tasks epic not found. Will be created on first use or re-run `/bc:init`."
+
+**If found**, extract the epic ID and check its status:
+```bash
+bd show <epic-id>
+```
+
+If the status is not `in_progress`: **WARN** — "Quick Tasks epic is not active. Child tasks may not appear in `bd ready`. Fix: `bd update <epic-id> --status in_progress`"
+
+If status is `in_progress`: **OK**
+
 ### 6. Breadcrumb Daemon
 
 Check daemon health:
@@ -149,6 +167,7 @@ Breadcrumb Doctor
   Merge driver:        [OK / WARN: not configured]
   Planning directory:  [OK / WARN: missing]
   STATE.md:            [OK / WARN: missing]
+  Quick Tasks epic:    [OK / INFO: not created / WARN: not active]
   Daemon:              [OK / INFO: not running]
   Project registered:  [OK / WARN: not registered]
   Hook scripts:        [OK / WARN: missing]

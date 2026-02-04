@@ -30,6 +30,17 @@ export function App() {
   // Compute per-epic progress from all issues
   const progressByEpic = useMemo(() => groupProgressByEpic(allIssues), [allIssues]);
 
+  // Derive quick tasks from the Quick Tasks epic (identified by label)
+  const quickTasks = useMemo(() => {
+    const epic = allIssues.find(
+      (i) => i.labels.includes('quick-tasks-epic') && i.parentId === null,
+    );
+    if (!epic) return [];
+    return allIssues
+      .filter((i) => i.parentId === epic.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [allIssues]);
+
   // Auto-select first project
   useEffect(() => {
     if (projects.length > 0 && !selectedProjectPath) {
@@ -70,6 +81,8 @@ export function App() {
         onSelectPhase={handleSelectPhase}
         onBackToDashboard={handleBackToDashboard}
         progressByEpic={progressByEpic}
+        quickTasks={quickTasks}
+        isQuickTasksLoading={false}
       />
       <main className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">

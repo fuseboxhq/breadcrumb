@@ -51,6 +51,58 @@ new-phase → plan → execute → close-phase
 | `/bc:update` | Update breadcrumb to latest version |
 | `/bc:doctor` | Diagnose and repair setup issues |
 
+## Always Track Work
+
+**Every code change must be tracked in Beads**, even small ad-hoc requests like "change the font" or "fix the typo".
+
+### When to auto-track
+
+Create a quick task when ALL of these are true:
+1. The user's request involves changing code or files (not just reading or answering questions)
+2. You are NOT already inside a `/bc:execute` or `/bc:quick` command flow
+3. A `.beads/` directory exists in the project
+
+### How to auto-track
+
+**Before making changes:**
+
+1. Find the Quick Tasks epic:
+   ```bash
+   bd list --label quick-tasks-epic --limit 1 2>/dev/null
+   ```
+   If not found, create it:
+   ```bash
+   bd create "Quick Tasks" --type epic --labels quick-tasks-epic
+   bd update <epic-id> --status in_progress
+   ```
+
+2. Create a task with an imperative title (5-8 words):
+   ```bash
+   bd create "<title>" --parent <epic-id> --labels <fix|tweak|add|refactor>
+   bd update <task-id> --status in_progress
+   ```
+
+**After completing changes:**
+```bash
+bd close <task-id>
+```
+
+### Auto-title examples
+
+| User request | Task title | Label |
+|---|---|---|
+| "make the sidebar wider" | Widen sidebar layout | tweak |
+| "the button color is wrong" | Fix button color | fix |
+| "add a loading spinner" | Add loading spinner | add |
+| "clean up the utils file" | Refactor utils module | refactor |
+| "update the README" | Update README docs | tweak |
+
+### What NOT to track
+
+- Questions and explanations (no code change)
+- Active `/bc:*` command flows (those have their own tracking)
+- Reading files or exploring code (no modification)
+
 ## Philosophy
 
 **Understand before building.** Commands like `/bc:plan`, `/bc:discuss-task`, and `/bc:research` will ask clarifying questions before diving into work. This ensures requirements are clear and reduces rework.

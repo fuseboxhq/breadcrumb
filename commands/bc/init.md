@@ -91,6 +91,30 @@ Sync SQLite database with JSONL (ensures they're in agreement):
 bd sync 2>/dev/null || true
 ```
 
+### 3.5. Quick Tasks Epic
+
+Create a persistent "Quick Tasks" epic for tracking ad-hoc work outside of phases. This is idempotent — safe to re-run.
+
+**Check if Quick Tasks epic already exists:**
+```bash
+bd list --label quick-tasks-epic --limit 1 2>/dev/null
+```
+
+**If no results (epic doesn't exist):**
+```bash
+bd create "Quick Tasks" --type epic --labels quick-tasks-epic
+```
+
+Capture the epic ID from output (format: `Created issue: <id>`). Then activate it so child tasks are unblocked:
+```bash
+bd update <epic-id> --status in_progress
+```
+
+Report: "Created Quick Tasks epic"
+
+**If epic already exists:**
+Report: "Quick Tasks epic already exists"
+
 ### 4. Create Planning Directory Structure
 
 ```bash
@@ -354,6 +378,7 @@ Breadcrumb initialized!
 Setup:
   Git repository:    [initialized / already existed]
   Beads database:    [initialized / already existed]
+  Quick Tasks epic:  [created / already existed]
   Git hooks:         installed
   Merge driver:      configured
   Initial commit:    [created / skipped (already committed)]

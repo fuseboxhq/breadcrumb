@@ -3,8 +3,9 @@ import clsx from 'clsx';
 import { PanelLeftClose, PanelLeft, LayoutDashboard } from 'lucide-react';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { PhaseList } from './PhaseList';
+import { QuickTaskList } from './QuickTaskList';
 import { Tooltip } from '../ui/Tooltip';
-import type { Phase, Project, PhaseProgress } from '../../types';
+import type { Phase, Project, PhaseProgress, BeadsIssue } from '../../types';
 
 interface SidebarProps {
   projects: Project[];
@@ -16,6 +17,8 @@ interface SidebarProps {
   onSelectPhase: (phaseId: string) => void;
   onBackToDashboard: () => void;
   progressByEpic: Map<string, PhaseProgress>;
+  quickTasks: BeadsIssue[];
+  isQuickTasksLoading: boolean;
 }
 
 export function Sidebar({
@@ -28,6 +31,8 @@ export function Sidebar({
   onSelectPhase,
   onBackToDashboard,
   progressByEpic,
+  quickTasks,
+  isQuickTasksLoading,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -111,6 +116,24 @@ export function Sidebar({
           progressByEpic={progressByEpic}
           collapsed={collapsed}
         />
+      </div>
+
+      {/* Quick Tasks — pinned at bottom */}
+      <div className="border-t border-border flex-shrink-0">
+        {!collapsed && (
+          <div className="px-3 pt-3 pb-1">
+            <span className="text-2xs font-medium uppercase tracking-wider text-text-tertiary">
+              Quick Tasks
+            </span>
+          </div>
+        )}
+        <div className="px-1.5 py-1">
+          <QuickTaskList
+            tasks={quickTasks}
+            isLoading={isQuickTasksLoading}
+            collapsed={collapsed}
+          />
+        </div>
       </div>
     </aside>
   );
