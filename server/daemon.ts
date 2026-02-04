@@ -92,12 +92,24 @@ function waitForPort(port: number, timeout = 10_000): Promise<void> {
 }
 
 // Resolve tsx binary — check local node_modules, then PATH
-function findTsx(): string {
+// Returns { command, prefixArgs } so we can handle Windows correctly.
+// On Windows, .bin/ contains .cmd shims that can't be spawned directly
+// without shell:true (which pops up a console window). Instead, we find
+// the tsx package's JS entry point and run it with node.
+function findTsx(): { command: string; prefixArgs: string[] } {
+  if (process.platform === 'win32') {
+    // Try tsx's JS entry point directly (avoids .cmd shim issues)
+    const tsxCli = join(PROJECT_ROOT, 'node_modules', 'tsx', 'dist', 'cli.mjs');
+    if (existsSync(tsxCli)) {
+      return { command: process.execPath, prefixArgs: [tsxCli] };
+    }
+  }
+
   const localTsx = join(PROJECT_ROOT, 'node_modules', '.bin', 'tsx');
-  if (existsSync(localTsx)) return localTsx;
+  if (existsSync(localTsx)) return { command: localTsx, prefixArgs: [] };
 
   // Fall back to global tsx (if installed globally)
-  return 'tsx';
+  return { command: 'tsx', prefixArgs: [] };
 }
 
 async function handleStart(): Promise<void> {
@@ -121,10 +133,10 @@ async function handleStart(): Promise<void> {
   const out = openSync(OUT_LOG, 'a');
   const err = openSync(ERR_LOG, 'a');
 
-  const tsxBin = findTsx();
+  const tsx = findTsx();
   const serverEntry = join(__dirname, 'index.ts');
 
-  const child = spawn(tsxBin, [serverEntry], {
+  const child = spawn(tsx.command, [...tsx.prefixArgs, serverEntry], {
     detached: true,
     stdio: ['ignore', out, err],
     cwd: PROJECT_ROOT,

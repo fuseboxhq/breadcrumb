@@ -8,7 +8,8 @@ const { spawn } = require('child_process');
 try {
   const child = spawn('bd', ['sync'], {
     detached: true,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    shell: process.platform === 'win32'
   });
   child.unref();
 } catch {
