@@ -13,6 +13,7 @@ export function watchProject(projectPath: string, callback: WatchCallback): void
 
   const watcher = watch([planningDir, beadsDir], {
     ignoreInitial: true,
+    ignored: /\.(sock|lock)$/,
     awaitWriteFinish: {
       stabilityThreshold: 300,
       pollInterval: 100,
@@ -22,7 +23,10 @@ export function watchProject(projectPath: string, callback: WatchCallback): void
   watcher
     .on('add', (path) => callback('add', path))
     .on('change', (path) => callback('change', path))
-    .on('unlink', (path) => callback('unlink', path));
+    .on('unlink', (path) => callback('unlink', path))
+    .on('error', (err) => {
+      console.error(`[watcher] Error watching ${projectPath}:`, err.message);
+    });
 
   watchers.set(projectPath, watcher);
 }
