@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# Planning/Beads (project-specific, not part of the tool itself)
+.planning/
+.beads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
