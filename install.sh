@@ -98,6 +98,22 @@ curl -fsSL "$RAW_URL/agents/bc-researcher.md" -o "$AGENTS_DIR/bc-researcher.md"
 echo "[OK] Claude Code commands installed"
 
 # =========================================================================
+# 2.5. Hooks
+# =========================================================================
+
+echo ""
+echo "Installing Breadcrumb hooks..."
+HOOKS_DIR="$BREADCRUMB_DIR/hooks"
+mkdir -p "$HOOKS_DIR"
+
+for hook in bc-statusline bc-session-start bc-session-end bc-bash-guard; do
+    curl -fsSL "$RAW_URL/hooks/$hook.cjs" -o "$HOOKS_DIR/$hook.cjs"
+done
+chmod +x "$HOOKS_DIR"/*.cjs
+
+echo "[OK] Hooks installed"
+
+# =========================================================================
 # 3. Server installation
 # =========================================================================
 

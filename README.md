@@ -111,6 +111,44 @@ sudo bash ~/.breadcrumb/server/scripts/setup-hostname.sh
 & "$env:USERPROFILE\.breadcrumb\server\scripts\setup-hostname.ps1"
 ```
 
+## Hooks & Statusline
+
+`/bc:init` configures Claude Code hooks in `~/.claude/settings.json` for live status and CLI safety.
+
+### Statusline
+
+Shows current phase, task progress, active work, and context window in Claude Code's status bar:
+
+```
+PHASE-01 ▸ 3/7 │ Implementing auth │ myproject │ ████░░░░░░ 57%
+```
+
+| Segment | Source |
+|---------|--------|
+| Phase + progress | `.planning/STATE.md` + daemon cache |
+| Current task | Claude Code todos (in-progress task) |
+| Project name | Working directory |
+| Context bar | Remaining context window (green → yellow → orange → red) |
+
+### Hooks
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `bc-statusline.cjs` | statusLine | Live phase/progress/context display |
+| `bc-session-start.cjs` | SessionStart | Warm cache, start daemon, check for updates |
+| `bc-session-end.cjs` | Stop | Run `bd sync` to flush Beads state |
+| `bc-bash-guard.cjs` | PreToolUse | Catch `bd` CLI mistakes (e.g., `--status in-progress` → `in_progress`) |
+
+### Pre-approved permissions
+
+`/bc:init` also adds permission rules so Claude doesn't prompt for common read-only commands:
+
+- **Beads CLI**: `bd *`
+- **Search**: `grep`, `find`, `wc`, `which`, `file`, `du`, `stat`
+- **Git reads**: `git status`, `git log`, `git diff`, `git branch`, `git show`, `git remote`
+- **Build tools**: `pnpm`, `npm`, `node`, `npx`, `tsc`
+- **System**: `ls`, `pwd`, `env`, `uname`, `curl`
+
 ## Architecture
 
 ```
@@ -121,6 +159,8 @@ sudo bash ~/.breadcrumb/server/scripts/setup-hostname.sh
 
 ~/.breadcrumb/
   server/              # Breadcrumb server (cloned repo)
+  hooks/               # Claude Code hook scripts
+  cache/               # Statusline and update cache
   projects.json        # Multi-project registry
   daemon.pid           # Daemon PID file
   install-path         # Server install location

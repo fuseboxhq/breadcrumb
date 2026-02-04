@@ -172,6 +172,22 @@ Download-File "$RawUrl/agents/bc-researcher.md" (Join-Path $AgentsDir "bc-resear
 Write-Status "Claude Code commands installed" "OK"
 
 # =========================================================================
+# 2.5. Hooks
+# =========================================================================
+
+Write-Host ""
+Write-Host "Installing Breadcrumb hooks..." -ForegroundColor White
+$HooksDir = Join-Path $BreadcrumbDir "hooks"
+New-Item -ItemType Directory -Force -Path $HooksDir | Out-Null
+
+$hooks = @("bc-statusline", "bc-session-start", "bc-session-end", "bc-bash-guard")
+foreach ($hook in $hooks) {
+    Download-File "$RawUrl/hooks/$hook.cjs" (Join-Path $HooksDir "$hook.cjs")
+}
+
+Write-Status "Hooks installed" "OK"
+
+# =========================================================================
 # 3. Server installation
 # =========================================================================
 

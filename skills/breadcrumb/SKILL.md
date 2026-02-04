@@ -87,6 +87,25 @@ PHASE-01.md ←→ bd-a3f8 (Beads epic)
                 └── bd-a3f8.3 (Task)
 ```
 
+## Hooks
+
+Breadcrumb installs Claude Code hooks during `/bc:init`:
+
+| Hook | Type | Purpose |
+|------|------|---------|
+| `bc-statusline.cjs` | statusLine | Live phase, progress, task, context bar |
+| `bc-session-start.cjs` | SessionStart | Warm cache, start daemon, check updates |
+| `bc-session-end.cjs` | Stop | Run `bd sync` to flush Beads state |
+| `bc-bash-guard.cjs` | PreToolUse | Block `bd` CLI mistakes (e.g., `--status in-progress` → use `in_progress`) |
+
+Hooks are stored in `~/.breadcrumb/hooks/` and configured in `~/.claude/settings.json`.
+
+## Beads CLI Gotchas
+
+- Status values use **underscores**: `in_progress`, not `in-progress`
+- To close an issue, use `bd close <id>`, not `bd update <id> --status done`
+- Epic must be `in_progress` for child tasks to appear in `bd ready`
+
 ## File Locations
 
 | Content | Location |
@@ -97,3 +116,5 @@ PHASE-01.md ←→ bd-a3f8 (Beads epic)
 | Project state | `.planning/STATE.md` |
 | Todo list | `.planning/TODO.md` |
 | Task database | `.beads/` |
+| Hook scripts | `~/.breadcrumb/hooks/` |
+| Status cache | `~/.breadcrumb/cache/` |

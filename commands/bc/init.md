@@ -134,6 +134,67 @@ No phases created yet. Run `/bc:new-phase [title]` to create your first phase.
 *.bak
 ```
 
+### 4.5. Project Instructions (CLAUDE.md & AGENTS.md)
+
+Add Breadcrumb workflow instructions to the project's configuration files so Claude Code and agents know to use Breadcrumb for planning and Beads for task tracking.
+
+The following block should be prepended to the **top** of each file. If the file doesn't exist, create it with just this content.
+
+**For `.claude/CLAUDE.md`:**
+
+Read `.claude/CLAUDE.md` if it exists. Prepend this block at the very top (before any existing content):
+
+```markdown
+# Task Tracking & Planning
+
+**Use Breadcrumb (`/bc`) for phase-based planning and execution.**
+
+```
+/bc:status         # View all phases and progress
+/bc:plan           # Plan a phase with task breakdown
+/bc:execute        # Execute tasks in a phase
+/bc:new-phase      # Create a new phase
+/bc:integrate      # Explore codebase and create context
+```
+
+**Use Beads CLI (`bd`) for task tracking.**
+
+```
+bd ready           # List tasks with no blockers
+bd list            # List all tasks
+bd show <id>       # View task details
+bd update <id> --status in_progress  # Mark in progress
+bd close <id>      # Mark complete
+```
+
+When working on this project, use Breadcrumb for all phase-based workflows and Beads CLI for task management.
+
+---
+
+```
+
+If `.claude/CLAUDE.md` already contains `/bc:` references, skip this step (already configured).
+
+**For `AGENTS.md`:**
+
+Read `AGENTS.md` in the project root if it exists. Prepend this block at the very top:
+
+```markdown
+# Agent Instructions
+
+All agents working on this project should use **Breadcrumb** (`/bc:*` commands) for phase-based planning and **Beads CLI** (`bd`) for task tracking. Check `.planning/STATE.md` for current phase status before starting work.
+
+---
+
+```
+
+If `AGENTS.md` already contains `Breadcrumb` or `/bc:` references, skip this step (already configured).
+
+Create the `.claude/` directory if it doesn't exist:
+```bash
+mkdir -p .claude
+```
+
 ### 5. Initial Commit
 
 Check if `.beads/` or `.planning/` have uncommitted changes:
@@ -143,12 +204,12 @@ git status --porcelain .beads/ .planning/
 
 **If there are untracked or modified files in those directories:**
 ```bash
-git add .beads/ .planning/
+git add .beads/ .planning/ .claude/CLAUDE.md AGENTS.md
 git commit -m "Initialize Breadcrumb project with Beads task tracking"
 ```
-Report: "Created initial commit with .beads/ and .planning/"
+Report: "Created initial commit with .beads/, .planning/, and project instructions"
 
-**IMPORTANT:** Only stage `.beads/` and `.planning/` — never run `git add .` or `git add -A`, which could accidentally stage unrelated user files.
+**IMPORTANT:** Only stage `.beads/`, `.planning/`, `.claude/CLAUDE.md`, and `AGENTS.md` — never run `git add .` or `git add -A`, which could accidentally stage unrelated user files.
 
 **If everything is already committed and clean:**
 Report: "Project files already committed"
@@ -195,6 +256,67 @@ curl -s -X POST "http://localhost:9999/api/projects" \
   -H "Content-Type: application/json" \
   -d '{"path":"[cwd]","name":"[project-name]"}'
 ```
+
+### 6.5. Configure Claude Code Settings
+
+Merge Breadcrumb hooks and pre-approved permissions into `~/.claude/settings.json` without destroying existing entries (e.g., from GSD or other tools).
+
+**Read the current settings file:**
+```bash
+cat ~/.claude/settings.json 2>/dev/null || echo '{}'
+```
+
+Parse the JSON. Then apply these merges:
+
+**Hooks — merge into `hooks` object:**
+
+For each of these hook entries, check if the array already contains an entry with the same `command`. If not, append it:
+
+- `hooks.SessionStart` array: add `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-session-start.cjs" }`
+- `hooks.Stop` array: add `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-session-end.cjs" }`
+- `hooks.PreToolUse` array: add `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-bash-guard.cjs", "matcher": "Bash" }`
+
+For `hooks.statusLine`:
+- If not set → set to `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-statusline.cjs" }`
+- If already set with `bc-statusline` → leave unchanged
+- If set with something else → ask the user whether to replace it or keep existing
+
+**Permissions — merge into `permissions.allow` array:**
+
+For each permission pattern below, check if it already exists in the array. If not, append it:
+
+```
+Bash(bd:*)
+Bash(grep:*)
+Bash(find:*)
+Bash(wc:*)
+Bash(which:*)
+Bash(file:*)
+Bash(du:*)
+Bash(stat:*)
+Bash(git status:*)
+Bash(git log:*)
+Bash(git diff:*)
+Bash(git branch:*)
+Bash(git show:*)
+Bash(git remote:*)
+Bash(pnpm:*)
+Bash(npm:*)
+Bash(node:*)
+Bash(npx:*)
+Bash(tsc:*)
+Bash(ls:*)
+Bash(pwd:*)
+Bash(env:*)
+Bash(uname:*)
+Bash(curl:*)
+```
+
+**Write the merged settings back:**
+
+Use `JSON.stringify(settings, null, 2)` formatting. Write to `~/.claude/settings.json`.
+
+Report what was added (e.g., "Added 4 hooks and 24 permission rules" or "Hooks already configured, added 3 new permission rules").
 
 ### 7. Health Check
 
