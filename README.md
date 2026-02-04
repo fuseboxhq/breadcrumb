@@ -81,12 +81,13 @@ This sets up git (if needed), initializes Beads with hooks and merge driver, cre
 
 ## Web UI
 
-The Breadcrumb daemon runs on `localhost:9999` and serves a dashboard showing:
+The Breadcrumb daemon runs on `localhost:9999` and serves a Linear-inspired dark-themed dashboard:
 
-- **Project switcher** — Switch between registered projects
-- **Phase list** — All phases with status indicators
-- **Phase viewer** — Full markdown rendering of phase documents
-- **Task status** — Beads issues with dependency tracking
+- **Collapsible sidebar** — Phase list with status dots, ready-task badges, and progress bars; collapses to icon-only mode (persisted via localStorage)
+- **Project switcher** — Radix dropdown in the sidebar header for switching between registered projects
+- **Project dashboard** — Status card, phase progress grid with hover interactions, and ready tasks panel
+- **Phase detail view** — Tabbed interface (Plan / Tasks / Research) with animated tab indicator, markdown rendering, task cards with dependency pills, and filter/sort controls
+- **Animations** — Page transitions, tab content slides, staggered list entrances, and hover micro-interactions via Motion
 
 ### Daemon management
 
@@ -176,7 +177,9 @@ your-project/
 
 ### Tech stack
 
-- **Frontend**: React 18, Vite 6, Tailwind CSS 3, TanStack Query 5
+- **Frontend**: React 18, Vite 6, Tailwind CSS 3 (semantic design tokens), TanStack Query 5
+- **UI**: Radix UI (Tooltip, DropdownMenu, Dialog, Select), Lucide icons, Inter + JetBrains Mono fonts, clsx
+- **Animation**: Motion (formerly Framer Motion) — AnimatePresence, layout animations, spring physics
 - **Backend**: Express 4, better-sqlite3, chokidar 5
 - **Runtime**: Node.js 18+, tsx, pnpm
 
