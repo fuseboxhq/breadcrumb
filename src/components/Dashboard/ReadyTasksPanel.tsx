@@ -69,11 +69,9 @@ export function ReadyTasksPanel({ issues, isLoading }: ReadyTasksPanelProps) {
 
 function priorityDot(textColor: string): string {
   const map: Record<string, string> = {
-    'text-red-500': 'bg-status-error',
-    'text-orange-400': 'bg-status-warning',
-    'text-yellow-400': 'bg-status-warning',
-    'text-gray-400': 'bg-text-tertiary',
-    'text-gray-500': 'bg-text-tertiary',
+    'text-status-error': 'bg-status-error',
+    'text-status-warning': 'bg-status-warning',
+    'text-text-tertiary': 'bg-text-tertiary',
   };
   return map[textColor] || 'bg-text-tertiary';
 }
