@@ -66,24 +66,61 @@ try {
 }
 
 # Check for pnpm (install if missing)
+$pnpmCmd = $null
 try {
     $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
-    if (-not $pnpmPath) { throw "not found" }
-    Write-Status "pnpm found" "OK"
-} catch {
+    if ($pnpmPath) { $pnpmCmd = "pnpm" }
+} catch {}
+
+if (-not $pnpmCmd) {
     Write-Status "pnpm not found. Installing..." "INFO"
     try {
         npm install -g pnpm 2>$null
-        Write-Status "pnpm installed" "OK"
+        # Refresh PATH so the current session can find pnpm
+        $npmGlobalBin = (npm prefix -g) + "\node_modules\.bin"
+        $npmGlobalRoot = npm prefix -g
+        foreach ($dir in @($npmGlobalBin, $npmGlobalRoot)) {
+            if (($env:PATH -split ";") -notcontains $dir) {
+                $env:PATH = "$dir;$env:PATH"
+            }
+        }
+        # Verify pnpm is now available
+        $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
+        if ($pnpmPath) {
+            $pnpmCmd = "pnpm"
+            Write-Status "pnpm installed" "OK"
+        } else {
+            throw "pnpm not on PATH after install"
+        }
     } catch {
         try {
             corepack enable 2>$null
-            Write-Status "pnpm enabled via corepack" "OK"
+            $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
+            if ($pnpmPath) {
+                $pnpmCmd = "pnpm"
+                Write-Status "pnpm enabled via corepack" "OK"
+            } else {
+                throw "corepack didn't help"
+            }
         } catch {
-            Write-Status "Could not install pnpm. Install manually: npm install -g pnpm" "ERROR"
-            exit 1
+            # Final fallback: use npx pnpm
+            Write-Status "pnpm not directly available, will use 'npx pnpm' as fallback" "WARN"
+            $pnpmCmd = "npx pnpm"
         }
     }
+} else {
+    Write-Status "pnpm found" "OK"
+}
+
+# Helper function to run pnpm (handles npx fallback)
+function Invoke-Pnpm {
+    param([string[]]$Arguments)
+    if ($pnpmCmd -eq "npx pnpm") {
+        & npx pnpm @Arguments
+    } else {
+        & pnpm @Arguments
+    }
+    if ($LASTEXITCODE -ne 0) { throw "pnpm command failed: $Arguments" }
 }
 
 # Check for Beads CLI
@@ -99,32 +136,48 @@ try {
 if (-not $beadsFound) {
     Write-Status "Beads CLI not found. Attempting to install..." "INFO"
 
-    # Try npm first
-    $npmInstalled = $false
+    $beadsInstalled = $false
+
+    # Try go install first (most reliable on Windows)
     try {
-        $npmPath = (Get-Command npm -ErrorAction SilentlyContinue).Source
-        if ($npmPath) {
-            Write-Status "Found npm, installing Beads via npm..." "INFO"
-            npm install -g @anthropics/beads 2>$null
+        $goPath = (Get-Command go -ErrorAction SilentlyContinue).Source
+        if ($goPath) {
+            Write-Status "Found Go, installing Beads via go install..." "INFO"
+            go install github.com/steveyegge/beads/cmd/bd@latest 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-Status "Beads CLI installed via npm" "OK"
-                $npmInstalled = $true
+                # Add GOPATH/bin to PATH for current session
+                $gobin = (go env GOPATH) + "\bin"
+                if (($env:PATH -split ";") -notcontains $gobin) {
+                    $env:PATH = "$gobin;$env:PATH"
+                }
+                $beadsInstalled = $true
             }
         }
     } catch {}
 
-    # Try go if npm failed
-    if (-not $npmInstalled) {
+    # Try downloading pre-built binary from GitHub releases
+    if (-not $beadsInstalled) {
         try {
-            $goPath = (Get-Command go -ErrorAction SilentlyContinue).Source
-            if ($goPath) {
-                Write-Status "Found go, installing Beads via go..." "INFO"
-                go install github.com/steveyegge/beads/cmd/bd@latest 2>$null
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Status "Beads CLI installed via go" "OK"
+            Write-Status "Trying to download Beads binary from GitHub..." "INFO"
+            $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
+            $releaseUrl = "https://api.github.com/repos/steveyegge/beads/releases/latest"
+            $release = Invoke-RestMethod -Uri $releaseUrl -UseBasicParsing -ErrorAction Stop
+            $asset = $release.assets | Where-Object { $_.name -match "windows.*$arch" -or $_.name -match "${arch}.*windows" } | Select-Object -First 1
+            if ($asset) {
+                $beadsBinDir = Join-Path $env:USERPROFILE ".local\bin"
+                New-Item -ItemType Directory -Force -Path $beadsBinDir | Out-Null
+                $beadsZip = Join-Path $env:TEMP "beads.zip"
+                Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $beadsZip -UseBasicParsing
+                Expand-Archive -Path $beadsZip -DestinationPath $beadsBinDir -Force
+                Remove-Item $beadsZip -Force -ErrorAction SilentlyContinue
+                if (($env:PATH -split ";") -notcontains $beadsBinDir) {
+                    $env:PATH = "$beadsBinDir;$env:PATH"
                 }
+                $beadsInstalled = $true
             }
-        } catch {}
+        } catch {
+            # GitHub release download failed, that's ok
+        }
     }
 
     # Check if installation succeeded
@@ -133,11 +186,15 @@ if (-not $beadsFound) {
         if ($bdPath) {
             Write-Status "Beads CLI now available: $bdPath" "OK"
         } else {
-            Write-Status "Beads CLI not installed. Install manually with: npm install -g @anthropics/beads" "WARN"
+            Write-Status "Beads CLI could not be installed automatically." "WARN"
+            Write-Status "Install manually: go install github.com/steveyegge/beads/cmd/bd@latest" "WARN"
+            Write-Status "  Or see: https://github.com/steveyegge/beads#installation" "WARN"
             Write-Status "Breadcrumb will work without Beads, but task tracking won't be available." "WARN"
         }
     } catch {
-        Write-Status "Beads CLI not installed. Install manually with: npm install -g @anthropics/beads" "WARN"
+        Write-Status "Beads CLI could not be installed automatically." "WARN"
+        Write-Status "Install manually: go install github.com/steveyegge/beads/cmd/bd@latest" "WARN"
+        Write-Status "  Or see: https://github.com/steveyegge/beads#installation" "WARN"
         Write-Status "Breadcrumb will work without Beads, but task tracking won't be available." "WARN"
     }
 }
@@ -221,14 +278,16 @@ Write-Status "Server source downloaded" "OK"
 Write-Host "Installing server dependencies..." -ForegroundColor White
 Push-Location $ServerDir
 try {
-    pnpm install --frozen-lockfile 2>$null
+    Invoke-Pnpm @("install", "--frozen-lockfile")
 } catch {
-    pnpm install
+    Invoke-Pnpm @("install")
 }
+
+Write-Status "Dependencies installed" "OK"
 
 # Build frontend
 Write-Host "Building frontend..." -ForegroundColor White
-pnpm build
+Invoke-Pnpm @("build")
 
 Pop-Location
 
@@ -281,7 +340,7 @@ if ($daemonRunning) {
     Write-Status "Breadcrumb daemon already running" "OK"
 } else {
     Push-Location $ServerDir
-    pnpm daemon:start
+    Invoke-Pnpm @("daemon:start")
     Pop-Location
 }
 
