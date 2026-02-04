@@ -49,8 +49,14 @@ export function App() {
     setContentTab('plan');
   };
 
+  // Back to dashboard (deselect phase)
+  const handleBackToDashboard = () => {
+    setSelectedPhaseId(null);
+    setContentTab('plan');
+  };
+
   return (
-    <div className="flex h-screen bg-gray-950 text-gray-100">
+    <div className="flex h-screen bg-surface text-text-primary">
       <Sidebar
         projects={projects}
         selectedProjectPath={selectedProjectPath}
@@ -59,6 +65,7 @@ export function App() {
         isPhasesLoading={isPhasesLoading}
         selectedPhaseId={selectedPhaseId}
         onSelectPhase={handleSelectPhase}
+        onBackToDashboard={handleBackToDashboard}
         progressByEpic={progressByEpic}
       />
       <main className="flex-1 overflow-hidden">
