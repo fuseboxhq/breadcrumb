@@ -1,5 +1,9 @@
 # Agent Instructions
 
+All agents working on this project should use **Breadcrumb** (`/bc:*` commands) for phase-based planning and **Beads CLI** (`bd`) for task tracking. Check `.planning/STATE.md` for current phase status before starting work.
+
+---
+
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
 ## Quick Reference
