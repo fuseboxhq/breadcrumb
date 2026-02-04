@@ -97,42 +97,45 @@ export function Sidebar({
         />
       </div>
 
-      {/* Section label */}
-      {!collapsed && (
-        <div className="px-3 pt-3 pb-1">
-          <span className="text-2xs font-medium uppercase tracking-wider text-text-tertiary">
-            Phases
-          </span>
-        </div>
-      )}
-
-      {/* Phase list */}
-      <div className="flex-1 overflow-y-auto px-1.5 py-1">
-        <PhaseList
-          phases={phases}
-          isLoading={isPhasesLoading}
-          selectedPhaseId={selectedPhaseId}
-          onSelect={onSelectPhase}
-          progressByEpic={progressByEpic}
-          collapsed={collapsed}
-        />
-      </div>
-
-      {/* Quick Tasks — pinned at bottom */}
-      <div className="border-t border-border flex-shrink-0">
-        {!collapsed && (
-          <div className="px-3 pt-3 pb-1">
-            <span className="text-2xs font-medium uppercase tracking-wider text-text-tertiary">
-              Quick Tasks
-            </span>
+      {/* Scrollable sections container */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Phases section */}
+        <div className="flex-[3] min-h-0 flex flex-col">
+          {!collapsed && (
+            <div className="px-3 pt-3 pb-1 flex-shrink-0">
+              <span className="text-2xs font-medium uppercase tracking-wider text-text-tertiary">
+                Phases
+              </span>
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto px-1.5 py-1">
+            <PhaseList
+              phases={phases}
+              isLoading={isPhasesLoading}
+              selectedPhaseId={selectedPhaseId}
+              onSelect={onSelectPhase}
+              progressByEpic={progressByEpic}
+              collapsed={collapsed}
+            />
           </div>
-        )}
-        <div className="px-1.5 py-1">
-          <QuickTaskList
-            tasks={quickTasks}
-            isLoading={isQuickTasksLoading}
-            collapsed={collapsed}
-          />
+        </div>
+
+        {/* Quick Tasks section */}
+        <div className="flex-[2] min-h-0 flex flex-col border-t border-border">
+          {!collapsed && (
+            <div className="px-3 pt-3 pb-1 flex-shrink-0">
+              <span className="text-2xs font-medium uppercase tracking-wider text-text-tertiary">
+                Quick Tasks
+              </span>
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto px-1.5 py-1">
+            <QuickTaskList
+              tasks={quickTasks}
+              isLoading={isQuickTasksLoading}
+              collapsed={collapsed}
+            />
+          </div>
         </div>
       </div>
     </aside>
