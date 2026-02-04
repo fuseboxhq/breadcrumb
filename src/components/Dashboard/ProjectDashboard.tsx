@@ -11,6 +11,7 @@ interface ProjectDashboardProps {
   readyIssues: BeadsIssue[];
   isReadyLoading: boolean;
   onSelectPhase: (phaseId: string) => void;
+  quickTasks: BeadsIssue[];
 }
 
 export function ProjectDashboard({
@@ -21,6 +22,7 @@ export function ProjectDashboard({
   readyIssues,
   isReadyLoading,
   onSelectPhase,
+  quickTasks,
 }: ProjectDashboardProps) {
   return (
     <div className="h-full overflow-y-auto">
@@ -30,7 +32,14 @@ export function ProjectDashboard({
           <p className="text-sm text-text-tertiary">Overview of phases, tasks, and progress</p>
         </div>
 
-        <ProjectStateCard state={projectState} isLoading={isStateLoading} />
+        <ProjectStateCard
+          state={projectState}
+          isLoading={isStateLoading}
+          phases={phases}
+          progressByEpic={progressByEpic}
+          readyIssues={readyIssues}
+          quickTasks={quickTasks}
+        />
 
         <PhaseProgressGrid
           phases={phases}

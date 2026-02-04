@@ -62,9 +62,20 @@ export function Sidebar({
       {/* Header with logo + collapse toggle */}
       <div className={clsx(
         'flex items-center h-12 border-b border-border flex-shrink-0',
-        collapsed ? 'justify-center px-2' : 'justify-between px-3',
+        collapsed ? 'flex-col justify-center gap-0.5 px-2' : 'justify-between px-3',
       )}>
-        {!collapsed && (
+        {collapsed ? (
+          <>
+            <Tooltip content="Dashboard" side="right">
+              <button
+                onClick={onBackToDashboard}
+                className="p-1.5 rounded-md text-text-tertiary hover:text-accent hover:bg-surface-hover transition-colors"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+              </button>
+            </Tooltip>
+          </>
+        ) : (
           <button
             onClick={onBackToDashboard}
             className="flex items-center gap-2 text-sm font-semibold text-text-primary hover:text-accent transition-colors"
@@ -73,19 +84,30 @@ export function Sidebar({
             Breadcrumb
           </button>
         )}
-        <Tooltip content={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} side="right">
-          <button
-            onClick={toggleCollapsed}
-            className="p-1.5 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-colors"
-          >
-            {collapsed ? (
-              <PanelLeft className="h-4 w-4" />
-            ) : (
+        {!collapsed && (
+          <Tooltip content="Collapse sidebar" side="right">
+            <button
+              onClick={toggleCollapsed}
+              className="p-1.5 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-colors"
+            >
               <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
-        </Tooltip>
+            </button>
+          </Tooltip>
+        )}
       </div>
+      {/* Expand toggle when collapsed — below header */}
+      {collapsed && (
+        <div className="flex justify-center py-1 border-b border-border flex-shrink-0">
+          <Tooltip content="Expand sidebar" side="right">
+            <button
+              onClick={toggleCollapsed}
+              className="p-1.5 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-hover transition-colors"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
       {/* Project switcher */}
       <div className="border-b border-border flex-shrink-0">

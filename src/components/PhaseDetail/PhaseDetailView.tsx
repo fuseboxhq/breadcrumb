@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { ArrowLeft } from 'lucide-react';
 import type { Phase, ContentTab } from '../../types';
 import { useIssues } from '../../hooks/useIssues';
 import { useResearch } from '../../hooks/useResearch';
@@ -25,6 +26,7 @@ interface PhaseDetailViewProps {
   error: Error | null;
   activeTab: ContentTab;
   onTabChange: (tab: ContentTab) => void;
+  onBack: () => void;
 }
 
 export function PhaseDetailView({
@@ -34,6 +36,7 @@ export function PhaseDetailView({
   error,
   activeTab,
   onTabChange,
+  onBack,
 }: PhaseDetailViewProps) {
   const { data: epicIssues = [], isLoading: isIssuesLoading } = useIssues(projectPath, phase.beadsEpic);
   const { data: research = [], isLoading: isResearchLoading } = useResearch(projectPath);
@@ -62,6 +65,13 @@ export function PhaseDetailView({
     <div className="h-full flex flex-col">
       {/* Phase header */}
       <div className="px-8 pt-6 pb-4 border-b border-border">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-accent transition-colors mb-3"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Dashboard
+        </button>
         <div className="flex items-center gap-2.5 mb-2">
           <Badge variant={badge.variant}>{badge.label}</Badge>
           <span className="text-2xs text-text-tertiary font-mono">{phase.id}</span>

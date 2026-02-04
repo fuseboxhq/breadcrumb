@@ -102,6 +102,7 @@ export function App() {
                 error={phaseError}
                 activeTab={contentTab}
                 onTabChange={setContentTab}
+                onBack={handleBackToDashboard}
               />
             </motion.div>
           ) : (
@@ -121,6 +122,7 @@ export function App() {
                 readyIssues={readyIssues}
                 isReadyLoading={isReadyLoading}
                 onSelectPhase={handleSelectPhase}
+                quickTasks={quickTasks}
               />
             </motion.div>
           )}
