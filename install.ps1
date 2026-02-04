@@ -66,59 +66,45 @@ try {
 }
 
 # Check for pnpm (install if missing)
-$pnpmCmd = $null
+# On Windows, newly-installed global npm packages often aren't on PATH in the
+# current session. We use npx as the reliable invocation method to avoid this.
+$pnpmDirect = $false
 try {
     $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
-    if ($pnpmPath) { $pnpmCmd = "pnpm" }
+    if ($pnpmPath) { $pnpmDirect = $true }
 } catch {}
 
-if (-not $pnpmCmd) {
+if ($pnpmDirect) {
+    Write-Status "pnpm found" "OK"
+} else {
     Write-Status "pnpm not found. Installing..." "INFO"
     try {
         npm install -g pnpm 2>$null
-        # Refresh PATH so the current session can find pnpm
-        $npmGlobalBin = (npm prefix -g) + "\node_modules\.bin"
-        $npmGlobalRoot = npm prefix -g
-        foreach ($dir in @($npmGlobalBin, $npmGlobalRoot)) {
-            if (($env:PATH -split ";") -notcontains $dir) {
-                $env:PATH = "$dir;$env:PATH"
-            }
-        }
-        # Verify pnpm is now available
-        $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
-        if ($pnpmPath) {
-            $pnpmCmd = "pnpm"
-            Write-Status "pnpm installed" "OK"
-        } else {
-            throw "pnpm not on PATH after install"
-        }
     } catch {
-        try {
-            corepack enable 2>$null
-            $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
-            if ($pnpmPath) {
-                $pnpmCmd = "pnpm"
-                Write-Status "pnpm enabled via corepack" "OK"
-            } else {
-                throw "corepack didn't help"
-            }
-        } catch {
-            # Final fallback: use npx pnpm
-            Write-Status "pnpm not directly available, will use 'npx pnpm' as fallback" "WARN"
-            $pnpmCmd = "npx pnpm"
-        }
+        try { corepack enable 2>$null } catch {}
     }
-} else {
-    Write-Status "pnpm found" "OK"
+    # Check if pnpm is now directly available
+    try {
+        $pnpmPath = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
+        if ($pnpmPath) { $pnpmDirect = $true }
+    } catch {}
+
+    if ($pnpmDirect) {
+        Write-Status "pnpm installed" "OK"
+    } else {
+        # pnpm installed but not on PATH in this session — npx will find it
+        Write-Status "pnpm installed (using npx to invoke)" "OK"
+    }
 }
 
-# Helper function to run pnpm (handles npx fallback)
+# Helper function to run pnpm reliably
+# Uses npx as wrapper when pnpm isn't directly on PATH
 function Invoke-Pnpm {
     param([string[]]$Arguments)
-    if ($pnpmCmd -eq "npx pnpm") {
-        & npx pnpm @Arguments
-    } else {
+    if ($pnpmDirect) {
         & pnpm @Arguments
+    } else {
+        & npx pnpm @Arguments
     }
     if ($LASTEXITCODE -ne 0) { throw "pnpm command failed: $Arguments" }
 }
