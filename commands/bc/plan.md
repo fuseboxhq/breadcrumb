@@ -57,49 +57,31 @@ If `.planning/CODEBASE.md` exists, read it to understand:
 
 This context should inform your research and task planning.
 
-### 3. Clarify Requirements (IMPORTANT)
+### 3. Validate Requirements
 
-**Before researching, ensure you understand what needs to be built.**
+**Check that the phase file has sufficient context from `/bc:new-phase`.**
 
-Use AskUserQuestion to clarify:
+The phase file should already contain an Objective, Scope, Constraints, and Completion Criteria from the discovery questions asked during phase creation.
 
-**Scope & Objectives:**
-- What is the expected outcome of this phase?
+**If the phase file is sparse** (e.g. it was created manually or with an older version), use AskUserQuestion to fill the gaps:
+
+- What is the expected outcome?
 - What is IN scope vs OUT of scope?
-- Are there dependencies on other phases?
+- Any technology constraints?
+- What does "done" look like?
 
-**Constraints:**
-- Any technology constraints (must use X, can't use Y)?
-- Any timeline or resource constraints?
-- Any existing code/patterns to follow?
+**If the phase file already has rich context**, confirm your understanding briefly:
 
-**Success Criteria:**
-- What does "done" look like for this phase?
-- How will we verify it works correctly?
-- Are there specific acceptance criteria?
-
-**Preferences:**
-- Any approaches you want to explore or avoid?
-- Any specific libraries or tools you prefer?
-
-**Example questions:**
 ```
-question: "What is the primary goal of this phase?"
-options:
-  - "Build [specific feature]"
-  - "Fix [specific problem]"
-  - "Refactor [specific component]"
-  - "Other (let me describe)"
+Based on the phase description, I understand:
+- Goal: [summarize]
+- Scope: [summarize]
+- Constraints: [summarize]
 
-question: "Are there any technology constraints?"
-options:
-  - "Must use [specific tech]"
-  - "Prefer [tech] but flexible"
-  - "No constraints - recommend what's best"
-  - "Other constraints"
+I'll proceed with research based on this. Let me know if anything needs adjusting.
 ```
 
-**Only proceed to research once requirements are clear.**
+**Only ask questions about gaps — don't repeat what's already documented.**
 
 ### 4. Research Phase Implementation
 
