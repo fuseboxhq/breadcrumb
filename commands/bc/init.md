@@ -289,8 +289,10 @@ For each of these, check if the `hooks` object already contains a bc-* entry (se
   { "matcher": "Bash", "hooks": [{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-bash-guard.cjs" }] }
   ```
 
-For `hooks.statusLine` (this is a direct object, NOT an array):
-- If not set → set to `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-statusline.cjs" }`
+**Status line — merge at top level (NOT inside `hooks`):**
+
+`statusLine` is a **top-level key** in settings.json, separate from the `hooks` object:
+- If `statusLine` not set → set to `{ "type": "command", "command": "node ~/.breadcrumb/hooks/bc-statusline.cjs" }`
 - If already set with `bc-statusline` → leave unchanged
 - If set with something else → ask the user whether to replace it or keep existing
 
