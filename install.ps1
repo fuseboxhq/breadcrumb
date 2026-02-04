@@ -282,6 +282,20 @@ Write-Status "Server built" "OK"
 # Save install path
 Set-Content -Path (Join-Path $BreadcrumbDir "install-path") -Value $ServerDir
 
+# Refresh update-check cache so statusline doesn't show stale "update available"
+$CacheDir = Join-Path $BreadcrumbDir "cache"
+New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
+try {
+    Push-Location $ServerDir
+    $currentSha = (git rev-parse --short=7 HEAD 2>$null).Trim()
+    Pop-Location
+    if ($currentSha) {
+        $ts = [long]([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+        $cacheJson = "{`"installed_sha`":`"$currentSha`",`"latest_sha`":`"$currentSha`",`"update_available`":false,`"checkedAt`":$ts}"
+        Set-Content -Path (Join-Path $CacheDir "update-check.json") -Value $cacheJson
+    }
+} catch {}
+
 Write-Host ""
 
 # =========================================================================

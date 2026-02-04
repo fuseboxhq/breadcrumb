@@ -157,6 +157,12 @@ cd - > /dev/null
 # Save install path for bc:init to find
 echo "$SERVER_DIR" > "$BREADCRUMB_DIR/install-path"
 
+# Refresh update-check cache so statusline doesn't show stale "update available"
+CACHE_DIR="$BREADCRUMB_DIR/cache"
+mkdir -p "$CACHE_DIR"
+CURRENT_SHA=$(cd "$SERVER_DIR" && git rev-parse --short=7 HEAD 2>/dev/null || echo "unknown")
+echo "{\"installed_sha\":\"$CURRENT_SHA\",\"latest_sha\":\"$CURRENT_SHA\",\"update_available\":false,\"checkedAt\":$(date +%s)000}" > "$CACHE_DIR/update-check.json"
+
 echo ""
 
 # =========================================================================
