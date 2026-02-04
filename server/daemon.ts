@@ -138,6 +138,7 @@ async function handleStart(): Promise<void> {
 
   const child = spawn(tsx.command, [...tsx.prefixArgs, serverEntry], {
     detached: true,
+    windowsHide: true,
     stdio: ['ignore', out, err],
     cwd: PROJECT_ROOT,
     env: {

@@ -48,6 +48,7 @@ async function checkDaemonHealth() {
   const child = spawn('pnpm', ['daemon:start'], {
     cwd: serverDir,
     detached: true,
+    windowsHide: true,
     stdio: 'ignore',
     shell: process.platform === 'win32'
   });
@@ -120,6 +121,7 @@ function checkForUpdates() {
 
   const child = spawn(process.execPath, ['-e', script], {
     detached: true,
+    windowsHide: true,
     stdio: 'ignore'
   });
   child.unref();

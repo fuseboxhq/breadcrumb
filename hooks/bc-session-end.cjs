@@ -8,6 +8,7 @@ const { spawn } = require('child_process');
 try {
   const child = spawn('bd', ['sync'], {
     detached: true,
+    windowsHide: true,
     stdio: 'ignore',
     shell: process.platform === 'win32'
   });

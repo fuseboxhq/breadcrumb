@@ -103,6 +103,7 @@ function maybeRefreshCache(projectDir) {
 
   const child = spawn(process.execPath, ['-e', script], {
     detached: true,
+    windowsHide: true,
     stdio: 'ignore'
   });
   child.unref();
