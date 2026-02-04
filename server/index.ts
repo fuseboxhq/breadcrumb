@@ -50,7 +50,7 @@ if (isProduction) {
 
 const listenPort = isProduction ? PORT : API_PORT;
 
-const server = app.listen(listenPort, () => {
+const server = app.listen(listenPort, '0.0.0.0', () => {
   console.log(`Breadcrumb server running on http://localhost:${listenPort}`);
 });
 

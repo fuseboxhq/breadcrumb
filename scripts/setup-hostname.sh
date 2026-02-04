@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-# Sets up breadcrumb.local hostname and port 80 → 9999 forwarding
+# Sets up bread.crumb hostname and port 80 → 9999 forwarding
 # Requires sudo/admin privileges (one-time setup)
 
-HOSTNAME="breadcrumb.local"
+HOSTNAME="bread.crumb"
 TARGET_PORT=9999
 
 echo "Setting up $HOSTNAME → localhost:$TARGET_PORT"

@@ -163,14 +163,14 @@ echo ""
 # 4. Hostname setup (optional)
 # =========================================================================
 
-echo "Optional: Set up breadcrumb.local hostname (requires sudo)"
-echo "  This allows you to access the UI at http://breadcrumb.local"
+echo "Optional: Set up bread.crumb hostname (requires sudo)"
+echo "  This allows you to access the UI at http://bread.crumb"
 echo "  instead of http://localhost:9999"
 echo ""
 
 # Only prompt if running interactively (not piped)
 if [ -t 0 ]; then
-    read -p "Set up breadcrumb.local? [y/N] " -n 1 -r
+    read -p "Set up bread.crumb? [y/N] " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         bash "$SERVER_DIR/scripts/setup-hostname.sh"
@@ -216,8 +216,8 @@ echo ""
 echo "Web UI:"
 if curl -s --max-time 2 http://localhost:9999/__daemon/health > /dev/null 2>&1; then
     echo "  http://localhost:9999 (running)"
-    if grep -q "breadcrumb.local" /etc/hosts 2>/dev/null; then
-        echo "  http://breadcrumb.local (configured)"
+    if grep -q "bread.crumb" /etc/hosts 2>/dev/null; then
+        echo "  http://bread.crumb (configured)"
     fi
 else
     echo "  Not running. Start with: cd $SERVER_DIR && pnpm daemon:start"

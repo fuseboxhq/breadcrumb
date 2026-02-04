@@ -243,13 +243,13 @@ Write-Host ""
 # 4. Hostname setup (optional)
 # =========================================================================
 
-Write-Host "Optional: Set up breadcrumb.local hostname" -ForegroundColor White
-Write-Host "  This allows you to access the UI at http://breadcrumb.local" -ForegroundColor White
+Write-Host "Optional: Set up bread.crumb hostname" -ForegroundColor White
+Write-Host "  This allows you to access the UI at http://bread.crumb" -ForegroundColor White
 Write-Host "  instead of http://localhost:9999" -ForegroundColor White
 Write-Host "  Requires running as Administrator." -ForegroundColor Yellow
 Write-Host ""
 
-$setupHostname = Read-Host "Set up breadcrumb.local? [y/N]"
+$setupHostname = Read-Host "Set up bread.crumb? [y/N]"
 if ($setupHostname -match "^[Yy]$") {
     # Check if running as admin
     $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -313,7 +313,7 @@ if ($daemonUp) {
     Write-Host "  http://localhost:9999 (running)" -ForegroundColor Cyan
     $hostsFile = Get-Content "C:\Windows\System32\drivers\etc\hosts" -Raw -ErrorAction SilentlyContinue
     if ($hostsFile -match "breadcrumb\.local") {
-        Write-Host "  http://breadcrumb.local (configured)" -ForegroundColor Cyan
+        Write-Host "  http://bread.crumb (configured)" -ForegroundColor Cyan
     }
 } else {
     Write-Host "  Not running. Start with:" -ForegroundColor Yellow

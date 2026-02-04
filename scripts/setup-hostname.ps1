@@ -1,9 +1,9 @@
-# Sets up breadcrumb.local hostname and port 80 → 9999 forwarding on Windows
+# Sets up bread.crumb hostname and port 80 → 9999 forwarding on Windows
 # Must be run as Administrator (one-time setup)
 
 $ErrorActionPreference = "Stop"
 
-$Hostname = "breadcrumb.local"
+$Hostname = "bread.crumb"
 $TargetPort = 9999
 $HostsFile = "C:\Windows\System32\drivers\etc\hosts"
 

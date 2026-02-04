@@ -37,7 +37,7 @@ The installer will:
 1. Install [Beads CLI](https://github.com/steveyegge/beads) if not present
 2. Download `/bc:*` commands, agent, and skill to `~/.claude/`
 3. Clone and build the Breadcrumb server to `~/.breadcrumb/server/`
-4. Optionally configure `breadcrumb.local` hostname
+4. Optionally configure `bread.crumb` hostname
 5. Start the Breadcrumb daemon
 
 ## Getting Started
@@ -97,9 +97,9 @@ pnpm daemon:stop     # Stop the daemon
 pnpm daemon:status   # Check daemon status
 ```
 
-### Optional: breadcrumb.local hostname
+### Optional: bread.crumb hostname
 
-Access the UI at `http://breadcrumb.local` instead of `http://localhost:9999`:
+Access the UI at `http://bread.crumb` instead of `http://localhost:9999`:
 
 **macOS / Linux:**
 ```bash
