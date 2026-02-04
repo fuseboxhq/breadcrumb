@@ -53,17 +53,19 @@ export function App() {
 
   // Handle clicking a ready task — navigate to its phase's tasks tab
   const handleSelectReadyTask = (issue: BeadsIssue) => {
-    // Find the phase that contains this task's epic
+    let ownerPhase;
     if (issue.parentId) {
-      const ownerPhase = phases.find((p) => p.beadsEpic === issue.parentId);
-      if (ownerPhase) {
-        setSelectedPhaseId(ownerPhase.id);
-        setContentTab('tasks');
-        return;
-      }
+      // Subtask — find the phase that owns the parent epic
+      ownerPhase = phases.find((p) => p.beadsEpic === issue.parentId);
+    } else {
+      // Epic itself — match directly
+      ownerPhase = phases.find((p) => p.beadsEpic === issue.id);
     }
-    // Fallback: just switch to tasks tab
-    setContentTab('tasks');
+    if (ownerPhase) {
+      setSelectedPhaseId(ownerPhase.id);
+      setSidebarTab('phases');
+      setContentTab('tasks');
+    }
   };
 
   return (
