@@ -4,6 +4,10 @@ Phase-based planning and visualization for [Claude Code](https://docs.anthropic.
 
 Breadcrumb gives you `/bc:*` slash commands for structured project planning inside Claude Code, a [Beads CLI](https://github.com/steveyegge/beads) integration for task tracking, and a local web UI that visualizes your phases, tasks, and research in real time.
 
+| Phase Plan View | Task Tracking View |
+|---|---|
+| ![Phase plan view showing markdown rendering, sidebar navigation, and progress](docs/screenshot-plan.png) | ![Task list with dependency pills, filter bar, and status badges](docs/screenshot-tasks.png) |
+
 ## Features
 
 - **Phase-based workflow** — Break projects into phases, plan them with research, execute tasks, and track progress
