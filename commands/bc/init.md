@@ -303,7 +303,7 @@ For each permission pattern below, check if it already exists in the array. If n
 ```
 Bash(bd:*)
 Bash(grep:*)
-Bash(ggrep:*)
+Bash(pgrep:*)
 Bash(find:*)
 Bash(wc:*)
 Bash(which:*)
