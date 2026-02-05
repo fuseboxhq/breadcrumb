@@ -47,3 +47,10 @@ export async function fetchResearch(projectPath: string): Promise<ResearchDoc[]>
   if (!response.ok) throw new Error('Failed to fetch research');
   return response.json();
 }
+
+export async function fetchVersion(): Promise<string> {
+  const response = await fetch('/__daemon/health');
+  if (!response.ok) return 'unknown';
+  const data = await response.json();
+  return data.version || 'unknown';
+}

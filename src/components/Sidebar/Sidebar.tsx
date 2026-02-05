@@ -5,6 +5,7 @@ import { ProjectSwitcher } from './ProjectSwitcher';
 import { PhaseList } from './PhaseList';
 import { QuickTaskList } from './QuickTaskList';
 import { Tooltip } from '../ui/Tooltip';
+import { useVersion } from '../../hooks/useVersion';
 import type { Phase, Project, PhaseProgress, BeadsIssue } from '../../types';
 
 interface SidebarProps {
@@ -34,6 +35,8 @@ export function Sidebar({
   quickTasks,
   isQuickTasksLoading,
 }: SidebarProps) {
+  const { data: version } = useVersion();
+
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('bc-sidebar-collapsed') === 'true';
@@ -160,6 +163,18 @@ export function Sidebar({
           </div>
         </div>
       </div>
+
+      {/* Version footer */}
+      {version && (
+        <div className={clsx(
+          'border-t border-border flex-shrink-0 py-2',
+          collapsed ? 'px-2 text-center' : 'px-3',
+        )}>
+          <span className="text-2xs font-mono text-text-tertiary">
+            {collapsed ? version.slice(0, 4) : `v${version}`}
+          </span>
+        </div>
+      )}
     </aside>
   );
 }

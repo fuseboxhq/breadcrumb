@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import phaseRoutes from './routes/phases.js';
@@ -11,6 +12,15 @@ import { getRegisteredProjects } from './services/registryService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Resolve version at startup from git
+const VERSION = (() => {
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { cwd: __dirname, encoding: 'utf-8' }).trim();
+  } catch {
+    return 'unknown';
+  }
+})();
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 9999;
@@ -26,9 +36,9 @@ app.use('/api', issueRoutes);
 app.use('/api', projectRoutes);
 app.use('/api', watchRoutes);
 
-// Health check endpoint for daemon management
+// Health/version endpoint for daemon management and UI
 app.get('/__daemon/health', (_req, res) => {
-  res.json({ pid: process.pid, uptime: process.uptime() });
+  res.json({ pid: process.pid, uptime: process.uptime(), version: VERSION });
 });
 
 // Shutdown endpoint for daemon management
