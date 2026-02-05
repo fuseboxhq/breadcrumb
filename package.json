@@ -1,6 +1,6 @@
 {
   "name": "breadcrumb",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Phase-based planning visualization for Claude Code projects",
   "type": "module",
   "scripts": {

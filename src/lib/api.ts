@@ -49,9 +49,14 @@ export async function fetchResearch(projectPath: string, phaseId: string): Promi
   return response.json();
 }
 
-export async function fetchVersion(): Promise<string> {
+export interface VersionInfo {
+  version: string;
+  sha: string;
+}
+
+export async function fetchVersion(): Promise<VersionInfo> {
   const response = await fetch('/__daemon/health');
-  if (!response.ok) return 'unknown';
+  if (!response.ok) return { version: '0.0.0', sha: 'unknown' };
   const data = await response.json();
-  return data.version || 'unknown';
+  return { version: data.version || '0.0.0', sha: data.sha || 'unknown' };
 }

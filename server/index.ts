@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import phaseRoutes from './routes/phases.js';
@@ -13,8 +14,17 @@ import { getRegisteredProjects } from './services/registryService.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Resolve version at startup from git
-const VERSION = (() => {
+// Resolve version at startup from package.json + git
+const PKG_VERSION = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+    return pkg.version || '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+})();
+
+const GIT_SHA = (() => {
   try {
     return execSync('git rev-parse --short=7 HEAD', { cwd: __dirname, encoding: 'utf-8' }).trim();
   } catch {
@@ -38,7 +48,7 @@ app.use('/api', watchRoutes);
 
 // Health/version endpoint for daemon management and UI
 app.get('/__daemon/health', (_req, res) => {
-  res.json({ pid: process.pid, uptime: process.uptime(), version: VERSION });
+  res.json({ pid: process.pid, uptime: process.uptime(), version: PKG_VERSION, sha: GIT_SHA });
 });
 
 // Shutdown endpoint for daemon management

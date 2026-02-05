@@ -171,7 +171,7 @@ export function Sidebar({
           collapsed ? 'px-2 text-center' : 'px-3',
         )}>
           <span className="text-2xs font-mono text-text-tertiary">
-            {collapsed ? version.slice(0, 4) : `v${version}`}
+            {collapsed ? `v${version.version}` : `v${version.version} (${version.sha})`}
           </span>
         </div>
       )}
