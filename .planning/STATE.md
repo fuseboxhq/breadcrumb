@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-04: Phase-Scoped Research Workflow (not_started)
+PHASE-04: Phase-Scoped Research Workflow (in_progress) - 7 tasks
 
 ## Completed Phases
 
