@@ -1,11 +1,11 @@
 # Project State
 
-**Current Phase:** None
-**Last Updated:** 2026-02-04
+**Current Phase:** PHASE-04
+**Last Updated:** 2026-02-05
 
 ## Active Work
 
-No active phases.
+PHASE-04: Phase-Scoped Research Workflow (not_started)
 
 ## Completed Phases
 
