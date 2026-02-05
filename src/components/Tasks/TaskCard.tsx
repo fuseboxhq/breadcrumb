@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import clsx from 'clsx';
-import { AlertTriangle, ChevronRight } from 'lucide-react';
+import { AlertTriangle, ChevronRight, MessageSquare, Play } from 'lucide-react';
 import type { BeadsIssue } from '../../types';
-import { getStatusConfig, getPriorityConfig, isBlocked } from '../../lib/taskUtils';
+import { getStatusConfig, getPriorityConfig, isBlocked, isDone } from '../../lib/taskUtils';
 import { DependencyPill } from './DependencyPill';
 import { Badge } from '../ui/Badge';
+import { Tooltip } from '../ui/Tooltip';
 
 interface TaskCardProps {
   issue: BeadsIssue;
@@ -97,11 +98,29 @@ export function TaskCard({ issue, allIssues }: TaskCardProps) {
             </div>
           )}
 
-          <div className="flex gap-4 text-2xs text-text-tertiary">
-            <span>ID: <span className="font-mono text-text-secondary">{issue.id}</span></span>
-            {issue.assignee && <span>Assignee: {issue.assignee}</span>}
-            <span>Created: {new Date(issue.createdAt).toLocaleDateString()}</span>
-            {issue.closedAt && <span>Closed: {new Date(issue.closedAt).toLocaleDateString()}</span>}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-4 text-2xs text-text-tertiary">
+              <span>ID: <span className="font-mono text-text-secondary">{issue.id}</span></span>
+              {issue.assignee && <span>Assignee: {issue.assignee}</span>}
+              <span>Created: {new Date(issue.createdAt).toLocaleDateString()}</span>
+              {issue.closedAt && <span>Closed: {new Date(issue.closedAt).toLocaleDateString()}</span>}
+            </div>
+            {!isDone(issue) && (
+              <div className="flex items-center gap-1">
+                <Tooltip content={`/bc:discuss-task ${issue.id}`} side="top">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs text-text-tertiary hover:text-accent-text hover:bg-accent-muted transition-colors cursor-default">
+                    <MessageSquare className="h-3 w-3" />
+                    Discuss
+                  </span>
+                </Tooltip>
+                <Tooltip content={`/bc:execute ${issue.id}`} side="top">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs text-text-tertiary hover:text-accent-text hover:bg-accent-muted transition-colors cursor-default">
+                    <Play className="h-3 w-3" />
+                    Execute
+                  </span>
+                </Tooltip>
+              </div>
+            )}
           </div>
         </div>
       )}

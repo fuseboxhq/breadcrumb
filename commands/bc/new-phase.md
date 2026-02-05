@@ -1,7 +1,7 @@
 ---
 name: new-phase
 description: Create a new phase with PHASE-XX.md file and corresponding Beads epic
-argument-hint: <title>
+argument-hint: <title - description>
 allowed-tools:
   - Bash
   - Write
@@ -21,6 +21,22 @@ Create a new phase for the project. Before creating the files, ask questions to 
 **Understand before scaffolding.** A phase with rich context leads to better planning and execution. Don't create empty templates — ask enough questions to populate the phase file with real substance.
 
 **Be conversational, not bureaucratic.** Adapt your questions based on what you learn. Skip questions that are already answered by the title/description.
+
+## Argument Format
+
+`$ARGUMENTS` can be provided in several formats:
+
+- **Title only:** `/bc:new-phase Dashboard Redesign`
+- **Title + description:** `/bc:new-phase Dashboard Redesign - Rebuild the main dashboard with new layout, stats grid, and phase navigation`
+- **Title + multiline:** `/bc:new-phase Dashboard Redesign - Full redesign including new component architecture, responsive grid, and dark mode support`
+
+**Parsing rules:**
+1. If `$ARGUMENTS` contains ` - ` (space-dash-space), split on the FIRST occurrence:
+   - Everything before = **title**
+   - Everything after = **description** (use as initial context for discovery questions — skip questions already answered)
+2. If no ` - ` separator, treat the entire argument as the **title**
+
+This lets users front-load context in a single prompt and skip redundant discovery questions.
 
 ## Steps
 
