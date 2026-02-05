@@ -54,13 +54,14 @@ router.get('/state', (req, res) => {
 
 router.get('/research', (req, res) => {
   const projectPath = req.query.project as string;
+  const phaseId = req.query.phase as string | undefined;
   if (!projectPath) {
     res.status(400).json({ error: 'project query parameter required' });
     return;
   }
 
   try {
-    const docs = getResearchDocs(projectPath);
+    const docs = getResearchDocs(projectPath, phaseId);
     res.json(docs);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

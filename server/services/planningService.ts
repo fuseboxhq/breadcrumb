@@ -156,8 +156,10 @@ export function getProjectState(projectPath: string): ProjectState {
   };
 }
 
-export function getResearchDocs(projectPath: string): ResearchDoc[] {
-  const researchDir = join(projectPath, '.planning', 'research');
+export function getResearchDocs(projectPath: string, phaseId?: string): ResearchDoc[] {
+  if (!phaseId) return [];
+
+  const researchDir = join(projectPath, '.planning', 'research', phaseId);
   if (!existsSync(researchDir)) return [];
 
   const files = readdirSync(researchDir).filter(f => f.endsWith('.md')).sort();

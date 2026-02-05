@@ -42,8 +42,9 @@ export async function fetchReadyIssues(projectPath: string): Promise<BeadsIssue[
   return response.json();
 }
 
-export async function fetchResearch(projectPath: string): Promise<ResearchDoc[]> {
-  const response = await fetch(`${API_BASE}/research?project=${encodeURIComponent(projectPath)}`);
+export async function fetchResearch(projectPath: string, phaseId: string): Promise<ResearchDoc[]> {
+  const params = new URLSearchParams({ project: projectPath, phase: phaseId });
+  const response = await fetch(`${API_BASE}/research?${params}`);
   if (!response.ok) throw new Error('Failed to fetch research');
   return response.json();
 }

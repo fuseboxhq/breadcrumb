@@ -39,7 +39,7 @@ export function PhaseDetailView({
   onBack,
 }: PhaseDetailViewProps) {
   const { data: epicIssues = [], isLoading: isIssuesLoading } = useIssues(projectPath, phase.beadsEpic);
-  const { data: research = [], isLoading: isResearchLoading } = useResearch(projectPath);
+  const { data: research = [], isLoading: isResearchLoading } = useResearch(projectPath, phase.id);
 
   const progress = useMemo(() => computeProgress(epicIssues), [epicIssues]);
 

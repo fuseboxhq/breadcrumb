@@ -30,13 +30,13 @@ No external libraries needed. This is internal wiring across four layers: server
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-crw.1 | Update server getResearchDocs to accept phaseId and read from phase subfolder | open | Low | - |
-| breadcrumb-crw.2 | Update research API route to accept phase query parameter | open | Low | crw.1 |
-| breadcrumb-crw.3 | Update frontend useResearch hook and api.ts to pass phaseId | open | Low | crw.2 |
-| breadcrumb-crw.4 | Update PhaseDetailView to pass phase ID to Research tab | open | Low | crw.3 |
-| breadcrumb-crw.5 | Update bc:research command to write to phase-scoped folder | open | Medium | - |
-| breadcrumb-crw.6 | Update bc:new-phase command to suggest research topics after creation | open | Medium | - |
-| breadcrumb-crw.7 | Update bc:plan command to read phase research before planning | open | Low | - |
+| breadcrumb-crw.1 | Update server getResearchDocs to accept phaseId and read from phase subfolder | done | Low | - |
+| breadcrumb-crw.2 | Update research API route to accept phase query parameter | done | Low | crw.1 |
+| breadcrumb-crw.3 | Update frontend useResearch hook and api.ts to pass phaseId | done | Low | crw.2 |
+| breadcrumb-crw.4 | Update PhaseDetailView to pass phase ID to Research tab | done | Low | crw.3 |
+| breadcrumb-crw.5 | Update bc:research command to write to phase-scoped folder | done | Medium | - |
+| breadcrumb-crw.6 | Update bc:new-phase command to suggest research topics after creation | done | Medium | - |
+| breadcrumb-crw.7 | Update bc:plan command to read phase research before planning | done | Low | - |
 
 ### Dependency Graph
 
