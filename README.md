@@ -11,10 +11,12 @@ Breadcrumb gives you `/bc:*` slash commands for structured project planning insi
 ## Features
 
 - **Phase-based workflow** — Break projects into phases, plan them with research, execute tasks, and track progress
-- **Web UI dashboard** — Dark-themed local web app showing phases, tasks, and research documents per project
+- **Web UI dashboard** — Dark-themed local web app showing phases, tasks, research, and version info per project
 - **Multi-project support** — One daemon serves all your projects; switch between them in the UI
 - **Real-time updates** — File changes in `.planning/` and `.beads/` are broadcast instantly via SSE
 - **Beads integration** — Task tracking backed by Beads CLI with SQLite-based issue management
+- **Phase-scoped research** — Research docs stored per phase, auto-detected during planning, and displayed per phase in the UI
+- **Frontend design skill** — Ships with a design skill for creating distinctive, production-grade interfaces; planning commands auto-detect UI tasks and activate it
 - **Research agents** — Dedicated research subagent for deep-diving on tasks before implementation
 
 ## Install
@@ -39,7 +41,7 @@ irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.ps1 | ie
 
 The installer will:
 1. Install [Beads CLI](https://github.com/steveyegge/beads) if not present
-2. Download `/bc:*` commands, agent, and skill to `~/.claude/`
+2. Download `/bc:*` commands, agents, and skills (breadcrumb + frontend-design) to `~/.claude/`
 3. Clone and build the Breadcrumb server to `~/.breadcrumb/server/`
 4. Optionally configure `bread.crumb` hostname
 5. Start the Breadcrumb daemon
@@ -57,7 +59,7 @@ This sets up git (if needed), initializes Beads with hooks and merge driver, cre
 ### Typical workflow
 
 ```
-/bc:new-phase "Add user authentication"   # Create a phase
+/bc:new-phase Auth System - Add JWT authentication with refresh tokens   # Create a phase (title + description)
 /bc:plan PHASE-01                          # Research and plan it
 /bc:execute PHASE-01                       # Execute all tasks
 /bc:status                                 # Check progress
@@ -70,7 +72,7 @@ This sets up git (if needed), initializes Beads with hooks and merge driver, cre
 |---------|-------------|
 | `/bc:init` | Initialize git, Beads, and Breadcrumb in a project |
 | `/bc:integrate` | Explore codebase and create CODEBASE.md context |
-| `/bc:new-phase <title>` | Create a new phase |
+| `/bc:new-phase <title - description>` | Create a new phase (description optional, separated by ` - `) |
 | `/bc:plan PHASE-XX` | Research, clarify, and plan a phase |
 | `/bc:execute <id\|PHASE-XX>` | Execute a task or all tasks in a phase |
 | `/bc:discuss-task <task-id>` | Clarify a task's requirements before implementation |
@@ -87,10 +89,11 @@ This sets up git (if needed), initializes Beads with hooks and merge driver, cre
 
 The Breadcrumb daemon runs on `localhost:9999` and serves a Linear-inspired dark-themed dashboard:
 
-- **Collapsible sidebar** — Phase list with status dots, ready-task badges, and progress bars; collapses to icon-only mode (persisted via localStorage)
+- **Collapsible sidebar** — Phase list with status dots, ready-task badges, progress bars, and version footer; collapses to icon-only mode (persisted via localStorage)
 - **Project switcher** — Radix dropdown in the sidebar header for switching between registered projects
-- **Project dashboard** — Status card, phase progress grid with hover interactions, and ready tasks panel
-- **Phase detail view** — Tabbed interface (Plan / Tasks / Research) with animated tab indicator, markdown rendering, task cards with dependency pills, and filter/sort controls
+- **Project dashboard** — 8-stat project status card, phase progress grid with hover interactions, ready tasks panel, and back navigation
+- **Phase detail view** — Tabbed interface (Plan / Tasks / Research) with animated tab indicator, markdown rendering, task cards with dependency pills, Discuss/Execute action hints, and filter/sort controls
+- **Phase-scoped research** — Research documents displayed per phase in the Research tab
 - **Animations** — Page transitions, tab content slides, staggered list entrances, and hover micro-interactions via Motion
 
 ### Daemon management
@@ -154,13 +157,25 @@ PHASE-01 ▸ 3/7 │ Implementing auth │ myproject │ ████░░░�
 - **Build tools**: `pnpm`, `npm`, `node`, `npx`, `tsc`
 - **System**: `ls`, `pwd`, `env`, `uname`, `curl`
 
+## Skills
+
+Breadcrumb ships with two background skills:
+
+| Skill | Purpose |
+|-------|---------|
+| `breadcrumb` | Phase management conventions, Beads CLI integration, auto-tracking rules |
+| `frontend-design` | Guidelines for distinctive, production-grade UI — typography, color, motion, spatial composition |
+
+The `frontend-design` skill is automatically referenced by planning commands (`/bc:plan`, `/bc:execute`, `/bc:new-phase`) when they detect UI/frontend/design work in the phase scope.
+
 ## Architecture
 
 ```
 ~/.claude/
-  commands/bc/         # /bc:* slash commands
-  agents/              # bc-researcher agent
-  skills/breadcrumb/   # Background skill context
+  commands/bc/            # /bc:* slash commands
+  agents/                 # bc-researcher agent
+  skills/breadcrumb/      # Background skill (conventions + task tracking)
+  skills/frontend-design/ # Frontend design skill (UI aesthetics)
 
 ~/.breadcrumb/
   server/              # Breadcrumb server (cloned repo)
@@ -173,11 +188,24 @@ PHASE-01 ▸ 3/7 │ Implementing auth │ myproject │ ████░░░�
 your-project/
   .planning/
     STATE.md           # Project state tracking
+    CODEBASE.md        # Codebase context (from /bc:integrate)
     PHASE-01.md        # Phase documents
-    research/          # Research documents
+    TODO.md            # Quick capture ideas
+    research/
+      PHASE-01/        # Phase-scoped research documents
+        topic-name.md
   .beads/
     beads.db           # Beads SQLite database
 ```
+
+### Phase file layouts
+
+The server supports two phase file layouts:
+
+- **Flat** (default): `.planning/PHASE-01.md`
+- **Nested**: `.planning/phases/auth-system/PHASE-01.md`
+
+Flat layout takes precedence when both exist for the same phase ID.
 
 ### Tech stack
 
