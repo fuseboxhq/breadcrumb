@@ -66,7 +66,7 @@ cmd.exe /c start http://localhost:9999
 ### 4. Report Result
 
 On success:
-```
+```text
 Dashboard opened at http://localhost:9999
 ```
 
