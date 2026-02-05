@@ -1,8 +1,9 @@
 # Phase 04: Phase-Scoped Research Workflow
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-crw
 **Created:** 2026-02-05
+**Completed:** 2026-02-05
 
 ## Objective
 
@@ -61,12 +62,12 @@ crw.7 (bc:plan command)         — independent
 
 ## Completion Criteria
 
-- [ ] `/bc:new-phase` suggests 3-5 research topics after phase creation; user selects which to run
-- [ ] `/bc:research` saves output to `.planning/research/PHASE-XX/<topic>.md`
-- [ ] `/bc:plan` reads all research from phase folder and references findings in planning
-- [ ] Server `getResearchDocs()` accepts phase ID and returns only that phase's research
-- [ ] Research tab in UI shows only the selected phase's research documents
-- [ ] Empty research folder shows "No research documents" with prompt to run `/bc:research`
+- [x] `/bc:new-phase` suggests 3-5 research topics after phase creation; user selects which to run
+- [x] `/bc:research` saves output to `.planning/research/PHASE-XX/<topic>.md`
+- [x] `/bc:plan` reads all research from phase folder and references findings in planning
+- [x] Server `getResearchDocs()` accepts phase ID and returns only that phase's research
+- [x] Research tab in UI shows only the selected phase's research documents
+- [x] Empty research folder shows "No research documents" with prompt to run `/bc:research`
 
 ## Sources
 
