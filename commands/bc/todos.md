@@ -6,6 +6,7 @@ allowed-tools:
   - Write
   - Edit
   - AskUserQuestion
+  - Skill
 ---
 
 # View Todos

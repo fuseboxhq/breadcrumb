@@ -15,6 +15,7 @@ allowed-tools:
   - WebFetch
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs
+  - Skill
 ---
 
 # Execute: $ARGUMENTS

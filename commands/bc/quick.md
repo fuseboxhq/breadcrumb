@@ -12,6 +12,7 @@ allowed-tools:
   - AskUserQuestion
   - mcp__context7__resolve-library-id
   - mcp__context7__query-docs
+  - Skill
 ---
 
 # Quick Task: $ARGUMENTS

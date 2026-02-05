@@ -5,6 +5,7 @@ allowed-tools:
   - Bash
   - Read
   - Glob
+  - Skill
 ---
 
 # Breadcrumb Doctor

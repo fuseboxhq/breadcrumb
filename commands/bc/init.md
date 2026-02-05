@@ -6,6 +6,7 @@ allowed-tools:
   - Write
   - Read
   - Edit
+  - Skill
 ---
 
 # Initialize Breadcrumb

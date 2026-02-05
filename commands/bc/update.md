@@ -5,6 +5,7 @@ allowed-tools:
   - Bash
   - Read
   - WebFetch
+  - Skill
 ---
 
 # Update Breadcrumb

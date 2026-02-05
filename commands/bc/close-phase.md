@@ -8,6 +8,7 @@ allowed-tools:
   - Read
   - Edit
   - AskUserQuestion
+  - Skill
 ---
 
 # Close Phase: $ARGUMENTS

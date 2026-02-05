@@ -9,6 +9,7 @@ allowed-tools:
   - Write
   - Task
   - AskUserQuestion
+  - Skill
 ---
 
 # Integrate Existing Codebase

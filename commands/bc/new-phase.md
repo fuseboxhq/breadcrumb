@@ -9,6 +9,7 @@ allowed-tools:
   - Edit
   - Glob
   - AskUserQuestion
+  - Skill
 ---
 
 # Create New Phase: $ARGUMENTS
