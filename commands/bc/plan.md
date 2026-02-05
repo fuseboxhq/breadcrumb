@@ -116,6 +116,18 @@ I'll proceed with research based on this. Let me know if anything needs adjustin
 - Cross-verify findings
 - Assign confidence levels (HIGH/MEDIUM/LOW)
 
+### 4b. Identify Frontend/Design Tasks
+
+Check if the phase involves any UI, frontend, or design work by looking for keywords in the objective and scope: UI, frontend, component, page, layout, design, styling, CSS, visual, dashboard, sidebar, form, modal, etc.
+
+**If frontend work is detected**, note in the Research Summary:
+```markdown
+### Design Guidance
+The `frontend-design` skill will be active during execution of UI tasks in this phase. It provides guidelines for typography, color, motion, spatial composition, and avoiding generic aesthetics.
+```
+
+Tag UI-related tasks with a note: `(frontend-design skill active)` in their description when creating them in Beads.
+
 ### 5. Define Tasks
 
 Break the phase into 3-7 tasks. Each task should be:

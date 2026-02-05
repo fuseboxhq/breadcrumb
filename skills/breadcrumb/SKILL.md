@@ -103,6 +103,17 @@ bd close <task-id>
 - Active `/bc:*` command flows (those have their own tracking)
 - Reading files or exploring code (no modification)
 
+## Frontend Design Skill
+
+Breadcrumb ships with the `frontend-design` skill (`~/.claude/skills/frontend-design/SKILL.md`). This skill provides guidelines for creating distinctive, production-grade frontend interfaces.
+
+**When to use it:** Any task involving UI work — building components, pages, layouts, styling, or visual design. The skill is automatically loaded as background context and guides aesthetic decisions like typography, color, motion, and spatial composition.
+
+**How planning commands use it:**
+- `/bc:plan` detects UI/frontend/design tasks and notes that the frontend-design skill will be active during execution
+- `/bc:execute` leverages the skill automatically when implementing frontend tasks
+- `/bc:new-phase` suggests the frontend-design skill for phases with UI/design scope
+
 ## Philosophy
 
 **Understand before building.** Commands like `/bc:plan`, `/bc:discuss-task`, and `/bc:research` will ask clarifying questions before diving into work. This ensures requirements are clear and reduces rework.

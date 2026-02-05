@@ -9,6 +9,7 @@ $ErrorActionPreference = "Stop"
 $RepoUrl = if ($env:BREADCRUMB_REPO) { $env:BREADCRUMB_REPO } else { "https://github.com/fuseboxhq/breadcrumb.git" }
 $RawUrl = if ($env:BREADCRUMB_RAW) { $env:BREADCRUMB_RAW } else { "https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main" }
 $SkillsDir = Join-Path $env:USERPROFILE ".claude\skills\breadcrumb"
+$DesignSkillsDir = Join-Path $env:USERPROFILE ".claude\skills\frontend-design"
 $CommandsDir = Join-Path $env:USERPROFILE ".claude\commands\bc"
 $AgentsDir = Join-Path $env:USERPROFILE ".claude\agents"
 $BreadcrumbDir = Join-Path $env:USERPROFILE ".breadcrumb"
@@ -193,11 +194,13 @@ Write-Host ""
 
 Write-Host "Installing Claude Code commands..." -ForegroundColor White
 New-Item -ItemType Directory -Force -Path $SkillsDir | Out-Null
+New-Item -ItemType Directory -Force -Path $DesignSkillsDir | Out-Null
 New-Item -ItemType Directory -Force -Path $CommandsDir | Out-Null
 New-Item -ItemType Directory -Force -Path $AgentsDir | Out-Null
 
-# Download skill file
+# Download skill files
 Download-File "$RawUrl/skills/breadcrumb/SKILL.md" (Join-Path $SkillsDir "SKILL.md")
+Download-File "$RawUrl/skills/frontend-design/SKILL.md" (Join-Path $DesignSkillsDir "SKILL.md")
 
 # Download command files
 $commands = @(
@@ -356,6 +359,7 @@ Write-Host "=============================================" -ForegroundColor Gree
 Write-Host ""
 Write-Host "Installed to:" -ForegroundColor White
 Write-Host "  $SkillsDir\SKILL.md          (background context)"
+Write-Host "  $DesignSkillsDir\SKILL.md    (frontend design skill)"
 Write-Host "  $CommandsDir\                  (commands)"
 Write-Host "  $AgentsDir\bc-researcher.md   (agent)"
 Write-Host "  $ServerDir\                   (server)"

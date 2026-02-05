@@ -15,6 +15,7 @@ fi
 REPO_URL="${BREADCRUMB_REPO:-https://github.com/fuseboxhq/breadcrumb.git}"
 RAW_URL="${BREADCRUMB_RAW:-https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main}"
 SKILLS_DIR="$HOME/.claude/skills/breadcrumb"
+DESIGN_SKILLS_DIR="$HOME/.claude/skills/frontend-design"
 COMMANDS_DIR="$HOME/.claude/commands/bc"
 AGENTS_DIR="$HOME/.claude/agents"
 BREADCRUMB_DIR="$HOME/.breadcrumb"
@@ -81,11 +82,13 @@ echo ""
 
 echo "Installing Claude Code commands..."
 mkdir -p "$SKILLS_DIR"
+mkdir -p "$DESIGN_SKILLS_DIR"
 mkdir -p "$COMMANDS_DIR"
 mkdir -p "$AGENTS_DIR"
 
-# Download skill file (background context)
+# Download skill files (background context)
 curl -fsSL "$RAW_URL/skills/breadcrumb/SKILL.md" -o "$SKILLS_DIR/SKILL.md"
+curl -fsSL "$RAW_URL/skills/frontend-design/SKILL.md" -o "$DESIGN_SKILLS_DIR/SKILL.md"
 
 # Download command files (user-invocable)
 for cmd in init integrate new-phase plan discuss-task status research close-phase execute todo todos update quick doctor; do
@@ -215,6 +218,7 @@ echo "============================================="
 echo ""
 echo "Installed to:"
 echo "  $SKILLS_DIR/SKILL.md         (background context)"
+echo "  $DESIGN_SKILLS_DIR/SKILL.md  (frontend design skill)"
 echo "  $COMMANDS_DIR/                (commands)"
 echo "  $AGENTS_DIR/bc-researcher.md  (agent)"
 echo "  $SERVER_DIR/                  (server)"

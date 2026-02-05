@@ -95,6 +95,7 @@ Based on clarification, focus on relevant domains:
 - **Patterns:** How do experts structure this? (if architectural)
 - **Pitfalls:** What do people get wrong? (if risk-focused)
 - **Existing solutions:** What shouldn't be hand-rolled? (always check)
+- **Design:** If the task involves UI/frontend work, note that the `frontend-design` skill will be active during execution. Research should focus on technical implementation rather than design aesthetics (the skill handles that).
 
 ### 4. Research with Verification
 

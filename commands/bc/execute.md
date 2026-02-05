@@ -134,6 +134,7 @@ Based on the task description and context:
 - Follow existing patterns from CODEBASE.md
 - Follow technical decisions from phase file
 - Use Context7 for library documentation if needed
+- **For UI/frontend/design tasks**: The `frontend-design` skill (`~/.claude/skills/frontend-design/SKILL.md`) provides guidelines for creating distinctive, production-grade interfaces. Follow its design thinking process (purpose, tone, constraints, differentiation) and aesthetics guidelines (typography, color, motion, spatial composition) when building or modifying frontend components.
 
 ### 8. Verify Implementation
 

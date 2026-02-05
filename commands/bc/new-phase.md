@@ -130,6 +130,21 @@ options:
 - Group related questions using the multi-option format where possible
 - If the user says "just create it" or similar, respect that and proceed with what you have
 
+### 2b. Detect Frontend/Design Scope
+
+If the phase title, description, or discovery answers indicate UI, frontend, or design work (keywords: UI, frontend, component, page, layout, design, styling, CSS, visual, dashboard, form, modal, etc.), inform the user:
+
+```
+This phase involves frontend/design work. The `frontend-design` skill will be
+active during execution, providing guidelines for distinctive, production-grade
+interfaces (typography, color, motion, spatial composition).
+```
+
+Add a note in the phase file under Constraints:
+```
+- Frontend design skill active — follow design thinking process for UI tasks
+```
+
 ### 3. Synthesize Phase Description
 
 From the discovery conversation, write a clear phase description that includes:
