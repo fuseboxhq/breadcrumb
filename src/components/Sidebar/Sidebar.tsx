@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import clsx from 'clsx';
-import { PanelLeftClose, PanelLeft, LayoutDashboard } from 'lucide-react';
+import { PanelLeftClose, PanelLeft, LayoutDashboard, CheckCircle2 } from 'lucide-react';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { PhaseList } from './PhaseList';
 import { QuickTaskList } from './QuickTaskList';
@@ -44,6 +44,24 @@ export function Sidebar({
       return false;
     }
   });
+
+  const [hideCompleted, setHideCompleted] = useState(() => {
+    try {
+      return localStorage.getItem('bc-hide-completed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleHideCompleted = useCallback(() => {
+    setHideCompleted((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('bc-hide-completed', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
@@ -127,10 +145,23 @@ export function Sidebar({
         {/* Phases section */}
         <div className="flex-[3] min-h-0 flex flex-col">
           {!collapsed && (
-            <div className="px-3 pt-3 pb-1 flex-shrink-0">
+            <div className="px-3 pt-3 pb-1 flex-shrink-0 flex items-center justify-between">
               <span className="text-2xs font-medium uppercase tracking-wider text-text-tertiary">
                 Phases
               </span>
+              <Tooltip content={hideCompleted ? 'Show completed' : 'Hide completed'} side="right">
+                <button
+                  onClick={toggleHideCompleted}
+                  className={clsx(
+                    'p-0.5 rounded transition-colors',
+                    hideCompleted
+                      ? 'text-accent hover:text-accent-text'
+                      : 'text-text-tertiary opacity-50 hover:opacity-100',
+                  )}
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                </button>
+              </Tooltip>
             </div>
           )}
           <div className="flex-1 overflow-y-auto px-1.5 py-1">
@@ -141,6 +172,7 @@ export function Sidebar({
               onSelect={onSelectPhase}
               progressByEpic={progressByEpic}
               collapsed={collapsed}
+              hideCompleted={hideCompleted}
             />
           </div>
         </div>

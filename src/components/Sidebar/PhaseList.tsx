@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import clsx from 'clsx';
 import { Layers, Zap } from 'lucide-react';
 import type { Phase, PhaseProgress } from '../../types';
@@ -12,6 +13,7 @@ interface PhaseListProps {
   onSelect: (phaseId: string) => void;
   progressByEpic: Map<string, PhaseProgress>;
   collapsed?: boolean;
+  hideCompleted?: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { dot: string; label: string }> = {
@@ -20,7 +22,12 @@ const STATUS_CONFIG: Record<string, { dot: string; label: string }> = {
   complete: { dot: 'bg-phase-complete', label: 'Complete' },
 };
 
-export function PhaseList({ phases, isLoading, selectedPhaseId, onSelect, progressByEpic, collapsed }: PhaseListProps) {
+export function PhaseList({ phases, isLoading, selectedPhaseId, onSelect, progressByEpic, collapsed, hideCompleted }: PhaseListProps) {
+  const visiblePhases = useMemo(() => {
+    let filtered = hideCompleted ? phases.filter(p => p.status !== 'complete') : phases;
+    return [...filtered].reverse();
+  }, [phases, hideCompleted]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -41,7 +48,7 @@ export function PhaseList({ phases, isLoading, selectedPhaseId, onSelect, progre
   if (collapsed) {
     return (
       <div className="flex flex-col items-center gap-1 py-1">
-        {phases.map((phase) => {
+        {visiblePhases.map((phase) => {
           const config = STATUS_CONFIG[phase.status] || STATUS_CONFIG.not_started;
           const isSelected = selectedPhaseId === phase.id;
           return (
@@ -66,7 +73,7 @@ export function PhaseList({ phases, isLoading, selectedPhaseId, onSelect, progre
 
   return (
     <div className="flex flex-col gap-0.5">
-      {phases.map((phase) => {
+      {visiblePhases.map((phase) => {
         const progress = progressByEpic.get(phase.beadsEpic);
         const config = STATUS_CONFIG[phase.status] || STATUS_CONFIG.not_started;
         const isSelected = selectedPhaseId === phase.id;
