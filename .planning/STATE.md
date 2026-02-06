@@ -1,11 +1,11 @@
 # Project State
 
-**Current Phase:** None
+**Current Phase:** PHASE-05
 **Last Updated:** 2026-02-05
 
 ## Active Work
 
-No active phases.
+PHASE-05: Add /bc:view command for opening dashboard (not_started)
 
 ## Completed Phases
 
