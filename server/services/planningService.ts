@@ -50,7 +50,8 @@ function parsePhaseMetadata(content: string): Omit<Phase, 'id' | 'content'> {
 // if the same phase ID exists in both locations.
 function findPhaseFiles(planningDir: string): { id: string; filePath: string }[] {
   const found = new Map<string, string>();
-  const phasePattern = /^PHASE-\d+\.md$/;
+  // Matches PHASE-XX.md and PHASE-XX-slug.md (e.g. PHASE-26-close-the-review-loop.md)
+  const phasePattern = /^(PHASE-\d+)(?:-[a-zA-Z0-9-]+)?\.md$/;
 
   // 1. Nested: .planning/phases/*/PHASE-XX.md
   const phasesDir = join(planningDir, 'phases');
@@ -61,8 +62,9 @@ function findPhaseFiles(planningDir: string): { id: string; filePath: string }[]
         if (!statSync(subdir).isDirectory()) continue;
       } catch { continue; }
       for (const file of readdirSync(subdir)) {
-        if (phasePattern.test(file)) {
-          const id = basename(file, '.md');
+        const match = phasePattern.exec(file);
+        if (match) {
+          const id = match[1]; // e.g. "PHASE-26" regardless of slug
           found.set(id, join(subdir, file));
         }
       }
@@ -71,8 +73,9 @@ function findPhaseFiles(planningDir: string): { id: string; filePath: string }[]
 
   // 2. Flat: .planning/PHASE-XX.md (overwrites nested if duplicate)
   for (const file of readdirSync(planningDir)) {
-    if (phasePattern.test(file)) {
-      const id = basename(file, '.md');
+    const match = phasePattern.exec(file);
+    if (match) {
+      const id = match[1]; // e.g. "PHASE-26" regardless of slug
       found.set(id, join(planningDir, file));
     }
   }
@@ -95,22 +98,43 @@ export function getPhases(projectPath: string): Phase[] {
 
 export function getPhase(projectPath: string, phaseId: string): Phase | null {
   const planningDir = join(projectPath, '.planning');
+  // Matches exact (PHASE-XX.md) or slugged (PHASE-XX-slug.md) filenames
+  const slugPattern = new RegExp(`^${phaseId}(?:-[a-zA-Z0-9-]+)?\\.md$`);
 
-  // Try flat layout first
+  // Try flat layout first: .planning/PHASE-XX.md or .planning/PHASE-XX-slug.md
   const flatPath = join(planningDir, `${phaseId}.md`);
   if (existsSync(flatPath)) {
     const content = readFileSync(flatPath, 'utf-8');
     return { id: phaseId, content, ...parsePhaseMetadata(content) };
   }
+  // Check for slugged variant in flat layout
+  for (const file of readdirSync(planningDir)) {
+    if (slugPattern.test(file)) {
+      const content = readFileSync(join(planningDir, file), 'utf-8');
+      return { id: phaseId, content, ...parsePhaseMetadata(content) };
+    }
+  }
 
-  // Try nested layout: .planning/phases/*/<phaseId>.md
+  // Try nested layout: .planning/phases/*/<phaseId>.md or slugged
   const phasesDir = join(planningDir, 'phases');
   if (existsSync(phasesDir)) {
     for (const entry of readdirSync(phasesDir)) {
-      const candidate = join(phasesDir, entry, `${phaseId}.md`);
+      const subdir = join(phasesDir, entry);
+      try {
+        if (!statSync(subdir).isDirectory()) continue;
+      } catch { continue; }
+      // Try exact match first
+      const candidate = join(subdir, `${phaseId}.md`);
       if (existsSync(candidate)) {
         const content = readFileSync(candidate, 'utf-8');
         return { id: phaseId, content, ...parsePhaseMetadata(content) };
+      }
+      // Try slugged variant
+      for (const file of readdirSync(subdir)) {
+        if (slugPattern.test(file)) {
+          const content = readFileSync(join(subdir, file), 'utf-8');
+          return { id: phaseId, content, ...parsePhaseMetadata(content) };
+        }
       }
     }
   }
