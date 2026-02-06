@@ -17,6 +17,7 @@ Breadcrumb gives you `/bc:*` slash commands for structured project planning insi
 - **Beads integration** — Task tracking backed by Beads CLI with SQLite-based issue management
 - **Phase-scoped research** — Research docs stored per phase, auto-detected during planning, and displayed per phase in the UI
 - **Frontend design skill** — Ships with a design skill for creating distinctive, production-grade interfaces; planning commands auto-detect UI tasks and activate it
+- **Structured bug fixing** — Dedicated `/bc:bug-fix` command with reproduce→diagnose→fix→verify workflow; catches bug classes, not just instances
 - **Research agents** — Dedicated research subagent for deep-diving on tasks before implementation
 
 ## Install
@@ -86,6 +87,28 @@ This sets up git (if needed), initializes Beads with hooks and merge driver, cre
 | `/bc:bug-fix <description>` | Investigate and fix a bug with reproduce→diagnose→fix→verify flow |
 | `/bc:view` | Open the web dashboard in your browser |
 | `/bc:doctor` | Diagnose and repair Breadcrumb + Beads setup issues |
+
+### Bug fixing
+
+`/bc:bug-fix` provides a structured workflow for fixing bugs properly:
+
+```
+/bc:bug-fix "dashboard shows stale data after switching projects"
+```
+
+| Step | What happens |
+|------|-------------|
+| **Gather** | Collects symptoms, severity (Critical/Moderate/Minor), and expected vs actual behavior |
+| **Reproduce** | Traces the code flow to identify the exact trigger |
+| **Diagnose** | Asks "why" repeatedly until the root cause is found — not just the symptom |
+| **Related issues** | Greps for the same bug pattern in sibling files to catch entire bug classes |
+| **Propose** | Explains the fix and gets confirmation before touching code |
+| **Implement** | Minimal, focused changes targeting the root cause |
+| **Verify** | Build check, tests, type check, and regression analysis |
+
+Bugs are tracked in Beads with a `bug` label and priority mapped from severity (Critical=P0, Moderate=P1, Minor=P2).
+
+For quick cosmetic fixes, `/bc:quick` is still the right choice. Use `/bc:bug-fix` when the issue needs investigation.
 
 ## Web UI
 
