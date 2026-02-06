@@ -57,6 +57,8 @@ After installation, open Claude Code in any project and run:
 
 This sets up git (if needed), initializes Beads with hooks and merge driver, creates `.planning/` directories, makes an initial commit, starts the daemon, and registers the project with the web UI.
 
+For new projects, `/bc:init` also runs a project discovery: you describe what you're building in your own words, then it asks targeted follow-ups about tech stack, scope, and audience. The result is a `.planning/PROJECT.md` brief that informs all future phases and planning.
+
 ### Typical workflow
 
 ```
@@ -212,6 +214,7 @@ The `frontend-design` skill is automatically referenced by planning commands (`/
 
 your-project/
   .planning/
+    PROJECT.md         # Project brief (from /bc:init discovery)
     STATE.md           # Project state tracking
     CODEBASE.md        # Codebase context (from /bc:integrate)
     PHASE-01.md        # Phase documents

@@ -12,12 +12,14 @@ breadcrumb is a lightweight research and planning extension that integrates with
 
 ```
 .planning/
+├── PROJECT.md               # Project brief (from /bc:init discovery)
 ├── CODEBASE.md              # Existing codebase context (from /bc:integrate)
 ├── PHASE-01.md              # Phase definition + research + tasks
 ├── PHASE-02.md
 ├── TODO.md                  # Quick capture ideas (from /bc:todo)
-├── research/                # Task-level deep dives
-│   └── bd-xxxx.md
+├── research/
+│   └── PHASE-01/            # Phase-scoped research
+│       └── topic-name.md
 └── STATE.md                 # Current context (optional)
 
 .beads/
@@ -176,6 +178,7 @@ Hooks are stored in `~/.breadcrumb/hooks/` and configured in `~/.claude/settings
 
 | Content | Location |
 |---------|----------|
+| Project brief | `.planning/PROJECT.md` |
 | Codebase context | `.planning/CODEBASE.md` |
 | Phase overviews | `.planning/PHASE-XX.md` |
 | Task research | `.planning/research/<task-id>.md` |

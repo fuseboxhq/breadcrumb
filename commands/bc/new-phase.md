@@ -63,6 +63,9 @@ If `.planning/STATE.md` exists, read it to understand:
 - What's currently active
 - What's been completed
 
+**Read project brief:**
+If `.planning/PROJECT.md` exists, read it for project purpose, audience, tech stack, and scope.
+
 **Read codebase context:**
 If `.planning/CODEBASE.md` exists, read it for tech stack, structure, patterns.
 

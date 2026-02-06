@@ -6,6 +6,8 @@ allowed-tools:
   - Write
   - Read
   - Edit
+  - Glob
+  - AskUserQuestion
   - Skill
 ---
 
@@ -239,6 +241,158 @@ Report: "Created initial commit with .beads/, .planning/, and project instructio
 **If everything is already committed and clean:**
 Report: "Project files already committed"
 
+### 5.5. Project Discovery
+
+After the technical setup, understand what this project is about and write a project brief.
+
+**Detect project maturity:**
+
+Use Glob to check for source files:
+```
+**/*.{ts,tsx,js,jsx,py,go,rs,java,rb,cs,cpp,c,swift,kt}
+```
+
+Count results:
+- **0 source files** → Brand new project (full discovery)
+- **1-10 source files** → Early project (light discovery — ask if they want to describe the project)
+- **11+ source files** → Existing codebase (skip discovery — suggest `/bc:integrate` instead)
+
+Also check: if `.planning/PROJECT.md` already exists, skip this step entirely.
+
+---
+
+**For brand new or early projects:**
+
+**Step 1 — Open-ended description:**
+
+Use AskUserQuestion with a free-form prompt:
+
+```
+question: "In your own words, describe what this project is. What are you building and why?"
+options:
+  - label: "Let me describe it"
+    description: "I'll type out what this project is about"
+  - label: "Skip for now"
+    description: "I'll set up the project context later"
+```
+
+If "Skip for now", skip to step 6. Write a minimal `.planning/PROJECT.md`:
+```markdown
+# Project Brief
+
+*Run `/bc:init` again or edit this file to add project context.*
+```
+
+If "Let me describe it", the user will type their description via the "Other" option. Capture this as the **raw description**.
+
+**Step 2 — Parse and ask targeted follow-ups:**
+
+From the raw description, extract what you can about:
+- What it does
+- Who it's for
+- Tech preferences mentioned
+- Scale/ambition
+
+Then ask 2-3 follow-up questions based on what's MISSING from their description. Adapt — don't ask about things they already covered.
+
+**Possible follow-ups (pick what's relevant):**
+
+```
+question: "What's the tech stack?"
+options:
+  - label: "React + TypeScript"
+    description: "React frontend with TypeScript"
+  - label: "Next.js"
+    description: "Full-stack with Next.js"
+  - label: "Python"
+    description: "Python-based (Flask, Django, FastAPI, etc.)"
+  - label: "Not decided yet"
+    description: "Help me choose during planning"
+```
+
+```
+question: "What's the scope of v1?"
+options:
+  - label: "MVP"
+    description: "Minimal viable product — core features only"
+  - label: "Full product"
+    description: "Complete implementation with polish"
+  - label: "Prototype"
+    description: "Proof of concept to validate the idea"
+```
+
+```
+question: "Who's the audience?"
+options:
+  - label: "Developers"
+    description: "Technical users, CLI tools, APIs"
+  - label: "End users"
+    description: "Non-technical consumers"
+  - label: "Internal team"
+    description: "Internal tooling or dashboards"
+  - label: "Just me"
+    description: "Personal project or learning"
+```
+
+**Adaptive rules:**
+- If they mentioned "React app" → skip tech stack question
+- If they mentioned "for my team" → skip audience question
+- If they gave a detailed description → only ask 1 follow-up
+- If they gave a brief description → ask 2-3 follow-ups
+- Maximum 3 follow-up questions total
+
+**Step 3 — Write `.planning/PROJECT.md`:**
+
+Synthesize everything into a project brief:
+
+```markdown
+# Project Brief
+
+## What
+[1-2 sentences: what this project is and what problem it solves]
+
+## Why
+[1-2 sentences: motivation, who it's for, what need it fills]
+
+## Tech Stack
+[Known or intended technologies. "TBD" is fine for undecided areas]
+- **Language:** [e.g., TypeScript]
+- **Framework:** [e.g., React, Next.js, Express]
+- **Styling:** [e.g., Tailwind CSS, CSS Modules]
+- **Database:** [e.g., PostgreSQL, SQLite, none yet]
+- **Other:** [any mentioned tools, APIs, services]
+
+## Scope
+[MVP / Full product / Prototype — with brief clarification]
+
+## Audience
+[Who uses this and in what context]
+
+## Initial Thoughts
+[Any architecture ideas, constraints, or decisions mentioned in discovery.
+This section gets refined as phases are planned.]
+
+---
+*Generated during `/bc:init`. Update as the project evolves.*
+```
+
+**Step 4 — Stage PROJECT.md:**
+
+```bash
+git add .planning/PROJECT.md
+git commit -m "Add project brief"
+```
+
+---
+
+**For existing codebases (11+ source files):**
+
+Skip discovery. After reporting success in step 8, mention:
+```
+This looks like an existing codebase. Run /bc:integrate to map the codebase,
+or /bc:init again to add a project description.
+```
+
 ### 6. Connect to Breadcrumb Web UI
 
 **Find the Breadcrumb server installation:**
@@ -382,6 +536,7 @@ Setup:
   Quick Tasks epic:  [created / already existed]
   Git hooks:         installed
   Merge driver:      configured
+  Project brief:     [created / skipped]
   Initial commit:    [created / skipped (already committed)]
 
 Web UI: http://localhost:9999 [running / not running]
@@ -393,9 +548,10 @@ Next steps (existing codebase):
   3. Plan and execute: /bc:plan PHASE-01 → /bc:execute PHASE-01
 
 Next steps (new project):
-  1. Create your first phase: /bc:new-phase "Setup and Configuration"
-  2. Plan and execute: /bc:plan PHASE-01 → /bc:execute PHASE-01
-  3. Check status: /bc:status
+  1. Your project brief is in .planning/PROJECT.md
+  2. Create your first phase: /bc:new-phase "Setup and Scaffolding"
+  3. Plan and execute: /bc:plan PHASE-01 → /bc:execute PHASE-01
+  4. Check status: /bc:status
 
 Troubleshooting:
   Run /bc:doctor to diagnose any issues.

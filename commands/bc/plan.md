@@ -60,13 +60,19 @@ Read `.planning/$ARGUMENTS.md` to get:
 
 If status is `complete`, warn user and confirm they want to re-plan.
 
-**Also check for codebase context:**
+**Also check for project context:**
+
+If `.planning/PROJECT.md` exists, read it to understand:
+- What the project is and who it's for
+- Intended tech stack and scope
+- Any architectural decisions or constraints
+
 If `.planning/CODEBASE.md` exists, read it to understand:
 - Existing tech stack (don't recommend conflicting technologies)
 - Directory structure (know where to put new code)
 - Existing patterns (follow established conventions)
 
-This context should inform your research and task planning.
+Both should inform your research and task planning.
 
 ### 3. Validate Requirements
 
