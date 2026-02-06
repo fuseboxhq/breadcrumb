@@ -83,6 +83,8 @@ This sets up git (if needed), initializes Beads with hooks and merge driver, cre
 | `/bc:todos` | View and manage the todo list |
 | `/bc:update` | Update Breadcrumb to the latest version |
 | `/bc:quick <description>` | Quick task execution without full planning |
+| `/bc:bug-fix <description>` | Investigate and fix a bug with reproduce→diagnose→fix→verify flow |
+| `/bc:view` | Open the web dashboard in your browser |
 | `/bc:doctor` | Diagnose and repair Breadcrumb + Beads setup issues |
 
 ## Web UI

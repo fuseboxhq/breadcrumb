@@ -206,7 +206,7 @@ Download-File "$RawUrl/skills/frontend-design/SKILL.md" (Join-Path $DesignSkills
 $commands = @(
     "init", "integrate", "new-phase", "plan", "discuss-task",
     "status", "research", "close-phase", "execute",
-    "todo", "todos", "update", "quick", "doctor"
+    "todo", "todos", "update", "quick", "doctor", "bug-fix", "view"
 )
 foreach ($cmd in $commands) {
     Download-File "$RawUrl/commands/bc/$cmd.md" (Join-Path $CommandsDir "$cmd.md")
@@ -398,6 +398,8 @@ Write-Host "  /bc:todo <description>     Add item to todo list"
 Write-Host "  /bc:todos                  View and manage todo list"
 Write-Host "  /bc:update                 Update Breadcrumb to latest version"
 Write-Host "  /bc:quick <description>    Quick task execution without planning"
+Write-Host "  /bc:bug-fix <description>  Investigate and fix a bug with diagnosis"
+Write-Host "  /bc:view                   Open web dashboard in browser"
 Write-Host ""
 Write-Host "To get started in a new project:" -ForegroundColor White
 Write-Host "  1. cd your-project"

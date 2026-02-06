@@ -48,6 +48,9 @@ new-phase → plan → execute → close-phase
 | `/bc:close-phase PHASE-XX` | Mark phase complete |
 | `/bc:todo <description>` | Add item to todo list |
 | `/bc:todos` | View and manage todo list |
+| `/bc:quick <description>` | Quick task execution without full planning |
+| `/bc:bug-fix <description>` | Investigate and fix a bug (reproduce→diagnose→fix→verify) |
+| `/bc:view` | Open web dashboard in browser |
 | `/bc:update` | Update breadcrumb to latest version |
 | `/bc:doctor` | Diagnose and repair setup issues |
 

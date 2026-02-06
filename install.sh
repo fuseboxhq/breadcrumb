@@ -91,7 +91,7 @@ curl -fsSL "$RAW_URL/skills/breadcrumb/SKILL.md" -o "$SKILLS_DIR/SKILL.md"
 curl -fsSL "$RAW_URL/skills/frontend-design/SKILL.md" -o "$DESIGN_SKILLS_DIR/SKILL.md"
 
 # Download command files (user-invocable)
-for cmd in init integrate new-phase plan discuss-task status research close-phase execute todo todos update quick doctor; do
+for cmd in init integrate new-phase plan discuss-task status research close-phase execute todo todos update quick doctor bug-fix view; do
     curl -fsSL "$RAW_URL/commands/bc/$cmd.md" -o "$COMMANDS_DIR/$cmd.md"
 done
 
@@ -247,6 +247,8 @@ echo "  /bc:todo <description>     Add item to todo list"
 echo "  /bc:todos                  View and manage todo list"
 echo "  /bc:update                 Update Breadcrumb to latest version"
 echo "  /bc:quick <description>    Quick task execution without planning"
+echo "  /bc:bug-fix <description>  Investigate and fix a bug with diagnosis"
+echo "  /bc:view                   Open web dashboard in browser"
 echo ""
 echo "To get started in a new project:"
 echo "  1. cd your-project"
