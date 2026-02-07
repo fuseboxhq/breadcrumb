@@ -408,7 +408,7 @@ If not found, inform the user:
 ```
 Breadcrumb web UI not installed. The planning commands will work without it.
 To install the web UI, run:
-  curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 **If installed, detect and start the daemon:**

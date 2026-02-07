@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { neon } from '@neondatabase/serverless';
 import { createHash } from 'crypto';
 
-const INSTALL_SCRIPT_URL = 'https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh';
+const INSTALL_SCRIPT_URL = 'https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh';
 
 function hashIp(ip: string): string {
   return createHash('sha256').update(ip).digest('hex').slice(0, 16);

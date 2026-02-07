@@ -38,7 +38,7 @@ Display recent changes to the user before updating.
 
 **For Unix/macOS/Linux/WSL:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 **For Windows (PowerShell):**
@@ -75,7 +75,7 @@ You may need to restart Claude Code for command changes to take full effect.
 
 **macOS/Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 **Windows (PowerShell):**

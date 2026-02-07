@@ -31,13 +31,13 @@ Breadcrumb gives you `/bc:*` slash commands for structured project planning insi
 ### macOS / Linux / WSL
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex
 ```
 
 The installer will:
@@ -263,7 +263,7 @@ This starts both the Express API server (port 9998) and Vite dev server (port 99
 Or manually:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 ## License
