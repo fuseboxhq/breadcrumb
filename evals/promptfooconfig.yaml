@@ -1,0 +1,228 @@
+# Breadcrumb Research Agent Evaluation Config
+# Run: npx promptfoo eval
+# View: npx promptfoo view
+
+description: "bc-researcher quality evaluation"
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-5-20250929
+    config:
+      temperature: 0
+      max_tokens: 4000
+
+prompts:
+  - id: research-prompt
+    raw: |
+      You are a technical research agent. Research the following topic and produce
+      a structured research document.
+
+      Topic: {{topic}}
+
+      Your output MUST include these sections:
+      - TL;DR (2-3 prescriptive sentences)
+      - Recommended Stack (table: Library | Version | Purpose | Confidence)
+      - Key Patterns (with code examples)
+      - Don't Hand-Roll (table: Problem | Use Instead | Why)
+      - Pitfalls (with "What happens" and "Avoid by")
+      - Sources (with HIGH/MEDIUM/LOW confidence levels)
+
+      Be prescriptive: say "Use X because Y", not "Consider X or Y".
+      Verify claims with current sources. Flag uncertainty honestly.
+
+defaultTest:
+  assert:
+    # Structural completeness - every research doc needs these sections
+    - type: contains
+      value: "Recommended Stack"
+    - type: contains
+      value: "Pitfalls"
+    - type: contains
+      value: "Sources"
+
+tests:
+  # Topic 1: Library Selection (React Form Library)
+  - vars:
+      topic: "Best form validation library for a React TypeScript project in 2026. Needs async validation, nested objects, custom error messages, and TypeScript inference."
+    assert:
+      - type: llm-rubric
+        value: |
+          Evaluate this technical research document across these dimensions:
+
+          1. ACCURACY (0.0-0.25): Are library versions current? Are API examples correct?
+             0.25 = all claims verified and current
+             0.15 = mostly verified, minor gaps
+             0.05 = outdated or unverified claims
+
+          2. ACTIONABILITY (0.0-0.25): Does it prescribe a clear choice?
+             0.25 = clear "use X because Y" with justification
+             0.15 = recommendation present but hedged
+             0.05 = exploratory "consider X or Y"
+
+          3. SOURCE QUALITY (0.0-0.25): Are sources authoritative with confidence levels?
+             0.25 = official docs cited with HIGH/MEDIUM/LOW confidence
+             0.15 = some sources, confidence unclear
+             0.05 = no sources or low-quality
+
+          4. PITFALLS (0.0-0.25): Are specific pitfalls documented?
+             0.25 = 2+ specific pitfalls with prevention strategies
+             0.15 = 1-2 somewhat specific pitfalls
+             0.05 = generic or no pitfalls
+
+          Output a score from 0.0 to 1.0.
+        threshold: 0.7
+      - type: similar
+        value: file://golden-references/react-form-library.md
+        threshold: 0.75
+      - type: contains
+        value: "Don't Hand-Roll"
+
+  # Topic 2: Library Selection (Charting Library)
+  - vars:
+      topic: "Best React charting library for a dashboard application. Stack uses Tailwind CSS and Radix UI. Needs line charts, bar charts, donut charts, and dark theme support."
+    assert:
+      - type: llm-rubric
+        value: |
+          Evaluate this technical research document across these dimensions:
+
+          1. ACCURACY (0.0-0.25): Are library versions current? Are API examples correct?
+             0.25 = all claims verified and current
+             0.15 = mostly verified, minor gaps
+             0.05 = outdated or unverified claims
+
+          2. ACTIONABILITY (0.0-0.25): Does it prescribe a clear choice?
+             0.25 = clear "use X because Y" with justification
+             0.15 = recommendation present but hedged
+             0.05 = exploratory "consider X or Y"
+
+          3. SOURCE QUALITY (0.0-0.25): Are sources authoritative with confidence levels?
+             0.25 = official docs cited with HIGH/MEDIUM/LOW confidence
+             0.15 = some sources, confidence unclear
+             0.05 = no sources or low-quality
+
+          4. PITFALLS (0.0-0.25): Are specific pitfalls documented?
+             0.25 = 2+ specific pitfalls with prevention strategies
+             0.15 = 1-2 somewhat specific pitfalls
+             0.05 = generic or no pitfalls
+
+          Output a score from 0.0 to 1.0.
+        threshold: 0.7
+      - type: similar
+        value: file://golden-references/charting-library.md
+        threshold: 0.75
+      - type: contains
+        value: "Don't Hand-Roll"
+
+  # Topic 3: API Integration (Stripe)
+  - vars:
+      topic: "How to integrate Stripe payment processing into an Express.js application. Must handle checkout sessions, webhook verification, subscription management, and failed payments."
+    assert:
+      - type: llm-rubric
+        value: |
+          Evaluate this technical research document across these dimensions:
+
+          1. ACCURACY (0.0-0.25): Are library versions current? Are API examples correct?
+             0.25 = all claims verified and current
+             0.15 = mostly verified, minor gaps
+             0.05 = outdated or unverified claims
+
+          2. ACTIONABILITY (0.0-0.25): Does it prescribe a clear choice?
+             0.25 = clear "use X because Y" with justification
+             0.15 = recommendation present but hedged
+             0.05 = exploratory "consider X or Y"
+
+          3. SOURCE QUALITY (0.0-0.25): Are sources authoritative with confidence levels?
+             0.25 = official docs cited with HIGH/MEDIUM/LOW confidence
+             0.15 = some sources, confidence unclear
+             0.05 = no sources or low-quality
+
+          4. PITFALLS (0.0-0.25): Are specific pitfalls documented?
+             0.25 = 2+ specific pitfalls with prevention strategies
+             0.15 = 1-2 somewhat specific pitfalls
+             0.05 = generic or no pitfalls
+
+          Output a score from 0.0 to 1.0.
+        threshold: 0.7
+      - type: similar
+        value: file://golden-references/stripe-integration.md
+        threshold: 0.75
+      - type: contains
+        value: "webhook"
+      - type: contains
+        value: "Don't Hand-Roll"
+
+  # Topic 4: Tooling Comparison (Vite vs Webpack)
+  - vars:
+      topic: "Whether to use Vite or Webpack for a production React application in 2026. App has TypeScript, Tailwind CSS, needs code-splitting and lazy loading."
+    assert:
+      - type: llm-rubric
+        value: |
+          Evaluate this technical research document across these dimensions:
+
+          1. ACCURACY (0.0-0.25): Are library versions current? Are API examples correct?
+             0.25 = all claims verified and current
+             0.15 = mostly verified, minor gaps
+             0.05 = outdated or unverified claims
+
+          2. ACTIONABILITY (0.0-0.25): Does it prescribe a clear choice?
+             0.25 = clear "use X because Y" with justification
+             0.15 = recommendation present but hedged
+             0.05 = exploratory "consider X or Y"
+
+          3. SOURCE QUALITY (0.0-0.25): Are sources authoritative with confidence levels?
+             0.25 = official docs cited with HIGH/MEDIUM/LOW confidence
+             0.15 = some sources, confidence unclear
+             0.05 = no sources or low-quality
+
+          4. PITFALLS (0.0-0.25): Are specific pitfalls documented?
+             0.25 = 2+ specific pitfalls with prevention strategies
+             0.15 = 1-2 somewhat specific pitfalls
+             0.05 = generic or no pitfalls
+
+          Output a score from 0.0 to 1.0.
+        threshold: 0.7
+      - type: similar
+        value: file://golden-references/vite-vs-webpack.md
+        threshold: 0.75
+      - type: llm-rubric
+        value: |
+          Does the research make a clear prescriptive choice between the tools
+          (not "both are valid")? Score 1.0 if clear choice, 0.0 if no choice.
+        threshold: 0.8
+
+  # Topic 5: Migration Guide (Express to Fastify)
+  - vars:
+      topic: "How to migrate an existing Express.js REST API to Fastify. The API has 50+ routes, middleware for auth and logging, MongoDB with Mongoose, and WebSocket support."
+    assert:
+      - type: llm-rubric
+        value: |
+          Evaluate this technical research document across these dimensions:
+
+          1. ACCURACY (0.0-0.25): Are library versions current? Are API examples correct?
+             0.25 = all claims verified and current
+             0.15 = mostly verified, minor gaps
+             0.05 = outdated or unverified claims
+
+          2. ACTIONABILITY (0.0-0.25): Does it prescribe a clear choice?
+             0.25 = clear "use X because Y" with justification
+             0.15 = recommendation present but hedged
+             0.05 = exploratory "consider X or Y"
+
+          3. SOURCE QUALITY (0.0-0.25): Are sources authoritative with confidence levels?
+             0.25 = official docs cited with HIGH/MEDIUM/LOW confidence
+             0.15 = some sources, confidence unclear
+             0.05 = no sources or low-quality
+
+          4. PITFALLS (0.0-0.25): Are specific pitfalls documented?
+             0.25 = 2+ specific pitfalls with prevention strategies
+             0.15 = 1-2 somewhat specific pitfalls
+             0.05 = generic or no pitfalls
+
+          Output a score from 0.0 to 1.0.
+        threshold: 0.7
+      - type: similar
+        value: file://golden-references/express-to-fastify.md
+        threshold: 0.75
+      - type: contains
+        value: "migration"
+      - type: contains
+        value: "Don't Hand-Roll"

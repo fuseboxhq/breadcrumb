@@ -14,7 +14,13 @@
     "daemon": "tsx server/daemon.ts",
     "daemon:start": "tsx server/daemon.ts start",
     "daemon:stop": "tsx server/daemon.ts stop",
-    "daemon:status": "tsx server/daemon.ts status"
+    "daemon:status": "tsx server/daemon.ts status",
+    "eval": "docker compose -f evals/docker-compose.yml run --rm eval",
+    "eval:run": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/promptfooconfig.yaml --no-progress-bar --output evals/results/eval-$(date +%Y%m%d-%H%M%S).json",
+    "eval:baseline": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/promptfooconfig.yaml --no-progress-bar --output evals/results/baseline.json",
+    "eval:compare": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/promptfooconfig.yaml --no-progress-bar --output evals/results/latest.json",
+    "eval:view": "docker compose -f evals/docker-compose.yml run --rm --service-ports viewer",
+    "eval:build": "docker compose -f evals/docker-compose.yml build"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
@@ -60,11 +66,15 @@
     "drizzle-kit": "^0.31.8",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
+    "promptfoo": "^0.120.23",
     "tailwindcss": "^3.4.15",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^6.0.1",
     "vitest": "^2.1.6"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "packageManager": "pnpm@10.24.0",
   "pnpm": {

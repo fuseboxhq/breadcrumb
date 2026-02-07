@@ -6,6 +6,7 @@
 ## Active Work
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
+PHASE-07: Evals for Research (in_progress) - 6 tasks
 
 ## Completed Phases
 

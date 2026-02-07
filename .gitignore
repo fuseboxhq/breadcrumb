@@ -13,3 +13,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Eval results (generated, not committed)
+evals/results/*.json
+evals/.cache/

@@ -1,0 +1,149 @@
+# Golden Reference Version: 1.0
+# Created: 2026-02-07
+# Last Validated: 2026-02-07
+# Expires: 2026-08-07
+
+# Research: Stripe Payment Integration for Express.js
+
+**Task ID:** eval-golden-003
+**Date:** 2026-02-07
+**Domain:** Payment processing, API integration
+**Overall Confidence:** HIGH
+
+## TL;DR
+
+Use the **Stripe Node.js SDK** (`stripe` package) with Express.js for payment processing. Build around Checkout Sessions for the payment flow and Webhook endpoints for async event handling. Never process payment state changes synchronously — always rely on webhooks as the source of truth for payment status.
+
+## Recommended Stack
+
+| Library | Version | Purpose | Confidence |
+|---------|---------|---------|------------|
+| stripe | 17.x | Official Stripe SDK for Node.js | HIGH |
+| express | 4.x | HTTP server (already in stack) | HIGH |
+
+**Install:**
+```bash
+npm install stripe
+```
+
+## Key Patterns
+
+### Checkout Session Creation
+**Use when:** Starting a new payment flow
+
+```typescript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+app.post('/api/checkout', async (req, res) => {
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    line_items: [{ price: req.body.priceId, quantity: 1 }],
+    success_url: `${req.headers.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${req.headers.origin}/cancel`,
+  }, {
+    idempotencyKey: req.body.idempotencyKey,
+  });
+
+  res.json({ url: session.url });
+});
+```
+
+### Webhook Verification and Handling
+**Use when:** Receiving async payment events from Stripe
+
+```typescript
+app.post('/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const sig = req.headers['stripe-signature']!;
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutComplete(event.data.object);
+        break;
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionCanceled(event.data.object);
+        break;
+    }
+
+    res.json({ received: true });
+  }
+);
+```
+
+### Failed Payment Handling
+**Use when:** Subscription payment fails
+
+```typescript
+async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const customerId = invoice.customer as string;
+  const attemptCount = invoice.attempt_count;
+
+  if (attemptCount >= 3) {
+    await downgradeUser(customerId);
+    await sendFinalWarningEmail(customerId);
+  } else {
+    await sendPaymentFailedEmail(customerId, attemptCount);
+  }
+}
+```
+
+## Don't Hand-Roll
+
+| Problem | Use Instead | Why |
+|---------|-------------|-----|
+| Webhook signature verification | `stripe.webhooks.constructEvent()` | Timing-safe comparison, handles signature rotation |
+| Retry logic for failed payments | Stripe's Smart Retries | Built-in retry schedule with configurable rules |
+| PCI-compliant card collection | Stripe Checkout or Elements | Keeps card data off your servers entirely |
+| Subscription billing logic | Stripe Billing | Handles proration, trials, metered billing |
+
+## Pitfalls
+
+### Raw Body Required for Webhooks
+**What happens:** Webhook signature verification fails with "No signatures found matching the expected signature" because Express's JSON middleware parses the body before Stripe can verify it.
+**Avoid by:** Use `express.raw({ type: 'application/json' })` on the webhook route. Mount it BEFORE `express.json()` middleware or use route-specific middleware.
+
+### Missing Idempotency Keys
+**What happens:** Network retries create duplicate charges. Customer gets charged twice for the same order.
+**Avoid by:** Always pass `idempotencyKey` when creating charges, sessions, or subscriptions. Use a client-generated UUID tied to the user action.
+
+### Trusting Client-Side Payment Status
+**What happens:** User manipulates the success redirect URL to claim payment succeeded when it didn't.
+**Avoid by:** Never trust the redirect. Always verify payment status server-side via the Checkout Session ID or wait for the webhook event.
+
+### Not Handling Webhook Replay
+**What happens:** Stripe retries webhook delivery if your endpoint was temporarily down. Your handler processes the same event twice, duplicating side effects.
+**Avoid by:** Store processed event IDs and check for duplicates before processing. Stripe events have unique `id` fields.
+
+## Open Questions
+
+None.
+
+## Sources
+
+**HIGH confidence:**
+- [Stripe Node.js SDK Documentation](https://stripe.com/docs/api?lang=node)
+- [Stripe Checkout Quickstart](https://stripe.com/docs/checkout/quickstart)
+- [Stripe Webhooks Documentation](https://stripe.com/docs/webhooks)
+- [Stripe Idempotent Requests](https://stripe.com/docs/api/idempotent_requests)
+
+**MEDIUM confidence:**
+- [Stripe Subscription Lifecycle](https://stripe.com/docs/billing/subscriptions/overview)
+- [Stripe Testing Guide](https://stripe.com/docs/testing)
