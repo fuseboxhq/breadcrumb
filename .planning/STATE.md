@@ -6,7 +6,7 @@
 ## Active Work
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
-PHASE-06: Analytics & Telemetry (not_started)
+PHASE-06: Analytics & Telemetry (in_progress) - 7 tasks
 
 ## Completed Phases
 
