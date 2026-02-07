@@ -10,6 +10,7 @@ import projectRoutes from './routes/projects.js';
 import watchRoutes, { broadcastUpdate } from './routes/watch.js';
 import { watchProject, unwatchAll } from './services/fileWatcher.js';
 import { getRegisteredProjects } from './services/registryService.js';
+import { sendHeartbeat } from './services/telemetry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -119,6 +120,7 @@ function startWatchers(): void {
 }
 
 startWatchers();
+sendHeartbeat();
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
