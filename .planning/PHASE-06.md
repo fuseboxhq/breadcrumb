@@ -59,7 +59,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-4fp.1 | Set up Vercel project + Neon Postgres schema | done | Medium | - |
 | breadcrumb-4fp.2 | Build install script proxy API route | done | Medium | .1 |
 | breadcrumb-4fp.3 | Add daemon heartbeat telemetry | done | Medium | .1 |
-| breadcrumb-4fp.4 | Add command usage telemetry | open | Medium | .3 |
+| breadcrumb-4fp.4 | Add command usage telemetry | done | Medium | .3 |
 | breadcrumb-4fp.5 | Build analytics query API routes | open | Medium | .1 |
 | breadcrumb-4fp.6 | Build analytics dashboard UI | open | High | .5 |
 | breadcrumb-4fp.7 | Add opt-out mechanism + documentation | open | Low | .3 |

@@ -59,6 +59,76 @@ function getVersion(): string {
   return '0.0.0';
 }
 
+// --- Command usage tracking ---
+
+const commandBuffer = new Map<string, { count: number; firstSeen: string }>();
+let flushTimer: ReturnType<typeof setInterval> | null = null;
+
+const FLUSH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Track a command execution. Buffers in memory and flushes periodically.
+ */
+export function trackCommand(commandName: string): void {
+  if (!isTelemetryEnabled()) return;
+
+  const existing = commandBuffer.get(commandName);
+  if (existing) {
+    existing.count++;
+  } else {
+    commandBuffer.set(commandName, { count: 1, firstSeen: new Date().toISOString() });
+  }
+}
+
+/**
+ * Flush buffered command events to the telemetry endpoint.
+ */
+export function flushCommands(): void {
+  if (!isTelemetryEnabled() || commandBuffer.size === 0) return;
+
+  const commands = Array.from(commandBuffer.entries()).map(([name, data]) => ({
+    name,
+    count: data.count,
+    timestamp: data.firstSeen,
+  }));
+
+  commandBuffer.clear();
+
+  const payload = {
+    machineId: getMachineId(),
+    commands,
+  };
+
+  fetch(`${TELEMETRY_URL}/api/telemetry/commands`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(5000),
+  }).catch(() => {
+    // Silently ignore
+  });
+}
+
+/**
+ * Start periodic command flush timer.
+ */
+export function startCommandTracking(): void {
+  if (!isTelemetryEnabled()) return;
+  flushTimer = setInterval(flushCommands, FLUSH_INTERVAL_MS);
+  flushTimer.unref(); // Don't keep the process alive
+}
+
+/**
+ * Stop tracking and flush remaining events.
+ */
+export function stopCommandTracking(): void {
+  if (flushTimer) {
+    clearInterval(flushTimer);
+    flushTimer = null;
+  }
+  flushCommands();
+}
+
 /**
  * Send a heartbeat ping on daemon startup.
  * Fire-and-forget — never blocks the daemon.

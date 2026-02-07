@@ -10,7 +10,7 @@ import projectRoutes from './routes/projects.js';
 import watchRoutes, { broadcastUpdate } from './routes/watch.js';
 import { watchProject, unwatchAll } from './services/fileWatcher.js';
 import { getRegisteredProjects } from './services/registryService.js';
-import { sendHeartbeat } from './services/telemetry.js';
+import { sendHeartbeat, startCommandTracking, stopCommandTracking, trackCommand } from './services/telemetry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -40,6 +40,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 app.use(cors());
 app.use(express.json());
+
+// Telemetry: track command usage from X-BC-Command header
+app.use((req, _res, next) => {
+  const cmd = req.headers['x-bc-command'] as string;
+  if (cmd) trackCommand(cmd);
+  next();
+});
 
 // API routes
 app.use('/api', phaseRoutes);
@@ -98,8 +105,8 @@ function shutdown(signal: string): void {
 }
 
 function cleanup(): void {
+  stopCommandTracking();
   unwatchAll();
-  // PID file cleanup will be added with daemon lifecycle task
 }
 
 // Start file watchers for all registered projects
@@ -121,6 +128,7 @@ function startWatchers(): void {
 
 startWatchers();
 sendHeartbeat();
+startCommandTracking();
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
