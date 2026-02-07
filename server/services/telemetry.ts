@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const TELEMETRY_URL = 'https://breadcrumb-six.vercel.app';
+const TELEMETRY_URL = 'https://breadcrumb-beta.vercel.app';
 const BREADCRUMB_DIR = join(homedir(), '.breadcrumb');
 const CONFIG_PATH = join(BREADCRUMB_DIR, 'config.json');
 

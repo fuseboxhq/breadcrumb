@@ -1,4 +1,4 @@
-const ANALYTICS_BASE = 'https://breadcrumb-six.vercel.app/api/analytics';
+const ANALYTICS_BASE = 'https://breadcrumb-beta.vercel.app/api/analytics';
 
 export interface AnalyticsSummary {
   totalInstalls: number;
