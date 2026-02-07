@@ -401,6 +401,12 @@ Write-Host "  /bc:quick <description>    Quick task execution without planning"
 Write-Host "  /bc:bug-fix <description>  Investigate and fix a bug with diagnosis"
 Write-Host "  /bc:view                   Open web dashboard in browser"
 Write-Host ""
+Write-Host "Telemetry:" -ForegroundColor White
+Write-Host "  Breadcrumb collects anonymous usage stats (install count, active"
+Write-Host "  users, command popularity). No personal data is collected."
+Write-Host "  To opt out:  Set-Content -Path `"$BreadcrumbDir\config.json`" -Value '{`"telemetry`":false}'"
+Write-Host "  Or set env:  `$env:BREADCRUMB_TELEMETRY = `"false`""
+Write-Host ""
 Write-Host "To get started in a new project:" -ForegroundColor White
 Write-Host "  1. cd your-project"
 Write-Host "  2. Open Claude Code"
