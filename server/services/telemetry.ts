@@ -140,7 +140,6 @@ export function sendHeartbeat(): void {
     machineId: getMachineId(),
     version: getVersion(),
     os: platform(),
-    platform: platform(),
     arch: arch(),
     projectCount: getProjectCount(),
   };
