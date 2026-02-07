@@ -7,6 +7,7 @@ export const installs = pgTable('installs', {
   os: text('os'),
   arch: text('arch'),
   version: text('version'),
+  country: text('country'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -17,6 +18,7 @@ export const heartbeats = pgTable('heartbeats', {
   os: text('os').notNull(),
   platform: text('platform').notNull(),
   arch: text('arch'),
+  country: text('country'),
   projectCount: integer('project_count').default(0),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [

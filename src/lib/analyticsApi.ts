@@ -78,6 +78,16 @@ export interface VersionsData {
   adoption: VersionAdoption[];
 }
 
+export interface CountryEntry {
+  country: string;
+  count: number;
+}
+
+export interface GeoData {
+  installsByCountry: CountryEntry[];
+  usersByCountry: CountryEntry[];
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Analytics API error: ${res.status}`);
@@ -106,4 +116,8 @@ export async function fetchOsBreakdown(days = 30): Promise<OsData> {
 
 export async function fetchVersions(days = 30): Promise<VersionsData> {
   return fetchJson(`${ANALYTICS_BASE}/versions?days=${days}`);
+}
+
+export async function fetchGeo(days = 30): Promise<GeoData> {
+  return fetchJson(`${ANALYTICS_BASE}/geo?days=${days}`);
 }

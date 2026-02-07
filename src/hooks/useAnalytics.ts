@@ -6,6 +6,7 @@ import {
   fetchCommands,
   fetchOsBreakdown,
   fetchVersions,
+  fetchGeo,
 } from '../lib/analyticsApi';
 
 export function useAnalyticsSummary() {
@@ -57,6 +58,15 @@ export function useVersions(days = 30) {
   return useQuery({
     queryKey: ['analytics', 'versions', days],
     queryFn: () => fetchVersions(days),
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+export function useGeo(days = 30) {
+  return useQuery({
+    queryKey: ['analytics', 'geo', days],
+    queryFn: () => fetchGeo(days),
     staleTime: 60_000,
     retry: 1,
   });

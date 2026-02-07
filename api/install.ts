@@ -44,10 +44,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Extract version from query param or default
     const version = (req.query.v as string) || 'unknown';
+    const country = (req.headers['x-vercel-ip-country'] as string) || 'unknown';
 
     await sql`
-      INSERT INTO installs (ip_hash, user_agent, os, arch, version, created_at)
-      VALUES (${hashIp(ip)}, ${ua.slice(0, 256)}, ${os}, ${arch}, ${version}, NOW())
+      INSERT INTO installs (ip_hash, user_agent, os, arch, version, country, created_at)
+      VALUES (${hashIp(ip)}, ${ua.slice(0, 256)}, ${os}, ${arch}, ${version}, ${country}, NOW())
     `;
   } catch (e) {
     // Don't block the install if logging fails

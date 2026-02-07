@@ -8,6 +8,7 @@ import {
   useCommands,
   useOsBreakdown,
   useVersions,
+  useGeo,
 } from '../../hooks/useAnalytics';
 import { KpiCards } from './KpiCards';
 import { InstallsChart } from './InstallsChart';
@@ -15,6 +16,7 @@ import { UsersChart } from './UsersChart';
 import { CommandsChart } from './CommandsChart';
 import { OsChart } from './OsChart';
 import { VersionsChart } from './VersionsChart';
+import { GeoChart } from './GeoChart';
 
 interface AnalyticsDashboardProps {
   onBack: () => void;
@@ -36,6 +38,7 @@ export function AnalyticsDashboard({ onBack }: AnalyticsDashboardProps) {
   const { data: commands, isLoading: commandsLoading } = useCommands(days);
   const { data: os, isLoading: osLoading } = useOsBreakdown(days);
   const { data: versions, isLoading: versionsLoading } = useVersions(days);
+  const { data: geo, isLoading: geoLoading } = useGeo(days);
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['analytics'] });
@@ -93,10 +96,9 @@ export function AnalyticsDashboard({ onBack }: AnalyticsDashboardProps) {
           <UsersChart data={users} isLoading={usersLoading} />
           <CommandsChart data={commands} isLoading={commandsLoading} />
           <OsChart data={os} isLoading={osLoading} />
+          <GeoChart data={geo} isLoading={geoLoading} />
+          <VersionsChart data={versions} isLoading={versionsLoading} />
         </div>
-
-        {/* Version adoption — full width */}
-        <VersionsChart data={versions} isLoading={versionsLoading} />
       </div>
     </div>
   );

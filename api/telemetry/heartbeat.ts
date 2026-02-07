@@ -14,10 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const sql = neon(process.env.DATABASE_URL!);
+    const country = (req.headers['x-vercel-ip-country'] as string) || 'unknown';
 
     await sql`
-      INSERT INTO heartbeats (machine_id, version, os, platform, arch, project_count, created_at)
-      VALUES (${machineId}, ${version}, ${os || 'unknown'}, ${platform || 'unknown'}, ${arch || 'unknown'}, ${projectCount || 0}, NOW())
+      INSERT INTO heartbeats (machine_id, version, os, platform, arch, country, project_count, created_at)
+      VALUES (${machineId}, ${version}, ${os || 'unknown'}, ${platform || 'unknown'}, ${arch || 'unknown'}, ${country}, ${projectCount || 0}, NOW())
     `;
 
     return res.status(200).json({ ok: true });
