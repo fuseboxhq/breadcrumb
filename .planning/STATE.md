@@ -1,15 +1,15 @@
 # Project State
 
-**Current Phase:** PHASE-06
+**Current Phase:** PHASE-05
 **Last Updated:** 2026-02-07
 
 ## Active Work
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
-PHASE-06: Analytics & Telemetry (in_progress) - 7 tasks
 
 ## Completed Phases
 
+PHASE-06: Analytics & Telemetry (complete) - 7/7 tasks done
 PHASE-04: Phase-Scoped Research Workflow (complete) - 7/7 tasks done
 PHASE-03: Universal Quick Task Tracking (complete) - 7/7 tasks done
 PHASE-02: Dashboard UI/UX overhaul (complete) - 7/7 tasks done

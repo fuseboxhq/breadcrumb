@@ -1,6 +1,6 @@
 # Phase 06: Analytics & Telemetry
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-4fp
 **Created:** 2026-02-07
 
@@ -60,9 +60,9 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-4fp.2 | Build install script proxy API route | done | Medium | .1 |
 | breadcrumb-4fp.3 | Add daemon heartbeat telemetry | done | Medium | .1 |
 | breadcrumb-4fp.4 | Add command usage telemetry | done | Medium | .3 |
-| breadcrumb-4fp.5 | Build analytics query API routes | open | Medium | .1 |
-| breadcrumb-4fp.6 | Build analytics dashboard UI | open | High | .5 |
-| breadcrumb-4fp.7 | Add opt-out mechanism + documentation | open | Low | .3 |
+| breadcrumb-4fp.5 | Build analytics query API routes | done | Medium | .1 |
+| breadcrumb-4fp.6 | Build analytics dashboard UI | done | High | .5 |
+| breadcrumb-4fp.7 | Add opt-out mechanism + documentation | done | Low | .3 |
 
 ## Technical Decisions
 
