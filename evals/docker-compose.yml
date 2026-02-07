@@ -3,6 +3,9 @@ services:
     build:
       context: ..
       dockerfile: evals/Dockerfile
+    env_file:
+      - path: ../.env
+        required: false
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - PROMPTFOO_CACHE_PATH=/app/evals/.cache

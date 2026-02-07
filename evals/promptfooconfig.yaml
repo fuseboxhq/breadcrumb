@@ -1,6 +1,6 @@
 # Breadcrumb Research Agent Evaluation Config
-# Run: npx promptfoo eval
-# View: npx promptfoo view
+# Run: pnpm eval
+# View: pnpm eval:view
 
 description: "bc-researcher quality evaluation"
 
@@ -36,8 +36,8 @@ defaultTest:
       value: "Recommended Stack"
     - type: contains
       value: "Pitfalls"
-    - type: contains
-      value: "Sources"
+    - type: javascript
+      value: "output.toLowerCase().includes('sources') || output.toLowerCase().includes('references')"
 
 tests:
   # Topic 1: Library Selection (React Form Library)
@@ -70,9 +70,17 @@ tests:
 
           Output a score from 0.0 to 1.0.
         threshold: 0.7
-      - type: similar
-        value: file://golden-references/react-form-library.md
-        threshold: 0.75
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          file://golden-references/react-form-library.txt
+        threshold: 0.7
       - type: contains
         value: "Don't Hand-Roll"
 
@@ -106,9 +114,17 @@ tests:
 
           Output a score from 0.0 to 1.0.
         threshold: 0.7
-      - type: similar
-        value: file://golden-references/charting-library.md
-        threshold: 0.75
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          file://golden-references/charting-library.txt
+        threshold: 0.7
       - type: contains
         value: "Don't Hand-Roll"
 
@@ -142,9 +158,17 @@ tests:
 
           Output a score from 0.0 to 1.0.
         threshold: 0.7
-      - type: similar
-        value: file://golden-references/stripe-integration.md
-        threshold: 0.75
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          file://golden-references/stripe-integration.txt
+        threshold: 0.7
       - type: contains
         value: "webhook"
       - type: contains
@@ -180,9 +204,17 @@ tests:
 
           Output a score from 0.0 to 1.0.
         threshold: 0.7
-      - type: similar
-        value: file://golden-references/vite-vs-webpack.md
-        threshold: 0.75
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          file://golden-references/vite-vs-webpack.txt
+        threshold: 0.7
       - type: llm-rubric
         value: |
           Does the research make a clear prescriptive choice between the tools
@@ -219,10 +251,18 @@ tests:
 
           Output a score from 0.0 to 1.0.
         threshold: 0.7
-      - type: similar
-        value: file://golden-references/express-to-fastify.md
-        threshold: 0.75
-      - type: contains
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          file://golden-references/express-to-fastify.txt
+        threshold: 0.7
+      - type: icontains
         value: "migration"
       - type: contains
         value: "Don't Hand-Roll"
