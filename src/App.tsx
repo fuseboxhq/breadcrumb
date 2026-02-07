@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { PhaseDetailView } from './components/PhaseDetail/PhaseDetailView';
 import { ProjectDashboard } from './components/Dashboard/ProjectDashboard';
+import { AnalyticsDashboard } from './components/Analytics/AnalyticsDashboard';
 import { useProjects } from './hooks/useProjects';
 import { usePhases, usePhase } from './hooks/usePhases';
 import { useIssues } from './hooks/useIssues';
@@ -16,6 +17,7 @@ export function App() {
   const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(null);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [contentTab, setContentTab] = useState<ContentTab>('plan');
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const { data: projects = [] } = useProjects();
   const { data: phases = [], isLoading: isPhasesLoading } = usePhases(selectedProjectPath);
@@ -64,10 +66,17 @@ export function App() {
   // Back to dashboard (deselect phase)
   const handleBackToDashboard = () => {
     setSelectedPhaseId(null);
+    setShowAnalytics(false);
     setContentTab('plan');
   };
 
-  const viewKey = selectedPhaseId && phase ? `phase-${selectedPhaseId}` : 'dashboard';
+  // Open analytics view
+  const handleShowAnalytics = () => {
+    setSelectedPhaseId(null);
+    setShowAnalytics(true);
+  };
+
+  const viewKey = showAnalytics ? 'analytics' : selectedPhaseId && phase ? `phase-${selectedPhaseId}` : 'dashboard';
 
   return (
     <div className="flex h-screen bg-surface text-text-primary">
@@ -80,13 +89,25 @@ export function App() {
         selectedPhaseId={selectedPhaseId}
         onSelectPhase={handleSelectPhase}
         onBackToDashboard={handleBackToDashboard}
+        onShowAnalytics={handleShowAnalytics}
         progressByEpic={progressByEpic}
         quickTasks={quickTasks}
         isQuickTasksLoading={false}
       />
       <main className="flex-1 overflow-hidden relative">
         <AnimatePresence mode="wait">
-          {selectedPhaseId && phase ? (
+          {showAnalytics ? (
+            <motion.div
+              key={viewKey}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="h-full"
+            >
+              <AnalyticsDashboard onBack={handleBackToDashboard} />
+            </motion.div>
+          ) : selectedPhaseId && phase ? (
             <motion.div
               key={viewKey}
               initial={{ opacity: 0, y: 8 }}

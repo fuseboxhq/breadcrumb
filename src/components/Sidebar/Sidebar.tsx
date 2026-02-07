@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import clsx from 'clsx';
-import { PanelLeftClose, PanelLeft, LayoutDashboard, CheckCircle2 } from 'lucide-react';
+import { PanelLeftClose, PanelLeft, LayoutDashboard, CheckCircle2, BarChart3 } from 'lucide-react';
 import { ProjectSwitcher } from './ProjectSwitcher';
 import { PhaseList } from './PhaseList';
 import { QuickTaskList } from './QuickTaskList';
@@ -17,6 +17,7 @@ interface SidebarProps {
   selectedPhaseId: string | null;
   onSelectPhase: (phaseId: string) => void;
   onBackToDashboard: () => void;
+  onShowAnalytics: () => void;
   progressByEpic: Map<string, PhaseProgress>;
   quickTasks: BeadsIssue[];
   isQuickTasksLoading: boolean;
@@ -31,6 +32,7 @@ export function Sidebar({
   selectedPhaseId,
   onSelectPhase,
   onBackToDashboard,
+  onShowAnalytics,
   progressByEpic,
   quickTasks,
   isQuickTasksLoading,
@@ -86,7 +88,7 @@ export function Sidebar({
         collapsed ? 'flex-col justify-center gap-0.5 px-2' : 'justify-between px-3',
       )}>
         {collapsed ? (
-          <>
+          <div className="flex flex-col gap-0.5">
             <Tooltip content="Dashboard" side="right">
               <button
                 onClick={onBackToDashboard}
@@ -95,15 +97,33 @@ export function Sidebar({
                 <LayoutDashboard className="h-4 w-4" />
               </button>
             </Tooltip>
-          </>
+            <Tooltip content="Analytics" side="right">
+              <button
+                onClick={onShowAnalytics}
+                className="p-1.5 rounded-md text-text-tertiary hover:text-accent hover:bg-surface-hover transition-colors"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </button>
+            </Tooltip>
+          </div>
         ) : (
-          <button
-            onClick={onBackToDashboard}
-            className="flex items-center gap-2 text-sm font-semibold text-text-primary hover:text-accent transition-colors"
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            Breadcrumb
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBackToDashboard}
+              className="flex items-center gap-2 text-sm font-semibold text-text-primary hover:text-accent transition-colors"
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Breadcrumb
+            </button>
+            <Tooltip content="Analytics" side="bottom">
+              <button
+                onClick={onShowAnalytics}
+                className="p-1 rounded-md text-text-tertiary hover:text-accent hover:bg-surface-hover transition-colors"
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+          </div>
         )}
         {!collapsed && (
           <Tooltip content="Collapse sidebar" side="right">
