@@ -43,12 +43,12 @@ curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/i
 
 **For Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/update.ps1 | iex
+irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex
 ```
 
 Note: On Windows, use the Bash tool but execute PowerShell commands:
 ```bash
-powershell -Command "irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/update.ps1 | iex"
+powershell -Command "irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex"
 ```
 
 ### 5. Report Success
@@ -80,5 +80,5 @@ curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/i
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/update.ps1 | iex
+irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex
 ```
