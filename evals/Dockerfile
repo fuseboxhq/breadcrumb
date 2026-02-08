@@ -11,10 +11,11 @@ COPY package.json pnpm-lock.yaml ./
 # Install only dev dependencies (promptfoo lives there)
 RUN pnpm install --frozen-lockfile
 
-# Copy eval configs and golden references
+# Copy eval configs, golden references, and agent definitions
 COPY evals/ ./evals/
+COPY agents/ ./agents/
 
 WORKDIR /app
 
 ENTRYPOINT ["pnpm", "exec", "promptfoo"]
-CMD ["eval", "--config", "evals/promptfooconfig.yaml", "--no-progress-bar"]
+CMD ["eval", "--config", "evals/suites/bc-researcher/promptfooconfig.yaml", "--no-progress-bar"]

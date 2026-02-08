@@ -1,33 +1,22 @@
 # Breadcrumb Research Agent Evaluation Config
+# Evals the REAL bc-researcher agent (agents/bc-researcher.md)
+#
 # Run: pnpm eval
 # View: pnpm eval:view
 
-description: "bc-researcher quality evaluation"
+description: "bc-researcher agent quality evaluation"
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-5-20250929
+  - id: file://provider.ts
     config:
-      temperature: 0
-      max_tokens: 4000
+      model: claude-sonnet-4-5-20250929
 
 prompts:
-  - id: research-prompt
+  - id: research-topic
     raw: |
-      You are a technical research agent. Research the following topic and produce
-      a structured research document.
+      Research the following topic and produce a structured research document.
 
       Topic: {{topic}}
-
-      Your output MUST include these sections:
-      - TL;DR (2-3 prescriptive sentences)
-      - Recommended Stack (table: Library | Version | Purpose | Confidence)
-      - Key Patterns (with code examples)
-      - Don't Hand-Roll (table: Problem | Use Instead | Why)
-      - Pitfalls (with "What happens" and "Avoid by")
-      - Sources (with HIGH/MEDIUM/LOW confidence levels)
-
-      Be prescriptive: say "Use X because Y", not "Consider X or Y".
-      Verify claims with current sources. Flag uncertainty honestly.
 
 defaultTest:
   assert:

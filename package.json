@@ -16,9 +16,9 @@
     "daemon:stop": "tsx server/daemon.ts stop",
     "daemon:status": "tsx server/daemon.ts status",
     "eval": "docker compose -f evals/docker-compose.yml run --rm eval",
-    "eval:run": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/promptfooconfig.yaml --no-progress-bar --output evals/results/eval-$(date +%Y%m%d-%H%M%S).json",
-    "eval:baseline": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/promptfooconfig.yaml --no-progress-bar --output evals/results/baseline.json",
-    "eval:compare": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/promptfooconfig.yaml --no-progress-bar --output evals/results/latest.json",
+    "eval:run": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/suites/bc-researcher/promptfooconfig.yaml --no-progress-bar --output evals/results/eval-$(date +%Y%m%d-%H%M%S).json",
+    "eval:baseline": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/suites/bc-researcher/promptfooconfig.yaml --no-progress-bar --output evals/results/baseline.json",
+    "eval:compare": "docker compose -f evals/docker-compose.yml run --rm eval eval --config evals/suites/bc-researcher/promptfooconfig.yaml --no-progress-bar --output evals/results/latest.json",
     "eval:view": "docker compose -f evals/docker-compose.yml run --rm --service-ports viewer",
     "eval:build": "docker compose -f evals/docker-compose.yml build"
   },
@@ -47,6 +47,7 @@
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.0.1",
