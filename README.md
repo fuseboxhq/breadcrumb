@@ -254,6 +254,8 @@ pnpm dev
 
 This starts both the Express API server (port 9998) and Vite dev server (port 9999) with hot reload.
 
+> **Note:** Running the eval suite (`evals/`) requires Node.js 22+. Everything else works with Node.js 18+.
+
 ## Updating
 
 ```

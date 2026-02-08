@@ -13,7 +13,7 @@ services:
       - ./results:/app/evals/results
       - eval-cache:/app/evals/.cache
     # Default: run eval and output timestamped results
-    command: ["eval", "--config", "evals/promptfooconfig.yaml", "--no-progress-bar"]
+    command: ["eval", "--config", "evals/suites/bc-researcher/promptfooconfig.yaml", "--no-progress-bar"]
 
   viewer:
     build:

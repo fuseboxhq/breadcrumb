@@ -1,5 +1,8 @@
 # Research Quality Rubric for bc-researcher Agent
 #
+# CANONICAL rubric — promptfooconfig.yaml references this definition.
+# Edit here, not in the inline assertions.
+#
 # Scoring: 4 dimensions, 0.25 each, total 0.0-1.0
 # Passing threshold: 0.7
 # Judge model: Claude Sonnet, temperature: 0

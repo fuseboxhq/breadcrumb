@@ -146,7 +146,7 @@ async function runAgent(
       };
     }
 
-    // Handle tool use
+    // Handle tool use — continue the loop
     if (response.stop_reason === "tool_use") {
       // Add assistant message with tool use blocks
       messages.push({ role: "assistant", content: response.content });
@@ -168,7 +168,21 @@ async function runAgent(
       }
 
       messages.push({ role: "user", content: toolResults });
+      continue;
     }
+
+    // Unhandled stop_reason (e.g. "max_tokens") — return what we have
+    const textBlocks = response.content.filter(
+      (b): b is Anthropic.Messages.TextBlock => b.type === "text"
+    );
+    return {
+      output: textBlocks.map((b) => b.text).join("\n"),
+      tokenUsage: {
+        total: totalPromptTokens + totalCompletionTokens,
+        prompt: totalPromptTokens,
+        completion: totalCompletionTokens,
+      },
+    };
   }
 
   // If we hit max turns, return whatever we have

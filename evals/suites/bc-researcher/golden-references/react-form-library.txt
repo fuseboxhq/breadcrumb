@@ -73,6 +73,7 @@ export function LoginPage() {
 ### Multi-Step Wizard Form
 **Use when:** Forms that span multiple pages/steps with shared state.
 ```tsx
+import { useState } from 'react';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -145,6 +146,11 @@ export function InvoiceEditor() {
     defaultValues: { items: [{ description: '', quantity: 1, price: 0 }] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+
+  const onSubmit = async (data: InvoiceForm) => {
+    console.log('Submitting invoice:', data);
+    // await api.saveInvoice(data);
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

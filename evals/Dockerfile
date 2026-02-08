@@ -8,7 +8,7 @@ RUN corepack enable && corepack prepare pnpm@10.24.0 --activate
 # Copy package files for dependency install
 COPY package.json pnpm-lock.yaml ./
 
-# Install only dev dependencies (promptfoo lives there)
+# Install all dependencies (promptfoo is a devDependency)
 RUN pnpm install --frozen-lockfile
 
 # Copy eval configs, golden references, and agent definitions

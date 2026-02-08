@@ -68,7 +68,8 @@ app.post('/api/webhooks/stripe',
         process.env.STRIPE_WEBHOOK_SECRET!
       );
     } catch (err) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      return res.status(400).send(`Webhook Error: ${message}`);
     }
 
     switch (event.type) {
