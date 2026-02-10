@@ -1,0 +1,34 @@
+services:
+  eval:
+    build:
+      context: ..
+      dockerfile: evals/Dockerfile
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PROMPTFOO_CACHE_PATH=/app/evals/.cache
+    volumes:
+      - ./results:/app/evals/results
+      - eval-cache:/app/evals/.cache
+    # Default: run eval and output timestamped results
+    command: ["eval", "--config", "evals/suites/bc-researcher/promptfooconfig.yaml", "--no-progress-bar"]
+
+  viewer:
+    build:
+      context: ..
+      dockerfile: evals/Dockerfile
+    ports:
+      - "15500:15500"
+    environment:
+      - PROMPTFOO_CACHE_PATH=/app/evals/.cache
+    volumes:
+      - ./results:/app/evals/results
+      - eval-cache:/app/evals/.cache
+    command: ["view", "--port", "15500"]
+    profiles:
+      - viewer
+
+volumes:
+  eval-cache:

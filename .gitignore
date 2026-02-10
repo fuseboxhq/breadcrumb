@@ -13,3 +13,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Environment files
+.env
+.env.local
+
+# Eval results (generated, not committed)
+evals/results/*.json
+evals/.cache/

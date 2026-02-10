@@ -38,17 +38,17 @@ Display recent changes to the user before updating.
 
 **For Unix/macOS/Linux/WSL:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 **For Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/update.ps1 | iex
+irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex
 ```
 
 Note: On Windows, use the Bash tool but execute PowerShell commands:
 ```bash
-powershell -Command "irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/update.ps1 | iex"
+powershell -Command "irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex"
 ```
 
 ### 5. Report Success
@@ -75,10 +75,10 @@ You may need to restart Claude Code for command changes to take full effect.
 
 **macOS/Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/update.ps1 | iex
+irm https://raw.githubusercontent.com/fuseboxhq/breadcrumb/main/scripts/install.ps1 | iex
 ```

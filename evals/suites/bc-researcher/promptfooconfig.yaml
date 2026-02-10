@@ -1,0 +1,173 @@
+# Breadcrumb Research Agent Evaluation Config
+# Evals the REAL bc-researcher agent (agents/bc-researcher.md)
+#
+# Run: pnpm eval
+# View: pnpm eval:view
+
+description: "bc-researcher agent quality evaluation"
+
+providers:
+  - id: file://provider.ts
+    config:
+      model: claude-sonnet-4-5-20250929
+
+prompts:
+  - id: research-topic
+    raw: |
+      Research the following topic and produce a structured research document.
+
+      Topic: {{topic}}
+
+defaultTest:
+  assert:
+    # ── Structural completeness (from rubrics/research-quality.yaml required_sections) ──
+    - type: contains
+      value: "Recommended Stack"
+    - type: contains
+      value: "Pitfalls"
+    - type: contains
+      value: "Don't Hand-Roll"
+    - type: contains
+      value: "Key Patterns"
+    - type: javascript
+      value: "output.toLowerCase().includes('sources') || output.toLowerCase().includes('references')"
+
+    # ── Quality rubric (canonical definition: rubrics/research-quality.yaml) ──
+    # 4 dimensions × 6-level scale, 0.25 each, total 0.0–1.0
+    - type: llm-rubric
+      value: |
+        Evaluate this technical research document across these dimensions:
+
+        1. ACCURACY (0.0-0.25): Are library versions current? Are API examples correct?
+           0.25 = all claims verified and current (2025-2026 sources)
+           0.20 = most claims verified, minor version/API gaps
+           0.15 = some outdated info or unverified claims
+           0.10 = multiple inaccuracies
+           0.05 = largely outdated or incorrect
+           0.00 = major inaccuracies throughout
+
+        2. ACTIONABILITY (0.0-0.25): Does it prescribe a clear choice?
+           0.25 = clear "use X because Y" with specific justification
+           0.20 = strong recommendation, minor hedging
+           0.15 = recommendation present but noticeably hedged
+           0.10 = multiple options presented with weak preference
+           0.05 = exploratory "consider X or Y" without decision
+           0.00 = purely exploratory with no recommendation
+
+        3. SOURCE QUALITY (0.0-0.25): Are sources authoritative with confidence levels?
+           0.25 = official docs/Context7 cited with HIGH/MEDIUM/LOW confidence labels
+           0.20 = good sources cited, confidence levels present but inconsistent
+           0.15 = some sources cited, confidence levels unclear or missing
+           0.10 = few sources, no confidence attribution
+           0.05 = vague references only
+           0.00 = no sources cited
+
+        4. PITFALLS (0.0-0.25): Are specific pitfalls documented with prevention?
+           0.25 = 3+ specific pitfalls with "What happens" and "Avoid by"
+           0.20 = 2+ specific pitfalls with clear prevention
+           0.15 = 1-2 pitfalls, somewhat specific
+           0.10 = generic pitfalls (e.g., "test thoroughly")
+           0.05 = pitfalls mentioned but no prevention strategies
+           0.00 = no pitfalls section
+
+        Output a single score from 0.0 (poor) to 1.0 (excellent).
+        Briefly justify your score for each dimension.
+      threshold: 0.7
+
+    # ── Prescriptiveness check (from rubrics/research-quality.yaml prescriptive_rubric) ──
+    - type: llm-rubric
+      value: |
+        Does the TL;DR section make a clear prescriptive recommendation
+        ("Use X because Y") rather than exploratory options ("Consider X or Y")?
+        Score 1.0 if prescriptive, 0.5 if somewhat prescriptive, 0.0 if exploratory.
+      threshold: 0.8
+
+tests:
+  # Topic 1: Library Selection (React Form Library)
+  - vars:
+      topic: "Best form validation library for a React TypeScript project in 2026. Needs async validation, nested objects, custom error messages, and TypeScript inference."
+      golden_ref: file://golden-references/react-form-library.txt
+    assert:
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          {{golden_ref}}
+        threshold: 0.7
+
+  # Topic 2: Library Selection (Charting Library)
+  - vars:
+      topic: "Best React charting library for a dashboard application. Stack uses Tailwind CSS and Radix UI. Needs line charts, bar charts, donut charts, and dark theme support."
+      golden_ref: file://golden-references/charting-library.txt
+    assert:
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          {{golden_ref}}
+        threshold: 0.7
+
+  # Topic 3: API Integration (Stripe)
+  - vars:
+      topic: "How to integrate Stripe payment processing into an Express.js application. Must handle checkout sessions, webhook verification, subscription management, and failed payments."
+      golden_ref: file://golden-references/stripe-integration.txt
+    assert:
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          {{golden_ref}}
+        threshold: 0.7
+      - type: contains
+        value: "webhook"
+
+  # Topic 4: Tooling Comparison (Vite vs Webpack)
+  - vars:
+      topic: "Whether to use Vite or Webpack for a production React application in 2026. App has TypeScript, Tailwind CSS, needs code-splitting and lazy loading."
+      golden_ref: file://golden-references/vite-vs-webpack.txt
+    assert:
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          {{golden_ref}}
+        threshold: 0.7
+
+  # Topic 5: Migration Guide (Express to Fastify)
+  - vars:
+      topic: "How to migrate an existing Express.js REST API to Fastify. The API has 50+ routes, middleware for auth and logging, MongoDB with Mongoose, and WebSocket support."
+      golden_ref: file://golden-references/express-to-fastify.txt
+    assert:
+      - type: llm-rubric
+        value: |
+          Compare this research document against the golden reference below.
+          Score how well it covers the same key topics, libraries, patterns, and pitfalls.
+          1.0 = covers all the same ground with equal or better depth
+          0.5 = covers most topics but misses some key points
+          0.0 = largely different content or missing major sections
+
+          Golden reference:
+          {{golden_ref}}
+        threshold: 0.7
+      - type: icontains
+        value: "migration"
