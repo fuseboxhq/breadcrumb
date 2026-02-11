@@ -2,7 +2,15 @@ import { useAppStore } from "../../store/appStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
 import { BrowserPanel } from "../browser/BrowserPanel";
 import { PlanningPanel } from "../breadcrumb/PlanningPanel";
-import { Terminal, Globe, LayoutGrid, Sparkles } from "lucide-react";
+import {
+  Terminal,
+  Globe,
+  LayoutGrid,
+  Sparkles,
+  Zap,
+  Command,
+  ArrowRight,
+} from "lucide-react";
 
 export function WorkspaceContent() {
   const activeTab = useAppStore((s) =>
@@ -10,11 +18,7 @@ export function WorkspaceContent() {
   );
 
   if (!activeTab) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-        No tab selected
-      </div>
-    );
+    return <EmptyWorkspace />;
   }
 
   switch (activeTab.type) {
@@ -31,6 +35,25 @@ export function WorkspaceContent() {
   }
 }
 
+function EmptyWorkspace() {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-background">
+      <div className="text-center animate-fade-in">
+        <div className="w-12 h-12 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-4">
+          <Zap className="w-6 h-6 text-foreground-muted" />
+        </div>
+        <p className="text-sm text-foreground-muted">No tab selected</p>
+        <p className="text-2xs text-foreground-muted/60 mt-1">
+          Open a tab from the activity bar or press{" "}
+          <kbd className="px-1.5 py-0.5 rounded bg-muted/50 text-foreground-secondary text-2xs font-mono">
+            ⌘K
+          </kbd>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function WelcomeView() {
   const { addTab } = useAppStore();
 
@@ -39,6 +62,9 @@ function WelcomeView() {
       icon: Terminal,
       label: "New Terminal",
       description: "Open a terminal session",
+      shortcut: "⌘T",
+      color: "text-dracula-green",
+      bgColor: "bg-dracula-green/10",
       action: () =>
         addTab({
           id: `terminal-${Date.now()}`,
@@ -50,6 +76,9 @@ function WelcomeView() {
       icon: Globe,
       label: "Open Browser",
       description: "Browse the web or preview dev server",
+      shortcut: "⌘B",
+      color: "text-dracula-cyan",
+      bgColor: "bg-dracula-cyan/10",
       action: () =>
         addTab({
           id: `browser-${Date.now()}`,
@@ -62,6 +91,9 @@ function WelcomeView() {
       icon: LayoutGrid,
       label: "Breadcrumb Planner",
       description: "View phases, tasks, and project status",
+      shortcut: "⌘P",
+      color: "text-dracula-purple",
+      bgColor: "bg-dracula-purple/10",
       action: () =>
         addTab({
           id: `breadcrumb-${Date.now()}`,
@@ -72,28 +104,66 @@ function WelcomeView() {
   ];
 
   return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="max-w-md text-center">
-        <Sparkles className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
-        <h1 className="text-xl font-bold mb-1">Breadcrumb IDE</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Planning, terminals, browser, and extensions in one place.
-        </p>
+    <div className="flex-1 flex items-center justify-center bg-background overflow-y-auto">
+      <div className="max-w-lg w-full px-8 py-16 animate-fade-in-up">
+        {/* Hero */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6 shadow-glow">
+            <Sparkles className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight mb-2">
+            Welcome to Breadcrumb
+          </h1>
+          <p className="text-sm text-foreground-muted max-w-sm mx-auto leading-relaxed">
+            Planning, terminals, browser, and extensions — all in one place.
+          </p>
+        </div>
 
-        <div className="grid gap-3">
-          {quickActions.map(({ icon: Icon, label, description, action }) => (
-            <button
-              key={label}
-              onClick={action}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors text-left"
-            >
-              <Icon className="w-5 h-5 text-muted-foreground shrink-0" />
-              <div>
-                <div className="text-sm font-medium">{label}</div>
-                <div className="text-xs text-muted-foreground">{description}</div>
-              </div>
-            </button>
-          ))}
+        {/* Quick Actions */}
+        <div className="space-y-2 mb-10">
+          <p className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted px-1 mb-3">
+            Quick Actions
+          </p>
+          {quickActions.map(
+            ({ icon: Icon, label, description, shortcut, color, bgColor, action }) => (
+              <button
+                key={label}
+                onClick={action}
+                className="group w-full flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-border-strong hover:bg-background-raised transition-default text-left"
+              >
+                <div
+                  className={`w-10 h-10 rounded-xl ${bgColor} flex items-center justify-center shrink-0 transition-default group-hover:scale-105`}
+                >
+                  <Icon className={`w-5 h-5 ${color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-foreground group-hover:text-foreground">
+                    {label}
+                  </div>
+                  <div className="text-2xs text-foreground-muted truncate">
+                    {description}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <kbd className="hidden group-hover:inline-flex px-1.5 py-0.5 rounded bg-muted/50 text-foreground-muted text-2xs font-mono transition-default">
+                    {shortcut}
+                  </kbd>
+                  <ArrowRight className="w-4 h-4 text-foreground-muted opacity-0 group-hover:opacity-100 transition-default -translate-x-1 group-hover:translate-x-0" />
+                </div>
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Command palette hint */}
+        <div className="text-center">
+          <p className="text-2xs text-foreground-muted/60">
+            Press{" "}
+            <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/40 text-foreground-muted text-2xs font-mono">
+              <Command className="w-2.5 h-2.5" />K
+            </kbd>{" "}
+            to open the command palette
+          </p>
         </div>
       </div>
     </div>
