@@ -12,6 +12,10 @@ import {
   Search,
   Command as CommandIcon,
   Zap,
+  SplitSquareVertical,
+  Rows3,
+  Trash2,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
@@ -67,6 +71,21 @@ export function CommandPalette() {
     },
     [setSidebarView]
   );
+
+  /** Dispatch a synthetic keyboard event to trigger terminal shortcuts */
+  const dispatchKey = useCallback((key: string, opts: { meta?: boolean; shift?: boolean; alt?: boolean } = {}) => {
+    setOpen(false);
+    requestAnimationFrame(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", {
+        key,
+        metaKey: opts.meta ?? true,
+        ctrlKey: false,
+        shiftKey: opts.shift ?? false,
+        altKey: opts.alt ?? false,
+        bubbles: true,
+      }));
+    });
+  }, []);
 
   const commands: CommandItem[] = [
     {
@@ -176,6 +195,61 @@ export function CommandPalette() {
         const dir = await window.breadcrumbAPI?.selectDirectory();
         if (dir) addProject(dir);
         setOpen(false);
+      },
+    },
+    // Terminal commands
+    {
+      id: "terminal-split-horizontal",
+      label: "Split Terminal Horizontally",
+      description: "Split the active terminal pane",
+      icon: Rows3,
+      category: "Terminal",
+      shortcut: "⌘D",
+      action: () => dispatchKey("d"),
+    },
+    {
+      id: "terminal-split-vertical",
+      label: "Split Terminal Vertically",
+      description: "Split the active terminal pane vertically",
+      icon: SplitSquareVertical,
+      category: "Terminal",
+      shortcut: "⌘⇧D",
+      action: () => dispatchKey("D", { shift: true }),
+    },
+    {
+      id: "terminal-search",
+      label: "Search in Terminal",
+      description: "Find text in terminal output",
+      icon: Search,
+      category: "Terminal",
+      shortcut: "⌘F",
+      action: () => dispatchKey("f"),
+    },
+    {
+      id: "terminal-navigate-next",
+      label: "Next Pane",
+      description: "Move focus to the next terminal pane",
+      icon: ArrowRightLeft,
+      category: "Terminal",
+      shortcut: "⌘⌥→",
+      action: () => dispatchKey("ArrowRight", { alt: true }),
+    },
+    {
+      id: "terminal-clear",
+      label: "Clear Terminal",
+      description: "Send clear command to active terminal",
+      icon: Trash2,
+      category: "Terminal",
+      shortcut: "⌘L",
+      action: () => {
+        setOpen(false);
+        requestAnimationFrame(() => {
+          document.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "l",
+            metaKey: true,
+            bubbles: true,
+          }));
+        });
       },
     },
   ];

@@ -81,13 +81,17 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     }
   }, [sessionId]);
 
-  // Cmd+F to toggle search
+  // Cmd+F to toggle search, Cmd+L to clear
   useEffect(() => {
     if (!isActive) return;
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "f") {
         e.preventDefault();
         setSearchVisible((prev) => !prev);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "l") {
+        e.preventDefault();
+        terminalRef.current?.clear();
       }
     };
     document.addEventListener("keydown", handler);
@@ -243,10 +247,16 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
       />
 
       {/* Exit code badge */}
-      {lastExitCode !== null && lastExitCode !== 0 && !searchVisible && (
-        <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/20 border border-destructive/30 text-destructive text-2xs font-mono animate-fade-in">
-          <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-          Exit {lastExitCode}
+      {lastExitCode !== null && !searchVisible && (
+        <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-mono animate-fade-in ${
+          lastExitCode === 0
+            ? "bg-dracula-green/15 border border-dracula-green/25 text-dracula-green"
+            : "bg-destructive/20 border border-destructive/30 text-destructive"
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            lastExitCode === 0 ? "bg-dracula-green" : "bg-destructive"
+          }`} />
+          {lastExitCode === 0 ? "OK" : `Exit ${lastExitCode}`}
         </div>
       )}
     </div>

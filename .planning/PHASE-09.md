@@ -86,7 +86,7 @@ Build a production-grade, Warp-level terminal experience that supports multi-pro
 | breadcrumb-xrv.4 | xterm addon suite & search overlay | done | Medium | - |
 | breadcrumb-xrv.5 | Split pane keyboard navigation | done | Medium | - |
 | breadcrumb-xrv.6 | CWD tracking & tab naming | done | Medium | xrv.1, xrv.3 |
-| breadcrumb-xrv.7 | Terminal polish & command palette | open | Medium | xrv.4, xrv.5, xrv.6 |
+| breadcrumb-xrv.7 | Terminal polish & command palette | done | Medium | xrv.4, xrv.5, xrv.6 |
 
 ### Task Details
 
