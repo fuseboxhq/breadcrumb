@@ -1,5 +1,7 @@
 import { useAppStore } from "../../store/appStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
+import { BrowserPanel } from "../browser/BrowserPanel";
+import { PlanningPanel } from "../breadcrumb/PlanningPanel";
 import { Terminal, Globe, LayoutGrid, Sparkles } from "lucide-react";
 
 export function WorkspaceContent() {
@@ -21,9 +23,9 @@ export function WorkspaceContent() {
     case "terminal":
       return <TerminalPanel tabId={activeTab.id} />;
     case "browser":
-      return <BrowserPlaceholder url={activeTab.url} />;
+      return <BrowserPanel initialUrl={activeTab.url} />;
     case "breadcrumb":
-      return <BreadcrumbPlaceholder />;
+      return <PlanningPanel />;
     default:
       return null;
   }
@@ -94,23 +96,6 @@ function WelcomeView() {
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-
-function BrowserPlaceholder({ url }: { url?: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-      <p>Browser: {url || "No URL"}</p>
-    </div>
-  );
-}
-
-function BreadcrumbPlaceholder() {
-  return (
-    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-      <p>Breadcrumb planning panel</p>
     </div>
   );
 }
