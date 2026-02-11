@@ -4,6 +4,7 @@ import { SidebarPanel } from "./SidebarPanel";
 import { TitleBar } from "./TitleBar";
 import { TabBar } from "./TabBar";
 import { WorkspaceContent } from "./WorkspaceContent";
+import { StatusBar } from "./StatusBar";
 import { useAppStore } from "../../store/appStore";
 
 export function AppShell() {
@@ -53,6 +54,8 @@ export function AppShell() {
           </Panel>
         </PanelGroup>
       </div>
+
+      <StatusBar />
     </div>
   );
 }
