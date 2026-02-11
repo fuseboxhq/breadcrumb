@@ -102,7 +102,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-3jm.1 | Scaffold desktop/ directory with Electron Forge + Vite | open | High | - |
+| breadcrumb-3jm.1 | Scaffold desktop/ directory with Electron Forge + Vite | done | High | - |
 | breadcrumb-3jm.2 | Port KevCode core services to desktop/ | open | High | .1 |
 | breadcrumb-3jm.3 | Build IDE shell layout with resizable panels | open | High | .1 |
 | breadcrumb-3jm.4 | Implement terminal multiplexing with split panes | open | High | .2 |
