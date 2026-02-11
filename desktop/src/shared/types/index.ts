@@ -40,7 +40,10 @@ export const IPC_CHANNELS = {
 
   // Settings channels
   SETTINGS_GET: "settings:get",
+  SETTINGS_GET_ALL: "settings:get-all",
   SETTINGS_SET: "settings:set",
+  SETTINGS_RESET: "settings:reset",
+  SETTINGS_CHANGED: "settings:changed",
 
   // File dialog
   DIALOG_SELECT_DIRECTORY: "dialog:select-directory",

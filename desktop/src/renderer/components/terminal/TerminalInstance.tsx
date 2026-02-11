@@ -5,6 +5,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { useShellIntegration } from "../../hooks/useShellIntegration";
+import { useTerminalSettings } from "../../store/settingsStore";
 import { TerminalSearch } from "./TerminalSearch";
 import "@xterm/xterm/css/xterm.css";
 
@@ -49,6 +50,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
   const cleanupRef = useRef<(() => void) | null>(null);
   const [lastExitCode, setLastExitCode] = useState<number | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
+  const terminalSettings = useTerminalSettings();
 
   // Shell integration (OSC 133 + OSC 7)
   const { registerHandlers } = useShellIntegration({
@@ -96,11 +98,12 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     if (!containerRef.current) return;
 
     const terminal = new Terminal({
-      cursorBlink: true,
-      fontSize: 13,
-      fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace",
+      cursorBlink: terminalSettings.cursorBlink,
+      cursorStyle: terminalSettings.cursorStyle,
+      fontSize: terminalSettings.fontSize,
+      fontFamily: terminalSettings.fontFamily,
       theme: TERMINAL_THEME,
-      scrollback: 5000,
+      scrollback: terminalSettings.scrollback,
       allowProposedApi: true,
     });
 
@@ -209,6 +212,18 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
       });
     }
   }, [isActive, fit]);
+
+  // Live settings updates — apply changes to existing terminal without recreating
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    terminal.options.fontSize = terminalSettings.fontSize;
+    terminal.options.fontFamily = terminalSettings.fontFamily;
+    terminal.options.cursorBlink = terminalSettings.cursorBlink;
+    terminal.options.cursorStyle = terminalSettings.cursorStyle;
+    terminal.options.scrollback = terminalSettings.scrollback;
+    requestAnimationFrame(() => fit());
+  }, [terminalSettings, fit]);
 
   return (
     <div className="relative w-full h-full">

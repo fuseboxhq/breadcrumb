@@ -1,8 +1,21 @@
+import { useEffect } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import { CommandPalette } from "./components/command-palette/CommandPalette";
+import { useSettingsStore } from "./store/settingsStore";
 import { Toaster } from "sonner";
 
 function App() {
+  const loadSettings = useSettingsStore((s) => s.loadSettings);
+
+  // Load settings from main process on startup + listen for changes
+  useEffect(() => {
+    loadSettings();
+    const cleanup = window.breadcrumbAPI?.onSettingsChanged(() => {
+      loadSettings();
+    });
+    return () => cleanup?.();
+  }, [loadSettings]);
+
   return (
     <>
       <AppShell />

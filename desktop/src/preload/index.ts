@@ -40,6 +40,12 @@ export interface BreadcrumbAPI {
     error?: string;
   }>;
 
+  // Settings operations
+  getSettings: () => Promise<Record<string, unknown>>;
+  setSetting: (key: string, value: unknown) => Promise<{ success: boolean; error?: string }>;
+  resetSettings: () => Promise<{ success: boolean }>;
+  onSettingsChanged: (callback: (settings: Record<string, unknown>) => void) => () => void;
+
   // Extension operations
   getExtensions: () => Promise<ExtensionInfoForRenderer[]>;
   activateExtension: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -98,6 +104,21 @@ const api: BreadcrumbAPI = {
   // Git operations
   getGitInfo: (workingDirectory) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_INFO, { workingDirectory }),
+
+  // Settings operations
+  getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET_ALL),
+
+  setSetting: (key: string, value: unknown) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_SET, key, value),
+
+  resetSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_RESET),
+
+  onSettingsChanged: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, data: Record<string, unknown>) =>
+      callback(data);
+    ipcRenderer.on(IPC_CHANNELS.SETTINGS_CHANGED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.SETTINGS_CHANGED, handler);
+  },
 
   // Extension operations
   getExtensions: () => ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_LIST),

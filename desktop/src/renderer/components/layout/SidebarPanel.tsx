@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
+import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
 import {
   FolderTree,
@@ -11,6 +13,7 @@ import {
   FolderOpen,
   Plus,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 
 const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
@@ -61,7 +64,7 @@ function SidebarContent({ view }: { view: SidebarView }) {
     case "extensions":
       return <ExtensionsPanel />;
     case "settings":
-      return <SettingsPlaceholder />;
+      return <SettingsView />;
   }
 }
 
@@ -254,12 +257,152 @@ function BrowserPlaceholder() {
   );
 }
 
-function SettingsPlaceholder() {
+function SettingsView() {
+  const { loadSettings, updateTerminalSetting, resetSettings, loaded } = useSettingsStore();
+  const terminal = useTerminalSettings();
+
+  useEffect(() => {
+    if (!loaded) loadSettings();
+  }, [loaded, loadSettings]);
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <span className="text-2xs text-foreground-muted">Loading settings...</span>
+      </div>
+    );
+  }
+
   return (
-    <EmptyState
-      icon={Settings}
-      title="Settings"
-      description="Application preferences"
-    />
+    <div className="p-3 space-y-4">
+      {/* Terminal section */}
+      <div>
+        <h3 className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted mb-3">
+          Terminal
+        </h3>
+        <div className="space-y-3">
+          {/* Font Family */}
+          <SettingRow label="Font Family">
+            <select
+              value={terminal.fontFamily}
+              onChange={(e) => updateTerminalSetting("fontFamily", e.target.value)}
+              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary/50 transition-default"
+            >
+              <option value="'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace">
+                JetBrains Mono
+              </option>
+              <option value="'SF Mono', Menlo, Monaco, monospace">SF Mono</option>
+              <option value="'Fira Code', monospace">Fira Code</option>
+              <option value="'Cascadia Code', monospace">Cascadia Code</option>
+              <option value="Menlo, Monaco, monospace">Menlo</option>
+              <option value="Monaco, monospace">Monaco</option>
+            </select>
+          </SettingRow>
+
+          {/* Font Size */}
+          <SettingRow label="Font Size">
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={8}
+                max={32}
+                value={terminal.fontSize}
+                onChange={(e) => updateTerminalSetting("fontSize", Number(e.target.value))}
+                className="flex-1 accent-primary"
+              />
+              <span className="text-sm text-foreground tabular-nums w-8 text-right">
+                {terminal.fontSize}
+              </span>
+            </div>
+          </SettingRow>
+
+          {/* Scrollback */}
+          <SettingRow label="Scrollback Lines">
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={100000}
+                step={1000}
+                value={terminal.scrollback}
+                onChange={(e) => updateTerminalSetting("scrollback", Number(e.target.value))}
+                className="flex-1 accent-primary"
+              />
+              <span className="text-sm text-foreground tabular-nums w-14 text-right">
+                {terminal.scrollback.toLocaleString()}
+              </span>
+            </div>
+          </SettingRow>
+
+          {/* Cursor Style */}
+          <SettingRow label="Cursor Style">
+            <div className="flex gap-1">
+              {(["block", "underline", "bar"] as const).map((style) => (
+                <button
+                  key={style}
+                  onClick={() => updateTerminalSetting("cursorStyle", style)}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-default capitalize ${
+                    terminal.cursorStyle === style
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "bg-background border border-border text-foreground-secondary hover:bg-muted/50"
+                  }`}
+                >
+                  {style}
+                </button>
+              ))}
+            </div>
+          </SettingRow>
+
+          {/* Cursor Blink */}
+          <SettingRow label="Cursor Blink">
+            <button
+              onClick={() => updateTerminalSetting("cursorBlink", !terminal.cursorBlink)}
+              className={`relative w-9 h-5 rounded-full transition-default ${
+                terminal.cursorBlink ? "bg-primary" : "bg-muted"
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-default ${
+                  terminal.cursorBlink ? "left-[18px]" : "left-0.5"
+                }`}
+              />
+            </button>
+          </SettingRow>
+
+          {/* Default Shell */}
+          <SettingRow label="Default Shell">
+            <select
+              value={terminal.defaultShell}
+              onChange={(e) => updateTerminalSetting("defaultShell", e.target.value)}
+              className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary/50 transition-default"
+            >
+              <option value="/bin/zsh">zsh</option>
+              <option value="/bin/bash">bash</option>
+              <option value="/usr/local/bin/fish">fish</option>
+            </select>
+          </SettingRow>
+        </div>
+      </div>
+
+      {/* Reset */}
+      <div className="pt-2 border-t border-border">
+        <button
+          onClick={resetSettings}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground-muted hover:text-destructive hover:bg-destructive/10 rounded-md transition-default"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Reset to Defaults
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-2xs font-medium text-foreground-secondary">{label}</label>
+      {children}
+    </div>
   );
 }

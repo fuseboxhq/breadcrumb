@@ -81,7 +81,7 @@ Build a production-grade, Warp-level terminal experience that supports multi-pro
 | ID | Title | Status | Complexity | Depends On |
 |----|-------|--------|------------|------------|
 | breadcrumb-xrv.1 | Multi-project workspace model | done | Large | - |
-| breadcrumb-xrv.2 | Settings persistence & terminal preferences | open | Large | xrv.1 |
+| breadcrumb-xrv.2 | Settings persistence & terminal preferences | done | Large | xrv.1 |
 | breadcrumb-xrv.3 | Shell integration (OSC sequences) | done | Large | - |
 | breadcrumb-xrv.4 | xterm addon suite & search overlay | done | Medium | - |
 | breadcrumb-xrv.5 | Split pane keyboard navigation | done | Medium | - |
