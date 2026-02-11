@@ -15,6 +15,8 @@ export interface WorkspaceTab {
   url?: string;
   // Terminal-specific
   terminalSessionId?: string;
+  // Project-scoped
+  projectId?: string;
 }
 
 export interface AppState {

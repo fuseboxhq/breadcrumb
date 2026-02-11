@@ -1,4 +1,5 @@
 import { useAppStore } from "../../store/appStore";
+import { useProjectsStore } from "../../store/projectsStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
 import { BrowserPanel } from "../browser/BrowserPanel";
 import { PlanningPanel } from "../breadcrumb/PlanningPanel";
@@ -16,16 +17,22 @@ export function WorkspaceContent() {
   const activeTab = useAppStore((s) =>
     s.tabs.find((t) => t.id === s.activeTabId)
   );
+  const projects = useProjectsStore((s) => s.projects);
 
   if (!activeTab) {
     return <EmptyWorkspace />;
   }
 
+  // Resolve project working directory for terminal tabs
+  const projectDir = activeTab.projectId
+    ? projects.find((p) => p.id === activeTab.projectId)?.path
+    : undefined;
+
   switch (activeTab.type) {
     case "welcome":
       return <WelcomeView />;
     case "terminal":
-      return <TerminalPanel tabId={activeTab.id} />;
+      return <TerminalPanel tabId={activeTab.id} workingDirectory={projectDir} />;
     case "browser":
       return <BrowserPanel initialUrl={activeTab.url} />;
     case "breadcrumb":
@@ -56,12 +63,17 @@ function EmptyWorkspace() {
 
 function WelcomeView() {
   const { addTab } = useAppStore();
+  const activeProject = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId) || null
+  );
 
   const quickActions = [
     {
       icon: Terminal,
       label: "New Terminal",
-      description: "Open a terminal session",
+      description: activeProject
+        ? `Open terminal in ${activeProject.name}`
+        : "Open a terminal session",
       shortcut: "⌘T",
       color: "text-dracula-green",
       bgColor: "bg-dracula-green/10",
@@ -69,7 +81,8 @@ function WelcomeView() {
         addTab({
           id: `terminal-${Date.now()}`,
           type: "terminal",
-          title: "Terminal 1",
+          title: activeProject ? activeProject.name : "Terminal",
+          projectId: activeProject?.id,
         }),
     },
     {

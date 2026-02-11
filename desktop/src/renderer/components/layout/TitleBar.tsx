@@ -1,10 +1,7 @@
-import { FolderOpen, ChevronRight, Zap } from "lucide-react";
-import { useAppStore } from "../../store/appStore";
+import { Zap, ChevronRight } from "lucide-react";
+import { ProjectSwitcher } from "./ProjectSwitcher";
 
 export function TitleBar() {
-  const projectPath = useAppStore((s) => s.currentProjectPath);
-  const projectName = projectPath?.split("/").pop() || "No project";
-
   return (
     <div className="h-11 bg-background border-b border-border flex items-center justify-between px-4 titlebar-drag-region shrink-0 relative">
       {/* Subtle bottom glow line */}
@@ -13,7 +10,7 @@ export function TitleBar() {
       {/* macOS traffic light spacer */}
       <div className="w-[72px] shrink-0" />
 
-      {/* Center: app title + project */}
+      {/* Center: app title + project switcher */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5 text-primary" />
@@ -21,17 +18,8 @@ export function TitleBar() {
             Breadcrumb
           </span>
         </div>
-        {projectPath && (
-          <>
-            <ChevronRight className="w-3 h-3 text-foreground-muted" />
-            <div className="no-drag flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-background-raised transition-default cursor-pointer">
-              <FolderOpen className="w-3.5 h-3.5 text-foreground-secondary" />
-              <span className="text-sm text-foreground-secondary max-w-48 truncate">
-                {projectName}
-              </span>
-            </div>
-          </>
-        )}
+        <ChevronRight className="w-3 h-3 text-foreground-muted" />
+        <ProjectSwitcher />
       </div>
 
       {/* Right spacer for symmetry */}

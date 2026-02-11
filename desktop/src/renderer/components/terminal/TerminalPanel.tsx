@@ -10,9 +10,10 @@ interface TerminalPane {
 
 interface TerminalPanelProps {
   tabId: string;
+  workingDirectory?: string;
 }
 
-export function TerminalPanel({ tabId }: TerminalPanelProps) {
+export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const [panes, setPanes] = useState<TerminalPane[]>([
     { id: "pane-1", sessionId: `${tabId}-1` },
   ]);
@@ -101,6 +102,7 @@ export function TerminalPanel({ tabId }: TerminalPanelProps) {
           <TerminalInstance
             sessionId={panes[0].sessionId}
             isActive={true}
+            workingDirectory={workingDirectory}
           />
         ) : (
           <PanelGroup direction={splitDirection}>
@@ -135,6 +137,7 @@ export function TerminalPanel({ tabId }: TerminalPanelProps) {
                     <TerminalInstance
                       sessionId={pane.sessionId}
                       isActive={activePane === pane.id}
+                      workingDirectory={workingDirectory}
                     />
                   </div>
                 </Panel>

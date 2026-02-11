@@ -6,6 +6,7 @@ import "@xterm/xterm/css/xterm.css";
 interface TerminalInstanceProps {
   sessionId: string;
   isActive: boolean;
+  workingDirectory?: string;
 }
 
 // Dracula-inspired terminal color scheme
@@ -34,7 +35,7 @@ const TERMINAL_THEME = {
   brightWhite: "#ffffff",
 };
 
-export function TerminalInstance({ sessionId, isActive }: TerminalInstanceProps) {
+export function TerminalInstance({ sessionId, isActive, workingDirectory }: TerminalInstanceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -78,20 +79,28 @@ export function TerminalInstance({ sessionId, isActive }: TerminalInstanceProps)
     // Initial fit
     requestAnimationFrame(() => fit());
 
-    // Create PTY session — use IPC to get working dir (process.env not available in renderer)
-    window.breadcrumbAPI?.getWorkingDirectory().then((workingDir) => {
+    // Create PTY session — use project dir if provided, otherwise IPC for home dir
+    if (workingDirectory) {
       window.breadcrumbAPI?.createTerminal({
         id: sessionId,
         name: sessionId,
-        workingDirectory: workingDir || "/",
+        workingDirectory,
       });
-    }).catch(() => {
-      window.breadcrumbAPI?.createTerminal({
-        id: sessionId,
-        name: sessionId,
-        workingDirectory: "/",
+    } else {
+      window.breadcrumbAPI?.getWorkingDirectory().then((workingDir) => {
+        window.breadcrumbAPI?.createTerminal({
+          id: sessionId,
+          name: sessionId,
+          workingDirectory: workingDir || "/",
+        });
+      }).catch(() => {
+        window.breadcrumbAPI?.createTerminal({
+          id: sessionId,
+          name: sessionId,
+          workingDirectory: "/",
+        });
       });
-    });
+    }
 
     // Forward keystrokes to PTY
     const dataDisposable = terminal.onData((data) => {

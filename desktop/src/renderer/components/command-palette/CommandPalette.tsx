@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
+import { useProjectsStore } from "../../store/projectsStore";
 
 interface CommandItem {
   id: string;
@@ -31,6 +32,10 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { addTab, setSidebarView } = useAppStore();
+  const activeProject = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId) || null
+  );
+  const { addProject } = useProjectsStore();
 
   // Register Cmd+K / Ctrl+K global listener
   useEffect(() => {
@@ -67,7 +72,7 @@ export function CommandPalette() {
     {
       id: "new-terminal",
       label: "New Terminal",
-      description: "Open a terminal session",
+      description: activeProject ? `In ${activeProject.name}` : "Open a terminal session",
       icon: Terminal,
       category: "Actions",
       shortcut: "⌘T",
@@ -75,7 +80,8 @@ export function CommandPalette() {
         addTab({
           id: `terminal-${Date.now()}`,
           type: "terminal",
-          title: `Terminal`,
+          title: activeProject?.name || "Terminal",
+          projectId: activeProject?.id,
         });
         setOpen(false);
       },
@@ -159,6 +165,18 @@ export function CommandPalette() {
       icon: Settings,
       category: "Navigation",
       action: () => navigateToView("settings"),
+    },
+    {
+      id: "add-project",
+      label: "Add Project",
+      description: "Open a folder as a workspace project",
+      icon: Plus,
+      category: "Actions",
+      action: async () => {
+        const dir = await window.breadcrumbAPI?.selectDirectory();
+        if (dir) addProject(dir);
+        setOpen(false);
+      },
     },
   ];
 
