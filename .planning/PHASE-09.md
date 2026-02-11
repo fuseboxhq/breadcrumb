@@ -40,38 +40,92 @@ Build a production-grade, Warp-level terminal experience that supports multi-pro
 
 ## Research Summary
 
-Run `/bc:plan PHASE-09` to research this phase and populate this section.
+### xterm.js Addons (HIGH confidence)
+- **@xterm/addon-search** (0.15.0): `findNext()`/`findPrevious()` with regex, case-sensitive, and `onDidChangeResults` event. `highlightLimit: 1000` default prevents perf issues. Decorations persist until `clearDecorations()`.
+- **@xterm/addon-web-links** (0.12.0): Detects URLs + handles OSC 8 hyperlinks natively. Custom click handler receives `(event, uri)`. In Electron, use `shell.openExternal(uri)`.
+- **@xterm/addon-unicode11** (0.10.0): Fixes emoji/CJK character widths. Must set `terminal.unicode.activeVersion = '11'` after loading — loading alone doesn't activate.
+- **@xterm/addon-serialize** (0.14.0): Experimental but functional. Serializes scrollback + cursor + colors. Restore before `terminal.open()` for best results. Use `scrollback` option to limit size.
+
+### Shell Integration (HIGH confidence)
+- **OSC 133** (command boundaries): `A` = prompt start, `B` = prompt end, `C` = command start, `D;exitcode` = command end. Standardized by FinalTerm, adopted by VS Code/iTerm2/kitty/Windows Terminal.
+- **OSC 7** (cwd reporting): `file://hostname/path` format. Must URI-encode special chars. 2083-byte limit.
+- **OSC 8** (hyperlinks): Handled automatically by addon-web-links. No custom parser needed.
+- **xterm.js parser**: `terminal.parser.registerOscHandler(133, callback)` for custom handling. Sync preferred, async supported. 10MB payload limit.
+- **Shell scripts**: User-sourced helper scripts (recommended approach). Guard variable `__TERMINAL_INTEGRATION_LOADED` prevents double-loading. Bash uses `PROMPT_COMMAND` + `preexec_functions`, zsh uses `precmd_functions` + `preexec_functions`, fish uses `--on-event fish_prompt/fish_preexec`.
+
+### Settings & Multi-Project (HIGH confidence)
+- **electron-store** (11.0.2): Main process only (security). JSON Schema validation with ajv. Atomic writes + corruption recovery. `onDidChange()` for reactive updates. Migrations object for schema evolution.
+- **IPC bridge pattern**: `SETTINGS_GET_ALL`, `SETTINGS_SET`, `SETTINGS_CHANGED` channels. Validate all inputs in handlers. Broadcast changes to renderer.
+- **Multi-project Zustand store**: `Project` entity with `id, name, path, terminalSessions[]`. `projectsStore` with `Map<string, Project>` and `activeProjectId`. `useProjectTerminalSettings()` merges global + per-project overrides. Persist recent projects in electron-store.
+
+### Key Pitfalls Identified
+- electron-store: Never use in renderer (security). Always validate IPC inputs. Keep stored data small (<1MB). Wait for `isLoaded` before rendering terminals.
+- OSC 133: `PROMPT_COMMAND` ordering matters (save `$?` on first line). Zsh precmd hooks must be last. Guard against double integration.
+- Scrollback: Never set unlimited (memory leak). 1000-5000 for interactive, 10000+ only for log viewing.
+- Unicode11: Not grapheme-cluster-aware — compound emojis (ZWJ sequences) may still break.
 
 ## Recommended Approach
 
 **Architecture:** Introduce a `Project` concept in the Zustand store — each project has an id, path, name, and owns terminal sessions, explorer state, and future agent sessions. A project switcher in the title bar or sidebar allows switching context. Terminals spawn in their project's root directory by default.
 
-**Shell integration:** Use OSC escape sequences (same approach as Warp, iTerm2, VS Code). OSC 133 for command start/end boundaries, OSC 7 for cwd reporting. Requires shell rc file snippets (`.zshrc`, `.bashrc`) or detection of existing integrations.
+**Shell integration:** Use OSC escape sequences (same approach as Warp, iTerm2, VS Code). OSC 133 for command start/end boundaries, OSC 7 for cwd reporting. Provide user-sourced helper scripts for bash, zsh, fish with guard variables to prevent double-loading.
 
-**Settings:** Use `electron-store` for persisted preferences. Create a settings store (Zustand) that syncs with electron-store via IPC. Settings panel in the sidebar "Settings" view.
+**Settings:** Use `electron-store` 11.0.2 in main process with JSON Schema validation. Expose via IPC to a Zustand `settingsStore` in renderer. Settings panel in sidebar "Settings" view. Per-project terminal overrides merged with global defaults.
 
-**Search:** xterm-addon-search with a floating search bar (Cmd+F when terminal focused). Style to match the glassmorphism overlay pattern from command palette.
+**Search:** @xterm/addon-search with a floating search bar (Cmd+F when terminal focused). Style to match the glassmorphism overlay pattern from command palette. `findNext`/`findPrevious` with regex toggle.
 
-Run `/bc:plan PHASE-09` to break down into tasks with dependencies.
+**Addon loading order:** Unicode11 first (activate `'11'`), then WebLinks (with Electron handler), then Search, then optional Serialize.
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| - | No tasks yet | - | - |
+| ID | Title | Status | Complexity | Depends On |
+|----|-------|--------|------------|------------|
+| breadcrumb-xrv.1 | Multi-project workspace model | open | Large | - |
+| breadcrumb-xrv.2 | Settings persistence & terminal preferences | open | Large | xrv.1 |
+| breadcrumb-xrv.3 | Shell integration (OSC sequences) | open | Large | - |
+| breadcrumb-xrv.4 | xterm addon suite & search overlay | open | Medium | - |
+| breadcrumb-xrv.5 | Split pane keyboard navigation | open | Medium | - |
+| breadcrumb-xrv.6 | CWD tracking & tab naming | open | Medium | xrv.1, xrv.3 |
+| breadcrumb-xrv.7 | Terminal polish & command palette | open | Medium | xrv.4, xrv.5, xrv.6 |
 
-Run `/bc:plan PHASE-09` to break down this phase into tasks.
+### Task Details
+
+**xrv.1 — Multi-project workspace model (Large)**
+Foundational task. Create `projectsStore` Zustand store with `Project` entity (id, name, path, terminalSessions[], terminalOverrides). Build project switcher UI in title bar or sidebar. Wire "Add Project" flow (folder picker → create project → set active). Update `TerminalPanel` to scope panes by active project. Scaffold explorer view placeholder per project. Ensure single-project backward compatibility.
+
+**xrv.2 — Settings persistence & terminal preferences (Large)**
+Install `electron-store` 11.0.2. Create `SettingsStore.ts` in main process with JSON Schema for terminal settings (fontFamily, fontSize, scrollback, cursorStyle, cursorBlink, defaultShell). Create settings IPC bridge (get/set/reset/onChanged channels). Create `settingsStore` Zustand store in renderer that syncs via IPC. Build settings panel UI (sidebar view) with live preview. Wire terminal settings into `TerminalInstance`. Support per-project overrides merged with global defaults.
+
+**xrv.3 — Shell integration (OSC sequences) (Large)**
+Register OSC 133 handler via `terminal.parser.registerOscHandler(133, ...)` to track command boundaries (A/B/C/D). Create `CommandBlock` model tracking prompt start/end, command start/end, exit code, timestamps. Create shell helper scripts for bash/zsh/fish with guard variables. Bundle scripts in app resources. Add exit code badge overlay on command completion. Emit OSC 7 from shell scripts for cwd reporting.
+
+**xrv.4 — xterm addon suite & search overlay (Medium)**
+Install @xterm/addon-search, @xterm/addon-web-links, @xterm/addon-unicode11. Load in correct order (unicode11 → web-links → search). Build floating search bar overlay (Cmd+F toggle) with glassmorphism styling. Wire findNext/findPrevious/clearDecorations. Add regex toggle and match count display. Configure web-links to open in system browser via IPC.
+
+**xrv.5 — Split pane keyboard navigation (Medium)**
+Add keyboard shortcuts: Cmd+D (split horizontal), Cmd+Shift+D (split vertical), Cmd+W (close pane). Add Cmd+Option+Arrow for focus navigation between panes. Track focus state per pane with visual indicators. Add pane numbering and Cmd+1-9 direct pane switching. Ensure all shortcuts registered in command palette.
+
+**xrv.6 — CWD tracking & tab naming (Medium)**
+Parse OSC 7 data from shell integration to update per-terminal cwd in store. Derive tab names from cwd (show folder name, not "Terminal 1"). Update terminal tab bar to show project-relative paths. When cwd changes, update store and re-render tab title. Ensure new terminals inherit project root as initial cwd.
+
+**xrv.7 — Terminal polish & command palette (Medium)**
+Register all terminal commands in command palette (new terminal, split, search, navigate panes, clear, settings). Add Warp-level visual polish: smooth pane transitions, focus ring animation, command block subtle separators, exit code color coding (green/red). Add terminal welcome message on first launch. Final integration testing across all features.
 
 ## Technical Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Multi-project model | Zustand store with Project entities | Central to the vision — everything is project-scoped |
+| Multi-project model | Zustand `projectsStore` with Project entities | Central to the vision — everything is project-scoped |
 | Shell integration | OSC 133 + OSC 7 + OSC 8 | Industry standard (Warp, iTerm2, VS Code all use this) |
-| Terminal search | xterm-addon-search | Official xterm addon, well-maintained |
-| Settings persistence | electron-store | Standard for Electron apps, JSON-based, zero setup |
-| Clickable links | xterm-addon-web-links | Official addon, handles URL detection |
-| Unicode support | xterm-addon-unicode11 | Proper emoji and CJK character rendering |
+| Shell script delivery | User-sourced helper scripts with guard vars | Non-invasive, user controls loading, easy to debug/disable |
+| Terminal search | @xterm/addon-search (0.15.0) | Official xterm addon, regex support, match highlighting |
+| Settings persistence | electron-store 11.0.2 (main process only) | Atomic writes, schema validation, corruption recovery |
+| Settings IPC | contextBridge + dedicated channels | Follows Electron security best practices |
+| Clickable links | @xterm/addon-web-links (0.12.0) | Official addon, OSC 8 + pattern detection |
+| Unicode support | @xterm/addon-unicode11 (0.10.0) | Proper emoji and CJK character rendering |
+| Addon loading order | unicode11 → web-links → search → serialize | Core rendering first, then features |
+| Per-project overrides | Merged with `useProjectTerminalSettings()` | Global defaults + project-specific customization |
+| Scrollback default | 5000 lines | Balance of usability (~34MB) and performance |
 
 ## Completion Criteria
 
