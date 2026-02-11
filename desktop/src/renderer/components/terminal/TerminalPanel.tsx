@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { Plus, SplitSquareVertical, X } from "lucide-react";
+import { Plus, SplitSquareVertical, X, Terminal } from "lucide-react";
 
 interface TerminalPane {
   id: string;
@@ -29,7 +29,7 @@ export function TerminalPanel({ tabId }: TerminalPanelProps) {
   const removePane = useCallback((paneId: string) => {
     setPanes((prev) => {
       const next = prev.filter((p) => p.id !== paneId);
-      if (next.length === 0) return prev; // Don't remove last pane
+      if (next.length === 0) return prev;
       return next;
     });
     setActivePane((prev) => {
@@ -46,26 +46,27 @@ export function TerminalPanel({ tabId }: TerminalPanelProps) {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0f]">
+    <div className="flex flex-col h-full bg-background">
       {/* Terminal toolbar */}
-      <div className="h-8 flex items-center justify-between px-2 bg-background border-b border-border shrink-0">
-        <div className="flex items-center gap-1">
-          {panes.map((pane) => (
+      <div className="h-8 flex items-center justify-between px-2 bg-background-raised border-b border-border shrink-0">
+        <div className="flex items-center gap-0.5">
+          {panes.map((pane, index) => (
             <button
               key={pane.id}
               onClick={() => setActivePane(pane.id)}
               className={`
-                px-2 py-0.5 text-xs rounded transition-colors flex items-center gap-1
+                group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5
                 ${activePane === pane.id
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
                 }
               `}
             >
-              {pane.sessionId.split("-").pop()}
+              <Terminal className="w-3 h-3" />
+              <span>{index + 1}</span>
               {panes.length > 1 && (
                 <X
-                  className="w-3 h-3 opacity-50 hover:opacity-100"
+                  className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-default hover:text-destructive"
                   onClick={(e) => {
                     e.stopPropagation();
                     removePane(pane.id);
@@ -76,17 +77,17 @@ export function TerminalPanel({ tabId }: TerminalPanelProps) {
           ))}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={toggleDirection}
-            className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors"
+            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
             title={`Split ${splitDirection === "horizontal" ? "vertically" : "horizontally"}`}
           >
             <SplitSquareVertical className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={addPane}
-            className="p-1 text-muted-foreground hover:text-foreground rounded transition-colors"
+            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
             title="Split terminal"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -107,17 +108,27 @@ export function TerminalPanel({ tabId }: TerminalPanelProps) {
               <div key={pane.id} className="contents">
                 {index > 0 && (
                   <PanelResizeHandle
-                    className={
-                      splitDirection === "horizontal"
-                        ? "w-px bg-border hover:bg-primary/50 transition-colors"
-                        : "h-px bg-border hover:bg-primary/50 transition-colors"
-                    }
-                  />
+                    className={`
+                      group relative transition-default
+                      ${splitDirection === "horizontal"
+                        ? "w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50"
+                        : "h-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50"
+                      }
+                    `}
+                  >
+                    <div
+                      className={`absolute transition-default ${
+                        splitDirection === "horizontal"
+                          ? "inset-y-0 left-[1px] w-px bg-border group-hover:bg-primary/40"
+                          : "inset-x-0 top-[1px] h-px bg-border group-hover:bg-primary/40"
+                      }`}
+                    />
+                  </PanelResizeHandle>
                 )}
                 <Panel minSize={10}>
                   <div
-                    className={`h-full ${
-                      activePane === pane.id ? "ring-1 ring-primary/30" : ""
+                    className={`h-full transition-default ${
+                      activePane === pane.id ? "ring-1 ring-primary/20" : ""
                     }`}
                     onClick={() => setActivePane(pane.id)}
                   >
