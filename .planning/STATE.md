@@ -1,12 +1,13 @@
 # Project State
 
-**Current Phase:** PHASE-07
+**Current Phase:** PHASE-08
 **Last Updated:** 2026-02-11
 
 ## Active Work
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
 PHASE-07: Desktop IDE Platform (in_progress) - 7 tasks
+PHASE-08: Desktop IDE Visual & UX Overhaul (not_started)
 
 ## Completed Phases
 
