@@ -1,0 +1,73 @@
+{
+  "name": "breadcrumb-db-browser",
+  "displayName": "Database Browser",
+  "version": "0.1.0",
+  "description": "Browse and query SQLite databases from within Breadcrumb IDE",
+  "publisher": "breadcrumb",
+  "main": "./src/index.js",
+  "engines": {
+    "breadcrumb": "^1.0.0",
+    "node": ">=18.0.0"
+  },
+  "activationEvents": [
+    "onCommand:breadcrumb-db-browser.connect",
+    "onCommand:breadcrumb-db-browser.listTables"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "breadcrumb-db-browser.connect",
+        "title": "Connect to Database",
+        "category": "Database"
+      },
+      {
+        "command": "breadcrumb-db-browser.listTables",
+        "title": "List Tables",
+        "category": "Database"
+      },
+      {
+        "command": "breadcrumb-db-browser.query",
+        "title": "Run Query",
+        "category": "Database"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "databaseExplorer",
+          "name": "Databases"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Database Browser",
+      "properties": {
+        "breadcrumb-db-browser.defaultPath": {
+          "type": "string",
+          "default": "",
+          "description": "Default path to SQLite database file"
+        },
+        "breadcrumb-db-browser.maxRows": {
+          "type": "number",
+          "default": 100,
+          "description": "Maximum rows to display in query results"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "breadcrumb-db-browser.connect",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d"
+      }
+    ]
+  },
+  "breadcrumb": {
+    "apiVersion": "1.0.0",
+    "capabilities": {
+      "fileSystem": "readonly",
+      "network": false,
+      "terminal": false
+    }
+  }
+}

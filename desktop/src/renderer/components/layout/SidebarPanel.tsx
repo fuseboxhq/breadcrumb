@@ -1,4 +1,5 @@
 import { useAppStore, type SidebarView } from "../../store/appStore";
+import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
 import {
   FolderTree,
   Terminal,
@@ -54,7 +55,7 @@ function SidebarContent({ view }: { view: SidebarView }) {
     case "browser":
       return <BrowserPlaceholder />;
     case "extensions":
-      return <ExtensionsPlaceholder />;
+      return <ExtensionsPanel />;
     case "settings":
       return <SettingsPlaceholder />;
   }
@@ -94,13 +95,6 @@ function BrowserPlaceholder() {
   );
 }
 
-function ExtensionsPlaceholder() {
-  return (
-    <div className="text-xs text-muted-foreground">
-      <p>Installed extensions will appear here.</p>
-    </div>
-  );
-}
 
 function SettingsPlaceholder() {
   return (

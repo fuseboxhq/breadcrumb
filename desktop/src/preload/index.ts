@@ -38,6 +38,25 @@ export interface BreadcrumbAPI {
     gitInfo?: { isGitRepo: boolean; branch: string; remote: string; repoName: string };
     error?: string;
   }>;
+
+  // Extension operations
+  getExtensions: () => Promise<ExtensionInfoForRenderer[]>;
+  activateExtension: (id: string) => Promise<{ success: boolean; error?: string }>;
+  deactivateExtension: (id: string) => Promise<{ success: boolean; error?: string }>;
+  getExtensionCommands: () => Promise<string[]>;
+  executeExtensionCommand: (commandId: string, ...args: unknown[]) => Promise<{ success: boolean; result?: unknown; error?: string }>;
+  onExtensionsChanged: (callback: (extensions: ExtensionInfoForRenderer[]) => void) => () => void;
+}
+
+export interface ExtensionInfoForRenderer {
+  id: string;
+  displayName: string;
+  version: string;
+  description: string;
+  status: string;
+  publisher: string;
+  capabilities: Record<string, unknown>;
+  commands: Array<{ command: string; title: string; category?: string }>;
 }
 
 const api: BreadcrumbAPI = {
@@ -77,6 +96,28 @@ const api: BreadcrumbAPI = {
   // Git operations
   getGitInfo: (workingDirectory) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_INFO, { workingDirectory }),
+
+  // Extension operations
+  getExtensions: () => ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_LIST),
+
+  activateExtension: (id) =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_ACTIVATE, id),
+
+  deactivateExtension: (id) =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_DEACTIVATE, id),
+
+  getExtensionCommands: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_COMMANDS),
+
+  executeExtensionCommand: (commandId, ...args) =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_EXECUTE_COMMAND, commandId, ...args),
+
+  onExtensionsChanged: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, data: ExtensionInfoForRenderer[]) =>
+      callback(data);
+    ipcRenderer.on(IPC_CHANNELS.EXTENSIONS_STATUS_CHANGED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.EXTENSIONS_STATUS_CHANGED, handler);
+  },
 };
 
 // Expose the API to the renderer process

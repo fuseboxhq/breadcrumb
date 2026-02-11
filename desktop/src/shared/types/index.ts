@@ -79,6 +79,14 @@ export const IPC_CHANNELS = {
   MEMORY_LIST: "memory:list",
   MEMORY_READ: "memory:read",
   MEMORY_WRITE: "memory:write",
+
+  // Extension channels
+  EXTENSIONS_LIST: "extensions:list",
+  EXTENSIONS_ACTIVATE: "extensions:activate",
+  EXTENSIONS_DEACTIVATE: "extensions:deactivate",
+  EXTENSIONS_COMMANDS: "extensions:commands",
+  EXTENSIONS_EXECUTE_COMMAND: "extensions:execute-command",
+  EXTENSIONS_STATUS_CHANGED: "extensions:status-changed",
 } as const;
 
 // Session statistics

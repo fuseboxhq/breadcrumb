@@ -36,6 +36,10 @@ const config: ForgeConfig = {
           config: "vite.main.config.ts",
         },
         {
+          entry: "src/main/extensions/extensionHostWorker.ts",
+          config: "vite.main.config.ts",
+        },
+        {
           entry: "src/preload/index.ts",
           config: "vite.preload.config.ts",
         },

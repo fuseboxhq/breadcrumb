@@ -108,7 +108,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-3jm.4 | Implement terminal multiplexing with split panes | done | High | .2 |
 | breadcrumb-3jm.5 | Integrate Breadcrumb planning panel into IDE | done | Medium | .2 |
 | breadcrumb-3jm.6 | Build embedded Chromium browser with multi-tab support | done | High | .1 |
-| breadcrumb-3jm.7 | Scaffold extension system with sample DB browser extension | open | High | .3 |
+| breadcrumb-3jm.7 | Scaffold extension system with sample DB browser extension | done | High | .3 |
 
 ## Technical Decisions
 
