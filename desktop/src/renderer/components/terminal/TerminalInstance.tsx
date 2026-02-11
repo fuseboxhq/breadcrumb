@@ -78,12 +78,19 @@ export function TerminalInstance({ sessionId, isActive }: TerminalInstanceProps)
     // Initial fit
     requestAnimationFrame(() => fit());
 
-    // Create PTY session
-    const workingDir = process.env.HOME || "/";
-    window.breadcrumbAPI?.createTerminal({
-      id: sessionId,
-      name: sessionId,
-      workingDirectory: workingDir,
+    // Create PTY session — use IPC to get working dir (process.env not available in renderer)
+    window.breadcrumbAPI?.getWorkingDirectory().then((workingDir) => {
+      window.breadcrumbAPI?.createTerminal({
+        id: sessionId,
+        name: sessionId,
+        workingDirectory: workingDir || "/",
+      });
+    }).catch(() => {
+      window.breadcrumbAPI?.createTerminal({
+        id: sessionId,
+        name: sessionId,
+        workingDirectory: "/",
+      });
     });
 
     // Forward keystrokes to PTY
