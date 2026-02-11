@@ -1,4 +1,5 @@
 import { useAppStore } from "../../store/appStore";
+import { TerminalPanel } from "../terminal/TerminalPanel";
 import { Terminal, Globe, LayoutGrid, Sparkles } from "lucide-react";
 
 export function WorkspaceContent() {
@@ -18,7 +19,7 @@ export function WorkspaceContent() {
     case "welcome":
       return <WelcomeView />;
     case "terminal":
-      return <TerminalPlaceholder tabId={activeTab.id} />;
+      return <TerminalPanel tabId={activeTab.id} />;
     case "browser":
       return <BrowserPlaceholder url={activeTab.url} />;
     case "breadcrumb":
@@ -97,13 +98,6 @@ function WelcomeView() {
   );
 }
 
-function TerminalPlaceholder({ tabId }: { tabId: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center bg-black text-green-400 font-mono text-sm">
-      <p>Terminal session: {tabId}</p>
-    </div>
-  );
-}
 
 function BrowserPlaceholder({ url }: { url?: string }) {
   return (
