@@ -228,7 +228,7 @@
   }
 
   .transition-default {
-    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
     transition-duration: var(--duration-normal);
     transition-timing-function: var(--ease-out);
   }

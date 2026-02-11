@@ -1,6 +1,6 @@
 # Phase 08: Desktop IDE Visual & UX Overhaul
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-5sc
 **Created:** 2026-02-11
 
@@ -102,7 +102,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-5sc.4 | Panel visual overhaul — terminal, browser, planner, extensions | done | High | .1 |
 | breadcrumb-5sc.5 | Command palette with cmdk and global keybinding | done | High | .1 |
 | breadcrumb-5sc.6 | Status bar & toast notification system | done | Medium | .1 |
-| breadcrumb-5sc.7 | Micro-interactions, loading states & polish pass | open | High | .2, .4 |
+| breadcrumb-5sc.7 | Micro-interactions, loading states & polish pass | done | High | .2, .4 |
 
 ### Task Details
 

@@ -8,6 +8,7 @@ import {
   FolderOpen,
   ChevronRight,
 } from "lucide-react";
+import { SkeletonCard } from "../ui/Skeleton";
 
 interface Phase {
   id: string;
@@ -101,7 +102,12 @@ export function PlanningPanel() {
 
       {/* Phases */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
-        {phases.length === 0 ? (
+        {loading ? (
+          <div className="space-y-2">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        ) : phases.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
             <div className="w-12 h-12 rounded-2xl bg-dracula-purple/10 flex items-center justify-center mb-4">
               <LayoutGrid className="w-6 h-6 text-dracula-purple" />

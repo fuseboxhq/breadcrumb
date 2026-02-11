@@ -8,6 +8,32 @@ interface TerminalInstanceProps {
   isActive: boolean;
 }
 
+// Dracula-inspired terminal color scheme
+const TERMINAL_THEME = {
+  background: "#0a0a0f",
+  foreground: "#f2f2f2",
+  cursor: "#f2f2f2",
+  cursorAccent: "#0a0a0f",
+  selectionBackground: "#44475a80",
+  selectionForeground: "#f2f2f2",
+  black: "#18181b",
+  red: "#ff5555",
+  green: "#50fa7b",
+  yellow: "#f1fa8c",
+  blue: "#8be9fd",
+  magenta: "#bd93f9",
+  cyan: "#8be9fd",
+  white: "#f2f2f2",
+  brightBlack: "#6272a4",
+  brightRed: "#ff6e6e",
+  brightGreen: "#69ff94",
+  brightYellow: "#ffffa5",
+  brightBlue: "#a4ffff",
+  brightMagenta: "#d6acff",
+  brightCyan: "#a4ffff",
+  brightWhite: "#ffffff",
+};
+
 export function TerminalInstance({ sessionId, isActive }: TerminalInstanceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
@@ -36,29 +62,8 @@ export function TerminalInstance({ sessionId, isActive }: TerminalInstanceProps)
     const terminal = new Terminal({
       cursorBlink: true,
       fontSize: 13,
-      fontFamily: "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace",
-      theme: {
-        background: "#0a0a0f",
-        foreground: "#e4e4e7",
-        cursor: "#e4e4e7",
-        selectionBackground: "#3f3f46",
-        black: "#18181b",
-        red: "#ef4444",
-        green: "#22c55e",
-        yellow: "#eab308",
-        blue: "#3b82f6",
-        magenta: "#a855f7",
-        cyan: "#06b6d4",
-        white: "#e4e4e7",
-        brightBlack: "#52525b",
-        brightRed: "#f87171",
-        brightGreen: "#4ade80",
-        brightYellow: "#facc15",
-        brightBlue: "#60a5fa",
-        brightMagenta: "#c084fc",
-        brightCyan: "#22d3ee",
-        brightWhite: "#fafafa",
-      },
+      fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace",
+      theme: TERMINAL_THEME,
       scrollback: 5000,
       allowProposedApi: true,
     });
@@ -131,8 +136,7 @@ export function TerminalInstance({ sessionId, isActive }: TerminalInstanceProps)
   return (
     <div
       ref={containerRef}
-      className="w-full h-full"
-      style={{ backgroundColor: "#0a0a0f" }}
+      className="w-full h-full bg-background"
     />
   );
 }

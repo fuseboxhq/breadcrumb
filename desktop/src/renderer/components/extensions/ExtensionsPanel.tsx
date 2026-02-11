@@ -12,6 +12,7 @@ import {
   Shield,
   Terminal,
 } from "lucide-react";
+import { SkeletonList } from "../ui/Skeleton";
 
 interface ExtensionInfo {
   id: string;
@@ -78,7 +79,9 @@ export function ExtensionsPanel() {
 
       {/* Extension list */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {extensions.length === 0 ? (
+        {loading ? (
+          <SkeletonList rows={3} />
+        ) : extensions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
             <div className="w-10 h-10 rounded-xl bg-dracula-purple/10 flex items-center justify-center mb-3">
               <Puzzle className="w-5 h-5 text-dracula-purple" />
