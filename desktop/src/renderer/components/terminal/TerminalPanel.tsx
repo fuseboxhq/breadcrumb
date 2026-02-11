@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { Plus, SplitSquareVertical, Rows3, X, Terminal } from "lucide-react";
+import { useAppStore } from "../../store/appStore";
+import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen } from "lucide-react";
 
 interface TerminalPane {
   id: string;
@@ -13,12 +14,43 @@ interface TerminalPanelProps {
   workingDirectory?: string;
 }
 
+/** Extract folder name from an absolute path */
+function folderName(cwd: string): string {
+  const parts = cwd.replace(/\/+$/, "").split("/");
+  return parts[parts.length - 1] || cwd;
+}
+
 export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const [panes, setPanes] = useState<TerminalPane[]>([
     { id: "pane-1", sessionId: `${tabId}-1` },
   ]);
   const [activePane, setActivePane] = useState("pane-1");
   const [splitDirection, setSplitDirection] = useState<"horizontal" | "vertical">("horizontal");
+  const [paneCwds, setPaneCwds] = useState<Record<string, string>>({});
+  const updateTab = useAppStore((s) => s.updateTab);
+  const activePaneRef = useRef(activePane);
+
+  // Keep ref in sync for use in callbacks
+  useEffect(() => {
+    activePaneRef.current = activePane;
+  }, [activePane]);
+
+  // When active pane's CWD changes, update the tab title
+  const handleCwdChange = useCallback((paneId: string, cwd: string) => {
+    setPaneCwds((prev) => ({ ...prev, [paneId]: cwd }));
+    // Only update tab title if this is the active pane
+    if (paneId === activePaneRef.current) {
+      updateTab(tabId, { title: folderName(cwd) });
+    }
+  }, [tabId, updateTab]);
+
+  // When active pane switches, update tab title to that pane's CWD
+  useEffect(() => {
+    const cwd = paneCwds[activePane];
+    if (cwd) {
+      updateTab(tabId, { title: folderName(cwd) });
+    }
+  }, [activePane, paneCwds, tabId, updateTab]);
 
   const addPane = useCallback((direction?: "horizontal" | "vertical") => {
     if (direction) setSplitDirection(direction);
@@ -121,31 +153,35 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       {/* Terminal toolbar */}
       <div className="h-8 flex items-center justify-between px-2 bg-background-raised border-b border-border shrink-0">
         <div className="flex items-center gap-0.5">
-          {panes.map((pane, index) => (
-            <button
-              key={pane.id}
-              onClick={() => setActivePane(pane.id)}
-              className={`
-                group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5
-                ${activePane === pane.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
-                }
-              `}
-            >
-              <Terminal className="w-3 h-3" />
-              <span>{index + 1}</span>
-              {panes.length > 1 && (
-                <X
-                  className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-default hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removePane(pane.id);
-                  }}
-                />
-              )}
-            </button>
-          ))}
+          {panes.map((pane, index) => {
+            const cwd = paneCwds[pane.id];
+            const label = cwd ? folderName(cwd) : `${index + 1}`;
+            return (
+              <button
+                key={pane.id}
+                onClick={() => setActivePane(pane.id)}
+                className={`
+                  group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5 max-w-32
+                  ${activePane === pane.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
+                  }
+                `}
+              >
+                {cwd ? <FolderOpen className="w-3 h-3 shrink-0" /> : <Terminal className="w-3 h-3 shrink-0" />}
+                <span className="truncate">{label}</span>
+                {panes.length > 1 && (
+                  <X
+                    className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-default hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removePane(pane.id);
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-0.5">
@@ -177,6 +213,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
             sessionId={panes[0].sessionId}
             isActive={true}
             workingDirectory={workingDirectory}
+            onCwdChange={(cwd) => handleCwdChange(panes[0].id, cwd)}
           />
         ) : (
           <PanelGroup direction={splitDirection}>
@@ -214,6 +251,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                       sessionId={pane.sessionId}
                       isActive={activePane === pane.id}
                       workingDirectory={workingDirectory}
+                      onCwdChange={(cwd) => handleCwdChange(pane.id, cwd)}
                     />
                   </div>
                 </Panel>
