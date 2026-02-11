@@ -1,12 +1,14 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { useShellIntegration } from "../../hooks/useShellIntegration";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
   sessionId: string;
   isActive: boolean;
   workingDirectory?: string;
+  onCwdChange?: (cwd: string) => void;
 }
 
 // Dracula-inspired terminal color scheme
@@ -35,11 +37,26 @@ const TERMINAL_THEME = {
   brightWhite: "#ffffff",
 };
 
-export function TerminalInstance({ sessionId, isActive, workingDirectory }: TerminalInstanceProps) {
+export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdChange }: TerminalInstanceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const [lastExitCode, setLastExitCode] = useState<number | null>(null);
+
+  // Shell integration (OSC 133 + OSC 7)
+  const { registerHandlers } = useShellIntegration({
+    onCwdChange: (cwd) => {
+      onCwdChange?.(cwd);
+    },
+    onCommandEnd: (block) => {
+      setLastExitCode(block.exitCode);
+      // Clear badge after 5 seconds for successful commands
+      if (block.exitCode === 0) {
+        setTimeout(() => setLastExitCode(null), 5000);
+      }
+    },
+  });
 
   const fit = useCallback(() => {
     const fitAddon = fitAddonRef.current;
@@ -71,6 +88,9 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory }: Term
 
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
+
+    // Register shell integration OSC handlers before open
+    const cleanupShell = registerHandlers(terminal);
 
     terminal.open(containerRef.current);
     terminalRef.current = terminal;
@@ -128,6 +148,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory }: Term
 
     cleanupRef.current = () => {
       dataDisposable.dispose();
+      cleanupShell();
       cleanupData?.();
       cleanupExit?.();
       resizeObserver.disconnect();
@@ -137,7 +158,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory }: Term
     return () => {
       cleanupRef.current?.();
     };
-  }, [sessionId, fit]);
+  }, [sessionId, fit, registerHandlers, workingDirectory]);
 
   // Refit on activation
   useEffect(() => {
@@ -150,9 +171,18 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory }: Term
   }, [isActive, fit]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full bg-background"
-    />
+    <div className="relative w-full h-full">
+      <div
+        ref={containerRef}
+        className="w-full h-full bg-background"
+      />
+      {/* Exit code badge */}
+      {lastExitCode !== null && lastExitCode !== 0 && (
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/20 border border-destructive/30 text-destructive text-2xs font-mono animate-fade-in">
+          <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+          Exit {lastExitCode}
+        </div>
+      )}
+    </div>
   );
 }

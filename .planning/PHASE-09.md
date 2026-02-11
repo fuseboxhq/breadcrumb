@@ -82,7 +82,7 @@ Build a production-grade, Warp-level terminal experience that supports multi-pro
 |----|-------|--------|------------|------------|
 | breadcrumb-xrv.1 | Multi-project workspace model | done | Large | - |
 | breadcrumb-xrv.2 | Settings persistence & terminal preferences | open | Large | xrv.1 |
-| breadcrumb-xrv.3 | Shell integration (OSC sequences) | open | Large | - |
+| breadcrumb-xrv.3 | Shell integration (OSC sequences) | done | Large | - |
 | breadcrumb-xrv.4 | xterm addon suite & search overlay | open | Medium | - |
 | breadcrumb-xrv.5 | Split pane keyboard navigation | open | Medium | - |
 | breadcrumb-xrv.6 | CWD tracking & tab naming | open | Medium | xrv.1, xrv.3 |
