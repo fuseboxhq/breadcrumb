@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { Plus, SplitSquareVertical, X, Terminal } from "lucide-react";
+import { Plus, SplitSquareVertical, Rows3, X, Terminal } from "lucide-react";
 
 interface TerminalPane {
   id: string;
@@ -20,7 +20,8 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const [activePane, setActivePane] = useState("pane-1");
   const [splitDirection, setSplitDirection] = useState<"horizontal" | "vertical">("horizontal");
 
-  const addPane = useCallback(() => {
+  const addPane = useCallback((direction?: "horizontal" | "vertical") => {
+    if (direction) setSplitDirection(direction);
     const id = `pane-${Date.now()}`;
     const sessionId = `${tabId}-${Date.now()}`;
     setPanes((prev) => [...prev, { id, sessionId }]);
@@ -45,6 +46,75 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const toggleDirection = useCallback(() => {
     setSplitDirection((d) => (d === "horizontal" ? "vertical" : "horizontal"));
   }, []);
+
+  // Navigate to adjacent pane
+  const navigatePane = useCallback((direction: "next" | "prev") => {
+    const currentIndex = panes.findIndex((p) => p.id === activePane);
+    if (currentIndex === -1) return;
+    let nextIndex: number;
+    if (direction === "next") {
+      nextIndex = (currentIndex + 1) % panes.length;
+    } else {
+      nextIndex = (currentIndex - 1 + panes.length) % panes.length;
+    }
+    setActivePane(panes[nextIndex].id);
+  }, [panes, activePane]);
+
+  // Navigate to specific pane by number
+  const navigateToPaneNumber = useCallback((num: number) => {
+    const index = num - 1;
+    if (index >= 0 && index < panes.length) {
+      setActivePane(panes[index].id);
+    }
+  }, [panes]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+
+      // Cmd+D — split horizontal
+      if (meta && !e.shiftKey && e.key === "d") {
+        e.preventDefault();
+        addPane("horizontal");
+        return;
+      }
+
+      // Cmd+Shift+D — split vertical
+      if (meta && e.shiftKey && e.key === "D") {
+        e.preventDefault();
+        addPane("vertical");
+        return;
+      }
+
+      // Cmd+W — close pane (only if multiple panes)
+      if (meta && e.key === "w" && panes.length > 1) {
+        e.preventDefault();
+        removePane(activePane);
+        return;
+      }
+
+      // Cmd+Option+Right/Left — navigate between panes
+      if (meta && e.altKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        e.preventDefault();
+        navigatePane(e.key === "ArrowRight" ? "next" : "prev");
+        return;
+      }
+
+      // Cmd+1-9 — switch to pane by number
+      if (meta && !e.shiftKey && !e.altKey) {
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 9) {
+          e.preventDefault();
+          navigateToPaneNumber(num);
+          return;
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [addPane, removePane, navigatePane, navigateToPaneNumber, activePane, panes.length]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -82,14 +152,18 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
           <button
             onClick={toggleDirection}
             className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
-            title={`Split ${splitDirection === "horizontal" ? "vertically" : "horizontally"}`}
+            title={`Split ${splitDirection === "horizontal" ? "vertically" : "horizontally"} (⌘${splitDirection === "horizontal" ? "⇧D" : "D"})`}
           >
-            <SplitSquareVertical className="w-3.5 h-3.5" />
+            {splitDirection === "horizontal" ? (
+              <SplitSquareVertical className="w-3.5 h-3.5" />
+            ) : (
+              <Rows3 className="w-3.5 h-3.5" />
+            )}
           </button>
           <button
-            onClick={addPane}
+            onClick={() => addPane()}
             className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
-            title="Split terminal"
+            title="Split terminal (⌘D)"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -130,7 +204,9 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                 <Panel minSize={10}>
                   <div
                     className={`h-full transition-default ${
-                      activePane === pane.id ? "ring-1 ring-primary/20" : ""
+                      activePane === pane.id
+                        ? "ring-1 ring-primary/20 rounded-sm"
+                        : panes.length > 1 ? "opacity-90 hover:opacity-100" : ""
                     }`}
                     onClick={() => setActivePane(pane.id)}
                   >
