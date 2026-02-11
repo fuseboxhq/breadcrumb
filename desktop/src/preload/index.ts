@@ -16,6 +16,7 @@ export interface TerminalExitEvent {
 export interface BreadcrumbAPI {
   // System
   getWorkingDirectory: () => Promise<string>;
+  readFile: (filePath: string) => Promise<{ success: boolean; content: string | null }>;
 
   // File operations
   selectDirectory: () => Promise<string | null>;
@@ -62,6 +63,7 @@ export interface ExtensionInfoForRenderer {
 const api: BreadcrumbAPI = {
   // System
   getWorkingDirectory: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_WORKING_DIR),
+  readFile: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_READ_FILE, filePath),
 
   // File operations
   selectDirectory: () => ipcRenderer.invoke(IPC_CHANNELS.DIALOG_SELECT_DIRECTORY),

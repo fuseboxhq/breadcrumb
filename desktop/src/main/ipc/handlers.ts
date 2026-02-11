@@ -1,5 +1,6 @@
 import { BrowserWindow, ipcMain, dialog, app } from "electron";
 import path from "path";
+import fs from "fs/promises";
 import { IPC_CHANNELS } from "../../shared/types";
 import { gitService } from "../git/GitService";
 
@@ -42,6 +43,17 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
     return app.getPath("home");
   });
 
+  // Read file (safe: validates path, returns null on error)
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_READ_FILE, async (_, filePath: string) => {
+    try {
+      const resolved = validatePath(filePath);
+      const content = await fs.readFile(resolved, "utf-8");
+      return { success: true, content };
+    } catch {
+      return { success: false, content: null };
+    }
+  });
+
   // Git
   ipcMain.handle(
     IPC_CHANNELS.GIT_INFO,
@@ -59,6 +71,7 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
   return () => {
     ipcMain.removeHandler(IPC_CHANNELS.DIALOG_SELECT_DIRECTORY);
     ipcMain.removeHandler(IPC_CHANNELS.SYSTEM_GET_WORKING_DIR);
+    ipcMain.removeHandler(IPC_CHANNELS.SYSTEM_READ_FILE);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_INFO);
     handlersRegistered = false;
   };

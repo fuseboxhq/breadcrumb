@@ -29,24 +29,15 @@ export function PlanningPanel() {
     setLoading(true);
 
     try {
-      const response = await fetch(`file://${projectPath}/.planning/STATE.md`);
-      if (!response.ok) {
+      const result = await window.breadcrumbAPI?.readFile(`${projectPath}/.planning/STATE.md`);
+      if (!result?.success || !result.content) {
         setPhases([]);
         return;
       }
-      const text = await response.text();
-      const parsedPhases = parseStateFile(text);
+      const parsedPhases = parseStateFile(result.content);
       setPhases(parsedPhases);
     } catch {
-      setPhases([
-        {
-          id: "PHASE-07",
-          title: "Desktop IDE Platform",
-          status: "in_progress",
-          taskCount: 7,
-          completedCount: 0,
-        },
-      ]);
+      setPhases([]);
     } finally {
       setLoading(false);
     }
