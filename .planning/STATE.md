@@ -7,7 +7,7 @@
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
 PHASE-07: Desktop IDE Platform (in_progress) - 7 tasks
-PHASE-08: Desktop IDE Visual & UX Overhaul (not_started)
+PHASE-08: Desktop IDE Visual & UX Overhaul (in_progress) - 7 tasks
 
 ## Completed Phases
 
