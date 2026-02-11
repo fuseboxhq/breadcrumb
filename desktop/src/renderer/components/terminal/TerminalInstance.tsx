@@ -1,7 +1,11 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { SearchAddon } from "@xterm/addon-search";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { useShellIntegration } from "../../hooks/useShellIntegration";
+import { TerminalSearch } from "./TerminalSearch";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
@@ -41,8 +45,10 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const searchAddonRef = useRef<SearchAddon | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const [lastExitCode, setLastExitCode] = useState<number | null>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
 
   // Shell integration (OSC 133 + OSC 7)
   const { registerHandlers } = useShellIntegration({
@@ -51,7 +57,6 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     },
     onCommandEnd: (block) => {
       setLastExitCode(block.exitCode);
-      // Clear badge after 5 seconds for successful commands
       if (block.exitCode === 0) {
         setTimeout(() => setLastExitCode(null), 5000);
       }
@@ -74,6 +79,19 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     }
   }, [sessionId]);
 
+  // Cmd+F to toggle search
+  useEffect(() => {
+    if (!isActive) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        setSearchVisible((prev) => !prev);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isActive]);
+
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -86,10 +104,31 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
       allowProposedApi: true,
     });
 
+    // Load addons in correct order
+
+    // 1. Unicode11 — must be first, then activate
+    const unicode11Addon = new Unicode11Addon();
+    terminal.loadAddon(unicode11Addon);
+    terminal.unicode.activeVersion = "11";
+
+    // 2. FitAddon
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
 
-    // Register shell integration OSC handlers before open
+    // 3. WebLinks — clickable URLs, opens in system browser via IPC
+    const webLinksAddon = new WebLinksAddon((event, uri) => {
+      event.preventDefault();
+      // Use IPC to open external URL (can't use shell.openExternal in renderer)
+      window.open(uri, "_blank");
+    });
+    terminal.loadAddon(webLinksAddon);
+
+    // 4. Search
+    const searchAddon = new SearchAddon();
+    terminal.loadAddon(searchAddon);
+    searchAddonRef.current = searchAddon;
+
+    // 5. Shell integration OSC handlers
     const cleanupShell = registerHandlers(terminal);
 
     terminal.open(containerRef.current);
@@ -99,7 +138,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     // Initial fit
     requestAnimationFrame(() => fit());
 
-    // Create PTY session — use project dir if provided, otherwise IPC for home dir
+    // Create PTY session
     if (workingDirectory) {
       window.breadcrumbAPI?.createTerminal({
         id: sessionId,
@@ -152,6 +191,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
       cleanupData?.();
       cleanupExit?.();
       resizeObserver.disconnect();
+      searchAddonRef.current = null;
       terminal.dispose();
     };
 
@@ -176,8 +216,19 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
         ref={containerRef}
         className="w-full h-full bg-background"
       />
+
+      {/* Search overlay */}
+      <TerminalSearch
+        searchAddon={searchAddonRef.current}
+        isVisible={searchVisible}
+        onClose={() => {
+          setSearchVisible(false);
+          terminalRef.current?.focus();
+        }}
+      />
+
       {/* Exit code badge */}
-      {lastExitCode !== null && lastExitCode !== 0 && (
+      {lastExitCode !== null && lastExitCode !== 0 && !searchVisible && (
         <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-destructive/20 border border-destructive/30 text-destructive text-2xs font-mono animate-fade-in">
           <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
           Exit {lastExitCode}
