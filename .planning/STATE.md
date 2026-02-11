@@ -1,12 +1,12 @@
 # Project State
 
 **Current Phase:** PHASE-05
-**Last Updated:** 2026-02-07
+**Last Updated:** 2026-02-11
 
 ## Active Work
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
-PHASE-07: Evals for Research (in_progress) - 6 tasks
+PHASE-07: Desktop IDE Platform (not_started)
 
 ## Completed Phases
 
