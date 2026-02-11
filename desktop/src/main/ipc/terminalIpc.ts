@@ -20,7 +20,7 @@ export function registerTerminalIPCHandlers(mainWindow: BrowserWindow): () => vo
 
   ipcMain.handle(
     IPC_CHANNELS.TERMINAL_CREATE,
-    async (_, config: { id: string; name: string; workingDirectory: string }) => {
+    async (_, config: { id: string; name: string; workingDirectory: string; cols?: number; rows?: number }) => {
       try {
         const sessionId = terminalService.createSession(config);
         return { success: true, sessionId };

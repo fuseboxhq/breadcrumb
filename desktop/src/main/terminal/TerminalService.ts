@@ -10,6 +10,8 @@ export interface TerminalConfig {
   name: string;
   workingDirectory: string;
   shell?: string;
+  cols?: number;
+  rows?: number;
 }
 
 export interface TerminalSession {
@@ -27,7 +29,7 @@ export class TerminalService extends EventEmitter {
   }
 
   createSession(config: TerminalConfig): string {
-    const { id, name, workingDirectory, shell } = config;
+    const { id, name, workingDirectory, shell, cols, rows } = config;
 
     if (this.sessions.has(id)) {
       return id;
@@ -48,8 +50,8 @@ export class TerminalService extends EventEmitter {
 
     const ptyProcess = pty.spawn(shellToUse, [], {
       name: "xterm-256color",
-      cols: DEFAULT_TERMINAL_COLS,
-      rows: DEFAULT_TERMINAL_ROWS,
+      cols: cols || DEFAULT_TERMINAL_COLS,
+      rows: rows || DEFAULT_TERMINAL_ROWS,
       cwd: workingDirectory,
       env,
     });

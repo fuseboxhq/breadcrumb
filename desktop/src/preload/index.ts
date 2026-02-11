@@ -26,6 +26,8 @@ export interface BreadcrumbAPI {
     id: string;
     name: string;
     workingDirectory: string;
+    cols?: number;
+    rows?: number;
   }) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
   writeTerminal: (sessionId: string, data: string) => Promise<{ success: boolean; error?: string }>;
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<{ success: boolean; error?: string }>;

@@ -47,12 +47,17 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const searchAddonRef = useRef<SearchAddon | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
   const [lastExitCode, setLastExitCode] = useState<number | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
   const terminalSettings = useTerminalSettings();
 
+  // Stable ref for settings — used during terminal creation without
+  // being a dependency (so changing settings doesn't recreate the terminal)
+  const settingsRef = useRef(terminalSettings);
+  settingsRef.current = terminalSettings;
+
   // Shell integration (OSC 133 + OSC 7)
+  // registerHandlers is now stable (no deps) thanks to callbacksRef pattern
   const { registerHandlers } = useShellIntegration({
     onCwdChange: (cwd) => {
       onCwdChange?.(cwd);
@@ -73,8 +78,12 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     try {
       const dims = fitAddon.proposeDimensions();
       if (dims && dims.cols > 0 && dims.rows > 0) {
-        terminal.resize(dims.cols, dims.rows);
-        window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+        // Only resize PTY when dimensions actually change — avoids
+        // spurious SIGWINCH that clears the shell prompt on focus
+        if (dims.cols !== terminal.cols || dims.rows !== terminal.rows) {
+          terminal.resize(dims.cols, dims.rows);
+          window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+        }
       }
     } catch {
       // Ignore resize errors during teardown
@@ -98,16 +107,21 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     return () => document.removeEventListener("keydown", handler);
   }, [isActive]);
 
+  // Terminal creation — runs once per sessionId+workingDirectory.
+  // All other values (settings, callbacks) are accessed via refs so
+  // they don't trigger destruction/recreation of the terminal.
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const settings = settingsRef.current;
+
     const terminal = new Terminal({
-      cursorBlink: terminalSettings.cursorBlink,
-      cursorStyle: terminalSettings.cursorStyle,
-      fontSize: terminalSettings.fontSize,
-      fontFamily: terminalSettings.fontFamily,
+      cursorBlink: settings.cursorBlink,
+      cursorStyle: settings.cursorStyle,
+      fontSize: settings.fontSize,
+      fontFamily: settings.fontFamily,
       theme: TERMINAL_THEME,
-      scrollback: terminalSettings.scrollback,
+      scrollback: settings.scrollback,
       allowProposedApi: true,
     });
 
@@ -125,7 +139,6 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     // 3. WebLinks — clickable URLs, opens in system browser via IPC
     const webLinksAddon = new WebLinksAddon((event, uri) => {
       event.preventDefault();
-      // Use IPC to open external URL (can't use shell.openExternal in renderer)
       window.open(uri, "_blank");
     });
     terminal.loadAddon(webLinksAddon);
@@ -142,31 +155,44 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
-    // Initial fit
-    requestAnimationFrame(() => fit());
+    // Fit first to get actual dimensions, THEN create PTY with those
+    // dimensions. This avoids the initial-resize SIGWINCH that causes
+    // duplicate/re-wrapped prompts when the PTY starts at 120x30 but
+    // the actual pane is much smaller.
+    const createPtyWithDimensions = (cwd: string) => {
+      let cols = 120;
+      let rows = 30;
+      try {
+        const dims = fitAddon.proposeDimensions();
+        if (dims && dims.cols > 0 && dims.rows > 0) {
+          cols = dims.cols;
+          rows = dims.rows;
+          terminal.resize(cols, rows);
+        }
+      } catch { /* use defaults */ }
 
-    // Create PTY session
-    if (workingDirectory) {
       window.breadcrumbAPI?.createTerminal({
         id: sessionId,
         name: sessionId,
-        workingDirectory,
+        workingDirectory: cwd,
+        cols,
+        rows,
       });
-    } else {
-      window.breadcrumbAPI?.getWorkingDirectory().then((workingDir) => {
-        window.breadcrumbAPI?.createTerminal({
-          id: sessionId,
-          name: sessionId,
-          workingDirectory: workingDir || "/",
+    };
+
+    // Defer PTY creation to next frame so the DOM has laid out and
+    // fitAddon can measure the real container size.
+    requestAnimationFrame(() => {
+      if (workingDirectory) {
+        createPtyWithDimensions(workingDirectory);
+      } else {
+        window.breadcrumbAPI?.getWorkingDirectory().then((workingDir) => {
+          createPtyWithDimensions(workingDir || "/");
+        }).catch(() => {
+          createPtyWithDimensions("/");
         });
-      }).catch(() => {
-        window.breadcrumbAPI?.createTerminal({
-          id: sessionId,
-          name: sessionId,
-          workingDirectory: "/",
-        });
-      });
-    }
+      }
+    });
 
     // Forward keystrokes to PTY
     const dataDisposable = terminal.onData((data) => {
@@ -188,26 +214,37 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
 
     // Resize observer
     const resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => fit());
+      requestAnimationFrame(() => {
+        try {
+          const dims = fitAddon.proposeDimensions();
+          if (dims && dims.cols > 0 && dims.rows > 0) {
+            if (dims.cols !== terminal.cols || dims.rows !== terminal.rows) {
+              terminal.resize(dims.cols, dims.rows);
+              window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+            }
+          }
+        } catch { /* ignore */ }
+      });
     });
     resizeObserver.observe(containerRef.current);
 
-    cleanupRef.current = () => {
+    return () => {
       dataDisposable.dispose();
       cleanupShell();
       cleanupData?.();
       cleanupExit?.();
       resizeObserver.disconnect();
       searchAddonRef.current = null;
+      fitAddonRef.current = null;
+      terminalRef.current = null;
       terminal.dispose();
     };
+    // Only recreate when the session or working directory changes.
+    // registerHandlers is stable (empty deps). Settings are read from ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, workingDirectory]);
 
-    return () => {
-      cleanupRef.current?.();
-    };
-  }, [sessionId, fit, registerHandlers, workingDirectory]);
-
-  // Refit on activation
+  // Refit + focus on activation — no PTY resize if dimensions unchanged
   useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
@@ -217,7 +254,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     }
   }, [isActive, fit]);
 
-  // Live settings updates — apply changes to existing terminal without recreating
+  // Live settings updates — apply to existing terminal without recreating
   useEffect(() => {
     const terminal = terminalRef.current;
     if (!terminal) return;

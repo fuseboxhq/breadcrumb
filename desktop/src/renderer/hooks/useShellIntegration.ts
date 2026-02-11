@@ -28,6 +28,10 @@ interface ShellIntegrationCallbacks {
 /**
  * Hook to register OSC 133 (command boundaries) and OSC 7 (cwd tracking)
  * handlers on an xterm.js Terminal instance.
+ *
+ * Callbacks are stored in a ref so that `registerHandlers` has a stable
+ * identity — callers can safely include it in useEffect dependency arrays
+ * without triggering terminal recreation on every render.
  */
 export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
   const stateRef = useRef<ShellIntegrationState>({
@@ -37,6 +41,10 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
   });
   const currentBlockRef = useRef<Partial<CommandBlock> | null>(null);
   const blockCounterRef = useRef(0);
+
+  // Store callbacks in a ref so registerHandlers never changes identity
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
 
   const registerHandlers = useCallback(
     (terminal: Terminal) => {
@@ -77,8 +85,8 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
             if (currentBlockRef.current) {
               currentBlockRef.current.commandStartLine = cursorLine;
               currentBlockRef.current.startTime = Date.now();
-              if (callbacks?.onCommandStart && currentBlockRef.current.id) {
-                callbacks.onCommandStart(currentBlockRef.current as CommandBlock);
+              if (callbacksRef.current?.onCommandStart && currentBlockRef.current.id) {
+                callbacksRef.current.onCommandStart(currentBlockRef.current as CommandBlock);
               }
             }
             break;
@@ -95,8 +103,8 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
               stateRef.current.blocks.push(block);
               stateRef.current.lastExitCode = exitCode;
 
-              if (callbacks?.onCommandEnd) {
-                callbacks.onCommandEnd(block);
+              if (callbacksRef.current?.onCommandEnd) {
+                callbacksRef.current.onCommandEnd(block);
               }
 
               currentBlockRef.current = null;
@@ -121,8 +129,8 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
             const cwd = decodeURIComponent(url.pathname);
             stateRef.current.currentCwd = cwd;
 
-            if (callbacks?.onCwdChange) {
-              callbacks.onCwdChange(cwd);
+            if (callbacksRef.current?.onCwdChange) {
+              callbacksRef.current.onCwdChange(cwd);
             }
           }
         } catch {
@@ -137,7 +145,7 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
         disposables.forEach((d) => d.dispose());
       };
     },
-    [callbacks]
+    [] // No dependencies — stable forever
   );
 
   const getState = useCallback(() => stateRef.current, []);
