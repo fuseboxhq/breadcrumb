@@ -10,7 +10,7 @@ export function AppShell() {
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
 
   return (
-    <div className="flex flex-col h-screen dark">
+    <div className="flex flex-col h-screen bg-background">
       <TitleBar />
 
       <div className="flex flex-1 overflow-hidden">
@@ -31,7 +31,10 @@ export function AppShell() {
               >
                 <SidebarPanel />
               </Panel>
-              <PanelResizeHandle className="w-px bg-border hover:bg-primary/50 transition-colors" />
+              <PanelResizeHandle className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative">
+                {/* Visible grab line */}
+                <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-primary/40 transition-default" />
+              </PanelResizeHandle>
             </>
           )}
 
@@ -40,7 +43,7 @@ export function AppShell() {
             <div className="flex flex-col h-full">
               <TabBar />
 
-              {/* Content area — will support further splits */}
+              {/* Content area */}
               <PanelGroup direction="vertical" className="flex-1">
                 <Panel id="editor" order={1}>
                   <WorkspaceContent />

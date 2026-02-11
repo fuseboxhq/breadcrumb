@@ -23,7 +23,7 @@ export function TabBar() {
   };
 
   return (
-    <div className="h-9 bg-background border-b border-border flex items-center shrink-0 overflow-x-auto">
+    <div className="h-9 bg-background flex items-end shrink-0 overflow-x-auto scrollbar-thin">
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab.type];
         const isActive = tab.id === activeTabId;
@@ -32,23 +32,29 @@ export function TabBar() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`
-              group h-full px-3 flex items-center gap-2 border-r border-border text-xs
-              transition-colors shrink-0 max-w-44
+              group relative h-full px-3 flex items-center gap-2 text-xs shrink-0 max-w-48
+              transition-default border-r border-border/50
               ${isActive
-                ? "bg-card text-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                ? "bg-background-raised text-foreground"
+                : "text-foreground-muted hover:text-foreground-secondary hover:bg-background-raised/50"
               }
             `}
           >
-            <Icon className="w-3.5 h-3.5 shrink-0" />
+            {/* Active tab indicator — accent underline at top */}
+            {isActive && (
+              <div className="absolute top-0 left-1 right-1 h-[2px] rounded-b-full bg-primary" />
+            )}
+
+            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-primary" : ""}`} />
             <span className="truncate">{tab.title}</span>
+
             {tab.type !== "welcome" && (
               <span
                 onClick={(e) => {
                   e.stopPropagation();
                   removeTab(tab.id);
                 }}
-                className="ml-auto shrink-0 p-0.5 rounded hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/80 opacity-0 group-hover:opacity-100 transition-default"
               >
                 <X className="w-3 h-3" />
               </span>
@@ -59,11 +65,14 @@ export function TabBar() {
 
       <button
         onClick={handleNewTerminal}
-        className="h-full px-2 flex items-center text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-colors shrink-0"
+        className="h-full px-2.5 flex items-center text-foreground-muted hover:text-foreground-secondary hover:bg-background-raised/50 transition-default shrink-0"
         title="New Terminal"
       >
         <Plus className="w-3.5 h-3.5" />
       </button>
+
+      {/* Fill remaining space */}
+      <div className="flex-1 h-full border-b border-border/50" />
     </div>
   );
 }
