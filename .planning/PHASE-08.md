@@ -100,7 +100,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-5sc.2 | Shell chrome overhaul — title bar, activity bar, tab bar, sidebar | done | High | .1 |
 | breadcrumb-5sc.3 | Welcome screen & workspace content polish | done | Medium | .1 |
 | breadcrumb-5sc.4 | Panel visual overhaul — terminal, browser, planner, extensions | done | High | .1 |
-| breadcrumb-5sc.5 | Command palette with cmdk and global keybinding | open | High | .1 |
+| breadcrumb-5sc.5 | Command palette with cmdk and global keybinding | done | High | .1 |
 | breadcrumb-5sc.6 | Status bar & toast notification system | open | Medium | .1 |
 | breadcrumb-5sc.7 | Micro-interactions, loading states & polish pass | open | High | .2, .4 |
 
