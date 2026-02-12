@@ -58,7 +58,7 @@ Three research areas investigated — see `.planning/research/PHASE-10-*.md` for
 
 | ID | Title | Status | Complexity | Depends On |
 |----|-------|--------|------------|------------|
-| kcc.1 | Add immer middleware & pane state to appStore | not_started | M | — |
+| kcc.1 | Add immer middleware & pane state to appStore | done | M | — |
 | kcc.2 | Migrate TerminalPanel to shared pane store | not_started | L | kcc.1 |
 | kcc.3 | Build accessible sidebar tree component | not_started | L | — |
 | kcc.4 | Rebuild Terminals view as pane-aware tree | not_started | L | kcc.2, kcc.3 |

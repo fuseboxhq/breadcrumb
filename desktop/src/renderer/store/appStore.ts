@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
 
 // Sidebar navigation views
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
@@ -19,6 +20,20 @@ export interface WorkspaceTab {
   projectId?: string;
 }
 
+// Terminal pane state (shared between TerminalPanel and sidebar)
+export interface TerminalPane {
+  id: string;
+  sessionId: string;
+  cwd: string;
+  lastActivity?: number;
+}
+
+export interface TabPaneState {
+  panes: TerminalPane[];
+  activePane: string;
+  splitDirection: "horizontal" | "vertical";
+}
+
 export interface AppState {
   // Sidebar
   sidebarView: SidebarView;
@@ -27,6 +42,9 @@ export interface AppState {
   // Tabs
   tabs: WorkspaceTab[];
   activeTabId: string | null;
+
+  // Terminal panes (keyed by tabId)
+  terminalPanes: Record<string, TabPaneState>;
 
   // Project
   currentProjectPath: string | null;
@@ -45,6 +63,15 @@ export interface AppActions {
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   updateTab: (id: string, updates: Partial<WorkspaceTab>) => void;
+
+  // Terminal pane management
+  initializeTabPanes: (tabId: string, workingDirectory?: string) => void;
+  addPane: (tabId: string, direction?: "horizontal" | "vertical") => void;
+  removePane: (tabId: string, paneId: string) => void;
+  setActivePane: (tabId: string, paneId: string) => void;
+  toggleSplitDirection: (tabId: string) => void;
+  updatePaneCwd: (tabId: string, paneId: string, cwd: string) => void;
+  clearTabPanes: (tabId: string) => void;
 
   // Project
   setCurrentProjectPath: (path: string | null) => void;
@@ -66,53 +93,163 @@ const initialState: AppState = {
     },
   ],
   activeTabId: "welcome",
+  terminalPanes: {},
   currentProjectPath: null,
   theme: "dark",
 };
 
-export const useAppStore = create<AppStore>((set) => ({
-  ...initialState,
+export const useAppStore = create<AppStore>()(
+  immer((set) => ({
+    ...initialState,
 
-  // Sidebar
-  setSidebarView: (view) =>
-    set((state) => ({
-      sidebarView: view,
-      sidebarCollapsed: state.sidebarView === view ? !state.sidebarCollapsed : false,
-    })),
+    // Sidebar
+    setSidebarView: (view) =>
+      set((state) => {
+        if (state.sidebarView === view) {
+          state.sidebarCollapsed = !state.sidebarCollapsed;
+        } else {
+          state.sidebarView = view;
+          state.sidebarCollapsed = false;
+        }
+      }),
 
-  toggleSidebar: () =>
-    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+    toggleSidebar: () =>
+      set((state) => {
+        state.sidebarCollapsed = !state.sidebarCollapsed;
+      }),
 
-  // Tabs
-  addTab: (tab) =>
-    set((state) => ({
-      tabs: [...state.tabs, tab],
-      activeTabId: tab.id,
-    })),
+    // Tabs
+    addTab: (tab) =>
+      set((state) => {
+        state.tabs.push(tab);
+        state.activeTabId = tab.id;
+      }),
 
-  removeTab: (id) =>
-    set((state) => {
-      const newTabs = state.tabs.filter((t) => t.id !== id);
-      const newActiveId =
-        state.activeTabId === id
-          ? newTabs[newTabs.length - 1]?.id || null
-          : state.activeTabId;
-      return { tabs: newTabs, activeTabId: newActiveId };
-    }),
+    removeTab: (id) =>
+      set((state) => {
+        const newTabs = state.tabs.filter((t) => t.id !== id);
+        const newActiveId =
+          state.activeTabId === id
+            ? newTabs[newTabs.length - 1]?.id || null
+            : state.activeTabId;
+        state.tabs = newTabs;
+        state.activeTabId = newActiveId;
+        // Clean up pane state when removing terminal tab
+        delete state.terminalPanes[id];
+      }),
 
-  setActiveTab: (id) => set({ activeTabId: id }),
+    setActiveTab: (id) =>
+      set((state) => {
+        state.activeTabId = id;
+      }),
 
-  updateTab: (id, updates) =>
-    set((state) => ({
-      tabs: state.tabs.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    })),
+    updateTab: (id, updates) =>
+      set((state) => {
+        const tab = state.tabs.find((t) => t.id === id);
+        if (tab) {
+          Object.assign(tab, updates);
+        }
+      }),
 
-  // Project
-  setCurrentProjectPath: (path) => set({ currentProjectPath: path }),
+    // Terminal pane management
+    initializeTabPanes: (tabId, workingDirectory) =>
+      set((state) => {
+        if (!state.terminalPanes[tabId]) {
+          state.terminalPanes[tabId] = {
+            panes: [
+              {
+                id: "pane-1",
+                sessionId: `${tabId}-1`,
+                cwd: workingDirectory || "",
+                lastActivity: Date.now(),
+              },
+            ],
+            activePane: "pane-1",
+            splitDirection: "horizontal",
+          };
+        }
+      }),
 
-  // Theme
-  setTheme: (theme) => set({ theme }),
-}));
+    addPane: (tabId, direction) =>
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+
+        if (direction) {
+          tabState.splitDirection = direction;
+        }
+
+        const id = `pane-${Date.now()}`;
+        const sessionId = `${tabId}-${Date.now()}`;
+
+        tabState.panes.push({
+          id,
+          sessionId,
+          cwd: "",
+          lastActivity: Date.now(),
+        });
+        tabState.activePane = id;
+      }),
+
+    removePane: (tabId, paneId) =>
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+
+        const newPanes = tabState.panes.filter((p) => p.id !== paneId);
+        if (newPanes.length === 0) return; // Don't remove last pane
+
+        tabState.panes = newPanes;
+        if (tabState.activePane === paneId) {
+          tabState.activePane = newPanes[newPanes.length - 1].id;
+        }
+      }),
+
+    setActivePane: (tabId, paneId) =>
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+        tabState.activePane = paneId;
+      }),
+
+    toggleSplitDirection: (tabId) =>
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+        tabState.splitDirection =
+          tabState.splitDirection === "horizontal" ? "vertical" : "horizontal";
+      }),
+
+    updatePaneCwd: (tabId, paneId, cwd) =>
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+
+        const pane = tabState.panes.find((p) => p.id === paneId);
+        if (pane) {
+          pane.cwd = cwd;
+          pane.lastActivity = Date.now();
+        }
+      }),
+
+    clearTabPanes: (tabId) =>
+      set((state) => {
+        delete state.terminalPanes[tabId];
+      }),
+
+    // Project
+    setCurrentProjectPath: (path) =>
+      set((state) => {
+        state.currentProjectPath = path;
+      }),
+
+    // Theme
+    setTheme: (theme) =>
+      set((state) => {
+        state.theme = theme;
+      }),
+  }))
+);
 
 // Selector hooks
 export const useSidebarView = () => useAppStore((s) => s.sidebarView);
@@ -122,3 +259,13 @@ export const useActiveTabId = () => useAppStore((s) => s.activeTabId);
 export const useActiveTab = () =>
   useAppStore((s) => s.tabs.find((t) => t.id === s.activeTabId));
 export const useCurrentProjectPath = () => useAppStore((s) => s.currentProjectPath);
+
+// Pane selector hooks
+export const useTabPanes = (tabId: string) =>
+  useAppStore((s) => s.terminalPanes[tabId]);
+export const useTabPanesList = (tabId: string) =>
+  useAppStore((s) => s.terminalPanes[tabId]?.panes || []);
+export const useActivePane = (tabId: string) =>
+  useAppStore((s) => s.terminalPanes[tabId]?.activePane);
+export const useSplitDirection = (tabId: string) =>
+  useAppStore((s) => s.terminalPanes[tabId]?.splitDirection || "horizontal");
