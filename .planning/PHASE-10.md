@@ -1,6 +1,6 @@
 # Phase 10: Workspace Sidebar Overhaul
 
-**Status:** not_started
+**Status:** complete
 **Beads Epic:** breadcrumb-kcc
 **Created:** 2026-02-12
 
@@ -64,7 +64,7 @@ Three research areas investigated — see `.planning/research/PHASE-10-*.md` for
 | kcc.4 | Rebuild Terminals view as pane-aware tree | done | L | kcc.2, kcc.3 |
 | kcc.5 | Enhanced Explorer view with project cards | done | M | — |
 | kcc.6 | Context menus for terminals, panes & projects | done | L | kcc.4, kcc.5 |
-| kcc.7 | Sidebar keyboard navigation & polish | not_started | M | kcc.4, kcc.5 |
+| kcc.7 | Sidebar keyboard navigation & polish | done | M | kcc.4, kcc.5 |
 
 **Dependency graph:**
 ```

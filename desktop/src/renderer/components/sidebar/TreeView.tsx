@@ -29,6 +29,8 @@ export interface TreeViewProps {
   renderActions?: (node: TreeNode) => ReactNode;
   /** Optional context menu wrapper — receives the node and its rendered content */
   renderContextMenu?: (node: TreeNode, children: ReactNode) => ReactNode;
+  /** Called when Escape is pressed — use to return focus to main content */
+  onEscape?: () => void;
   /** Additional className for the root */
   className?: string;
 }
@@ -66,6 +68,7 @@ export function TreeView({
   onToggle,
   renderActions,
   renderContextMenu,
+  onEscape,
   className = "",
 }: TreeViewProps) {
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -155,9 +158,15 @@ export function TreeView({
           onSelect?.(current.id);
           break;
         }
+        case "Escape": {
+          e.preventDefault();
+          setFocusedId(null);
+          onEscape?.();
+          break;
+        }
       }
     },
-    [visibleNodes, focusedId, onSelect, onToggle]
+    [visibleNodes, focusedId, onSelect, onToggle, onEscape]
   );
 
   const registerRef = useCallback((id: string, el: HTMLDivElement | null) => {

@@ -443,6 +443,11 @@ function TerminalsView() {
           selectedId={activeTabId}
           onSelect={handleSelect}
           onToggle={handleToggle}
+          onEscape={() => {
+            // Return focus to the active terminal pane
+            const terminalEl = document.querySelector<HTMLElement>(".xterm-helper-textarea");
+            terminalEl?.focus();
+          }}
           renderActions={(node) => {
             // Only show close button on terminal tab nodes (not groups or panes)
             const isTab = terminalTabs.some((t) => t.id === node.id);
