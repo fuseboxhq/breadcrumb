@@ -86,6 +86,22 @@ export function getFriendlyProcessName(raw: string): string {
 /** Generic runtimes where pty.process is useless — need to inspect actual args */
 const INSPECT_RUNTIMES = new Set(["node", "python", "python3", "ruby", "java"]);
 
+/** Shells are the resting state — don't treat them as a meaningful processLabel */
+const SHELL_NAMES = new Set(["bash", "zsh", "fish", "sh", "dash", "ksh", "tcsh", "login"]);
+
+/**
+ * Should we run command-line inspection for this process name?
+ * Yes for: generic runtimes ("node"), unknown names ("2.1.38"), version strings
+ * No for: shells, well-known tools with good names ("vim", "git", "docker")
+ */
+function shouldInspect(rawName: string): boolean {
+  if (SHELL_NAMES.has(rawName)) return false;
+  if (INSPECT_RUNTIMES.has(rawName)) return true;
+  // Unknown process — not in our friendly names map. Inspect it.
+  if (!PROCESS_FRIENDLY_NAMES[rawName]) return true;
+  return false;
+}
+
 interface ProcessLabel {
   processName: string;
   processLabel: string;
@@ -286,10 +302,15 @@ const PYTHON_COMMAND_PATTERNS: Array<{
   },
 ];
 
+/** All patterns combined — used when runtime is unknown */
+const ALL_COMMAND_PATTERNS = [...NODE_COMMAND_PATTERNS, ...PYTHON_COMMAND_PATTERNS];
+
 function getCommandPatterns(runtime: string) {
   if (runtime === "node") return NODE_COMMAND_PATTERNS;
   if (runtime === "python" || runtime === "python3") return PYTHON_COMMAND_PATTERNS;
-  return [];
+  // Unknown runtime (e.g. "2.1.38" from Claude Code setting process.title) —
+  // try ALL patterns since we don't know what kind of process this is
+  return ALL_COMMAND_PATTERNS;
 }
 
 /**
@@ -421,9 +442,14 @@ export class TerminalService extends EventEmitter {
       const gen = (this.inspectGeneration.get(sessionId) || 0) + 1;
       this.inspectGeneration.set(sessionId, gen);
 
-      if (INSPECT_RUNTIMES.has(rawName)) {
-        // For generic runtimes, emit the basic label immediately,
-        // then async-inspect the command line for a smarter one
+      // Shells are the resting state — clear processLabel so CWD shows through
+      if (SHELL_NAMES.has(rawName)) {
+        this.emitLabel(sessionId, "", "");
+        return;
+      }
+
+      if (shouldInspect(rawName)) {
+        // Emit whatever we have immediately, then try to find something better
         this.emitLabel(sessionId, rawName, getFriendlyProcessName(rawName));
         this.inspectAndEmit(sessionId, ptyProcess, rawName, gen);
       } else {
