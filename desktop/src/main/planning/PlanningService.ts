@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { join } from "path";
 import Database from "better-sqlite3";
 
@@ -84,11 +84,35 @@ export class PlanningService {
   }
 
   getPhaseDetail(projectPath: string, phaseId: string): PhaseDetail | null {
-    const phaseFile = join(projectPath, ".planning", `${phaseId}.md`);
-    if (!existsSync(phaseFile)) return null;
+    const phaseFile = this.resolvePhaseFile(projectPath, phaseId);
+    if (!phaseFile) return null;
 
     const content = readFileSync(phaseFile, "utf-8");
     return this.parsePhaseFile(content, phaseId);
+  }
+
+  /**
+   * Resolve phase file path — handles both `PHASE-XX.md` and
+   * slugified names like `PHASE-XX-some-title.md`.
+   */
+  private resolvePhaseFile(
+    projectPath: string,
+    phaseId: string
+  ): string | null {
+    const planningDir = join(projectPath, ".planning");
+
+    // Try exact match first
+    const exact = join(planningDir, `${phaseId}.md`);
+    if (existsSync(exact)) return exact;
+
+    // Try prefix match (e.g. PHASE-26-close-the-review-loop.md)
+    if (!existsSync(planningDir)) return null;
+    const prefix = `${phaseId}-`;
+    const files = readdirSync(planningDir);
+    const match = files.find(
+      (f) => f.startsWith(prefix) && f.endsWith(".md")
+    );
+    return match ? join(planningDir, match) : null;
   }
 
   getBeadsTasks(projectPath: string, epicId: string): BeadsTask[] {
