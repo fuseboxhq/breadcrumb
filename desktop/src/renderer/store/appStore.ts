@@ -290,7 +290,7 @@ export const useAppStore = create<AppStore>()(
         const wasClaude = pane.processName === "claude";
         const isClaude = processName === "claude";
 
-        pane.processName = processName;
+        pane.processName = processName || undefined;
 
         if (isClaude) {
           // Assign a Claude instance number if this pane doesn't already have one
@@ -315,7 +315,8 @@ export const useAppStore = create<AppStore>()(
           if (wasClaude) {
             pane.claudeInstanceNumber = undefined;
           }
-          pane.processLabel = processLabel;
+          // Normalize empty string to undefined so resolveLabel falls through
+          pane.processLabel = processLabel || undefined;
         }
       }),
 

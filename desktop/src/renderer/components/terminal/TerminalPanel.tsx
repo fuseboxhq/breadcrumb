@@ -56,19 +56,17 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
     const state = useAppStore.getState();
     const currentActivePane = state.terminalPanes[tabId]?.activePane;
     if (paneId === currentActivePane) {
-      const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
-      // Prefer process label over CWD for tab title
-      const title = pane?.processLabel || folderName(cwd);
-      updateTab(tabId, { title });
+      // Don't set tab title here — the useEffect below handles it
+      // reactively, avoiding stale processLabel races
     }
-  }, [tabId, storeUpdatePaneCwd, updateTab]);
+  }, [tabId, storeUpdatePaneCwd]);
 
-  // When active pane switches or process label changes, update tab title
+  // When active pane switches, process label changes, or CWD changes → update tab title
   useEffect(() => {
     const pane = panes.find((p) => p.id === activePane);
     if (pane) {
-      const title = pane.processLabel || (pane.cwd ? folderName(pane.cwd) : undefined);
-      if (title) updateTab(tabId, { title });
+      const title = pane.processLabel || (pane.cwd ? folderName(pane.cwd) : "Terminal");
+      updateTab(tabId, { title });
     }
   }, [activePane, panes, tabId, updateTab]);
 
