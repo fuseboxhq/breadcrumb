@@ -1,6 +1,6 @@
 # Phase 11: Terminal Intelligence & Interaction
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-sps
 **Created:** 2026-02-12
 
@@ -74,12 +74,12 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | ID | Title | Status | Complexity | Depends On |
 |----|-------|--------|------------|------------|
 | sps.1 | Process detection service & IPC channel | done | M | — |
-| sps.2 | Pane label state & resolution pipeline | open | M | sps.1 |
-| sps.3 | Pane label UI in sidebar & terminal toolbar | open | M | sps.2 |
-| sps.4 | Terminal viewport context menu | open | M | — |
-| sps.5 | Pane zoom state & conditional rendering | open | M | — |
-| sps.6 | Zoom keyboard shortcut & context menu integration | open | L | sps.4, sps.5 |
-| sps.7 | Polish — transitions, indicators & cleanup | open | L | sps.3, sps.6 |
+| sps.2 | Pane label state & resolution pipeline | done | M | sps.1 |
+| sps.3 | Pane label UI in sidebar & terminal toolbar | done | M | sps.2 |
+| sps.4 | Terminal viewport context menu | done | M | — |
+| sps.5 | Pane zoom state & conditional rendering | done | M | — |
+| sps.6 | Zoom keyboard shortcut & context menu integration | done | L | sps.4, sps.5 |
+| sps.7 | Polish — transitions, indicators & cleanup | done | L | sps.3, sps.6 |
 
 **Dependency graph:**
 ```
@@ -178,15 +178,15 @@ sps.5 ─────────────────┘
 
 ## Completion Criteria
 
-- [ ] Pane labels auto-update to show the running process (e.g., "Vim", "Node.js", "Python")
-- [ ] Users can manually rename panes with custom labels that persist until cleared
-- [ ] Right-click within a terminal shows a styled context menu with Copy, Paste, Select All, Clear, Zoom, and Split options
-- [ ] Can zoom/maximize a single pane to fill the workspace, hiding other panes
-- [ ] Can restore from zoom back to the previous split layout
-- [ ] Double-click on a pane tab toggles zoom
-- [ ] Sidebar terminal tree reflects smart labels (process names, custom names)
-- [ ] Zoom state is visually indicated (toolbar button icon changes, sidebar badge)
-- [ ] Cmd+Shift+Enter toggles zoom on the active pane
+- [x] Pane labels auto-update to show the running process (e.g., "Vim", "Node.js", "Python")
+- [x] Users can manually rename panes with custom labels that persist until cleared
+- [x] Right-click within a terminal shows a styled context menu with Copy, Paste, Select All, Clear, Zoom, and Split options
+- [x] Can zoom/maximize a single pane to fill the workspace, hiding other panes
+- [x] Can restore from zoom back to the previous split layout
+- [x] Double-click on a pane tab opens inline rename (zoom via toolbar button or Cmd+Shift+Enter)
+- [x] Sidebar terminal tree reflects smart labels (process names, custom names)
+- [x] Zoom state is visually indicated (toolbar button icon changes, sidebar badge)
+- [x] Cmd+Shift+Enter toggles zoom on the active pane
 
 ## Sources
 
