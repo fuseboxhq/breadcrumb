@@ -1,8 +1,8 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { useAppStore, useTabPanes } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen } from "lucide-react";
+import { useAppStore, useTabPanes, resolveLabel } from "../../store/appStore";
+import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen, Cpu } from "lucide-react";
 
 interface TerminalPanelProps {
   tabId: string;
@@ -22,6 +22,11 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const activePane = tabPaneState?.activePane || "pane-1";
   const splitDirection = tabPaneState?.splitDirection || "horizontal";
 
+  // Inline rename state
+  const [renamingPaneId, setRenamingPaneId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
   // Store actions
   const initializeTabPanes = useAppStore((s) => s.initializeTabPanes);
   const storeAddPane = useAppStore((s) => s.addPane);
@@ -29,6 +34,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const storeSetActivePane = useAppStore((s) => s.setActivePane);
   const storeToggleSplitDirection = useAppStore((s) => s.toggleSplitDirection);
   const storeUpdatePaneCwd = useAppStore((s) => s.updatePaneCwd);
+  const setPaneCustomLabel = useAppStore((s) => s.setPaneCustomLabel);
   const updateTab = useAppStore((s) => s.updateTab);
 
   // Initialize panes on mount (idempotent)
@@ -94,6 +100,32 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
     }
   }, [tabId, storeSetActivePane]);
 
+  // Inline rename handlers
+  const startRename = useCallback((paneId: string, currentLabel: string) => {
+    setRenamingPaneId(paneId);
+    setRenameValue(currentLabel);
+  }, []);
+
+  const commitRename = useCallback(() => {
+    if (renamingPaneId) {
+      const trimmed = renameValue.trim();
+      setPaneCustomLabel(tabId, renamingPaneId, trimmed || null);
+      setRenamingPaneId(null);
+    }
+  }, [tabId, renamingPaneId, renameValue, setPaneCustomLabel]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingPaneId(null);
+  }, []);
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renamingPaneId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingPaneId]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -152,11 +184,31 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       <div className="h-8 flex items-center justify-between px-2 bg-background-raised border-b border-border shrink-0">
         <div className="flex items-center gap-0.5">
           {panes.map((pane, index) => {
-            const label = pane.cwd ? folderName(pane.cwd) : `${index + 1}`;
+            const label = resolveLabel(pane, index);
+            const PaneIcon = pane.processName ? Cpu : pane.cwd ? FolderOpen : Terminal;
+
+            if (renamingPaneId === pane.id) {
+              return (
+                <input
+                  key={pane.id}
+                  ref={renameInputRef}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename();
+                    if (e.key === "Escape") cancelRename();
+                  }}
+                  className="px-2 py-0.5 text-2xs rounded-md bg-background border border-primary/30 text-foreground outline-none max-w-32 w-24"
+                />
+              );
+            }
+
             return (
               <button
                 key={pane.id}
                 onClick={() => setActivePane(pane.id)}
+                onDoubleClick={() => startRename(pane.id, pane.customLabel || "")}
                 className={`
                   group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5 max-w-32
                   ${activePane === pane.id
@@ -164,10 +216,22 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                     : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
                   }
                 `}
+                title={`${label}${pane.customLabel ? " (custom)" : pane.processLabel ? ` — ${pane.processLabel}` : ""}\nDouble-click to rename`}
               >
-                {pane.cwd ? <FolderOpen className="w-3 h-3 shrink-0" /> : <Terminal className="w-3 h-3 shrink-0" />}
+                <PaneIcon className="w-3 h-3 shrink-0" />
                 <span className="truncate">{label}</span>
-                {panes.length > 1 && (
+                {pane.customLabel && (
+                  <span
+                    title="Clear custom name"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPaneCustomLabel(tabId, pane.id, null);
+                    }}
+                  >
+                    <X className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-default hover:text-foreground" />
+                  </span>
+                )}
+                {!pane.customLabel && panes.length > 1 && (
                   <X
                     className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-default hover:text-destructive"
                     onClick={(e) => {

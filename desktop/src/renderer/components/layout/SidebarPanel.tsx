@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useAppStore, type SidebarView } from "../../store/appStore";
+import { useAppStore, resolveLabel, type SidebarView } from "../../store/appStore";
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
@@ -394,8 +394,10 @@ function TerminalsView() {
         const paneChildren: TreeNodeType[] = hasMultiplePanes
           ? panes.map((pane, i) => ({
               id: `${tab.id}:${pane.id}`,
-              label: pane.cwd ? folderName(pane.cwd) : `Pane ${i + 1}`,
-              icon: <FolderOpen className="w-3 h-3" />,
+              label: resolveLabel(pane, i),
+              icon: pane.processName
+                ? <Terminal className="w-3 h-3" />
+                : <FolderOpen className="w-3 h-3" />,
               isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
             }))
           : [];
@@ -515,16 +517,23 @@ function TerminalsView() {
                 <ContextMenu
                   content={
                     <>
+                      <MenuItem
+                        icon={<Pencil className="w-3.5 h-3.5" />}
+                        label="Rename Pane"
+                        onSelect={() => {
+                          // Focus the pane tab and trigger rename via store
+                          setActiveTab(tabId);
+                          setActivePane(tabId, paneId);
+                        }}
+                      />
                       {pane?.cwd && (
-                        <>
-                          <MenuItem
-                            icon={<Copy className="w-3.5 h-3.5" />}
-                            label="Copy CWD"
-                            onSelect={() => navigator.clipboard.writeText(pane.cwd)}
-                          />
-                          <MenuSeparator />
-                        </>
+                        <MenuItem
+                          icon={<Copy className="w-3.5 h-3.5" />}
+                          label="Copy CWD"
+                          onSelect={() => navigator.clipboard.writeText(pane.cwd)}
+                        />
                       )}
+                      <MenuSeparator />
                       <MenuItem
                         icon={<X className="w-3.5 h-3.5" />}
                         label="Close Pane"
