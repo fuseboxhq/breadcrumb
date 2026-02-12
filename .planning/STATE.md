@@ -1,6 +1,6 @@
 # Project State
 
-**Current Phase:** PHASE-12
+**Current Phase:** PHASE-13
 **Last Updated:** 2026-02-12
 
 ## Active Work
@@ -9,6 +9,7 @@ PHASE-05: Add /bc:view command for opening dashboard (not_started)
 PHASE-09: Terminal Experience (complete)
 PHASE-10: Workspace Sidebar Overhaul (complete)
 PHASE-12: Breadcrumb Dashboard Integration (not_started)
+PHASE-13: Right Panel Layout Overhaul (not_started)
 ## Completed Phases
 
 PHASE-11: Terminal Intelligence & Interaction (complete) - 7/7 tasks done
