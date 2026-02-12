@@ -7,6 +7,12 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { useShellIntegration } from "../../hooks/useShellIntegration";
 import { useTerminalSettings } from "../../store/settingsStore";
 import { TerminalSearch } from "./TerminalSearch";
+import {
+  ContextMenu,
+  MenuItem,
+  MenuSeparator,
+} from "../shared/ContextMenu";
+import { Copy, ClipboardPaste, CheckSquare, Eraser } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
@@ -90,6 +96,36 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     }
   }, [sessionId]);
 
+  // Track whether there's a text selection in the terminal
+  const [hasSelection, setHasSelection] = useState(false);
+
+  // Context menu handlers
+  const handleCopy = useCallback(async () => {
+    const selection = terminalRef.current?.getSelection();
+    if (selection) {
+      await navigator.clipboard.writeText(selection);
+    }
+    terminalRef.current?.focus();
+  }, []);
+
+  const handlePaste = useCallback(async () => {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      terminalRef.current?.paste(text);
+    }
+    terminalRef.current?.focus();
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    terminalRef.current?.selectAll();
+    terminalRef.current?.focus();
+  }, []);
+
+  const handleClear = useCallback(() => {
+    terminalRef.current?.clear();
+    terminalRef.current?.focus();
+  }, []);
+
   // Cmd+F to toggle search, Cmd+L to clear
   useEffect(() => {
     if (!isActive) return;
@@ -150,6 +186,11 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
 
     // 5. Shell integration OSC handlers
     const cleanupShell = registerHandlers(terminal);
+
+    // 6. Track selection state for context menu
+    const selectionDisposable = terminal.onSelectionChange(() => {
+      setHasSelection(!!terminal.getSelection());
+    });
 
     terminal.open(containerRef.current);
     terminalRef.current = terminal;
@@ -246,6 +287,7 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
       destroyed = true;
       clearTimeout(resizeTimer);
       dataDisposable.dispose();
+      selectionDisposable.dispose();
       cleanupShell();
       cleanupData?.();
       cleanupExit?.();
@@ -283,35 +325,68 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
   }, [terminalSettings, fit]);
 
   return (
-    <div className="relative w-full h-full">
-      <div
-        ref={containerRef}
-        className="w-full h-full bg-background"
-      />
+    <ContextMenu
+      content={
+        <>
+          <MenuItem
+            icon={<Copy className="w-3.5 h-3.5" />}
+            label="Copy"
+            shortcut="⌘C"
+            disabled={!hasSelection}
+            onSelect={handleCopy}
+          />
+          <MenuItem
+            icon={<ClipboardPaste className="w-3.5 h-3.5" />}
+            label="Paste"
+            shortcut="⌘V"
+            onSelect={handlePaste}
+          />
+          <MenuItem
+            icon={<CheckSquare className="w-3.5 h-3.5" />}
+            label="Select All"
+            shortcut="⌘A"
+            onSelect={handleSelectAll}
+          />
+          <MenuSeparator />
+          <MenuItem
+            icon={<Eraser className="w-3.5 h-3.5" />}
+            label="Clear Terminal"
+            shortcut="⌘L"
+            onSelect={handleClear}
+          />
+        </>
+      }
+    >
+      <div className="relative w-full h-full">
+        <div
+          ref={containerRef}
+          className="w-full h-full bg-background"
+        />
 
-      {/* Search overlay */}
-      <TerminalSearch
-        searchAddon={searchAddonRef.current}
-        isVisible={searchVisible}
-        onClose={() => {
-          setSearchVisible(false);
-          terminalRef.current?.focus();
-        }}
-      />
+        {/* Search overlay */}
+        <TerminalSearch
+          searchAddon={searchAddonRef.current}
+          isVisible={searchVisible}
+          onClose={() => {
+            setSearchVisible(false);
+            terminalRef.current?.focus();
+          }}
+        />
 
-      {/* Exit code badge */}
-      {lastExitCode !== null && !searchVisible && (
-        <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-mono animate-fade-in ${
-          lastExitCode === 0
-            ? "bg-dracula-green/15 border border-dracula-green/25 text-dracula-green"
-            : "bg-destructive/20 border border-destructive/30 text-destructive"
-        }`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${
-            lastExitCode === 0 ? "bg-dracula-green" : "bg-destructive"
-          }`} />
-          {lastExitCode === 0 ? "OK" : `Exit ${lastExitCode}`}
-        </div>
-      )}
-    </div>
+        {/* Exit code badge */}
+        {lastExitCode !== null && !searchVisible && (
+          <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-mono animate-fade-in ${
+            lastExitCode === 0
+              ? "bg-dracula-green/15 border border-dracula-green/25 text-dracula-green"
+              : "bg-destructive/20 border border-destructive/30 text-destructive"
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${
+              lastExitCode === 0 ? "bg-dracula-green" : "bg-destructive"
+            }`} />
+            {lastExitCode === 0 ? "OK" : `Exit ${lastExitCode}`}
+          </div>
+        )}
+      </div>
+    </ContextMenu>
   );
 }
