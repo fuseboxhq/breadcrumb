@@ -1,10 +1,10 @@
-import { X, Plus, Terminal, Globe, LayoutGrid, Sparkles } from "lucide-react";
+import { X, Plus, Terminal, Sparkles } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 
 const TAB_ICONS: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
-  browser: Globe,
-  breadcrumb: LayoutGrid,
+  browser: Terminal, // browser tabs no longer used in center
+  breadcrumb: Terminal, // breadcrumb tabs no longer used in center
   welcome: Sparkles,
 };
 

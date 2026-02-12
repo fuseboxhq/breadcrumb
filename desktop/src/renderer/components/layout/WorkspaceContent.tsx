@@ -1,12 +1,8 @@
 import { useAppStore } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
-import { BrowserPanel } from "../browser/BrowserPanel";
-import { PlanningPanel } from "../breadcrumb/PlanningPanel";
 import {
   Terminal,
-  Globe,
-  LayoutGrid,
   Sparkles,
   Zap,
   Command,
@@ -33,12 +29,8 @@ export function WorkspaceContent() {
       return <WelcomeView />;
     case "terminal":
       return <TerminalPanel tabId={activeTab.id} workingDirectory={projectDir} />;
-    case "browser":
-      return <BrowserPanel initialUrl={activeTab.url} />;
-    case "breadcrumb":
-      return <PlanningPanel />;
     default:
-      return null;
+      return <EmptyWorkspace />;
   }
 }
 
@@ -62,7 +54,7 @@ function EmptyWorkspace() {
 }
 
 function WelcomeView() {
-  const { addTab } = useAppStore();
+  const { addTab, addRightPanelPane } = useAppStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
@@ -86,33 +78,13 @@ function WelcomeView() {
         }),
     },
     {
-      icon: Globe,
-      label: "Open Browser",
-      description: "Browse the web or preview dev server",
-      shortcut: "⌘B",
-      color: "text-dracula-cyan",
-      bgColor: "bg-dracula-cyan/10",
-      action: () =>
-        addTab({
-          id: `browser-${Date.now()}`,
-          type: "browser",
-          title: "Browser",
-          url: "https://localhost:3000",
-        }),
-    },
-    {
-      icon: LayoutGrid,
+      icon: Sparkles,
       label: "Breadcrumb Planner",
       description: "View phases, tasks, and project status",
-      shortcut: "⌘P",
+      shortcut: "⌘⇧P",
       color: "text-dracula-purple",
       bgColor: "bg-dracula-purple/10",
-      action: () =>
-        addTab({
-          id: `breadcrumb-${Date.now()}`,
-          type: "breadcrumb",
-          title: "Planner",
-        }),
+      action: () => addRightPanelPane("planning"),
     },
   ];
 
