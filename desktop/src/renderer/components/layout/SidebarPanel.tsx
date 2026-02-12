@@ -415,10 +415,16 @@ function TerminalsView() {
             })
           : [];
 
+        // When single pane, reflect its process icon on the tab node
+        const singlePane = !hasMultiplePanes && panes.length === 1 ? panes[0] : null;
+        const tabIcon = singlePane?.processName === "claude"
+          ? <ClaudeIcon className="w-3.5 h-3.5" />
+          : <Terminal className="w-3.5 h-3.5" />;
+
         return {
           id: tab.id,
           label: tab.title,
-          icon: <Terminal className="w-3.5 h-3.5" />,
+          icon: tabIcon,
           isActive: tab.id === activeTabId,
           children: paneChildren.length > 0 ? paneChildren : undefined,
           expanded: expandedIds.has(tab.id),
