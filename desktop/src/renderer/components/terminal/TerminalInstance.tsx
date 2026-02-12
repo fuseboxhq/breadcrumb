@@ -340,8 +340,16 @@ export function TerminalInstance({
     requestAnimationFrame(() => fit());
   }, [terminalSettings, fit]);
 
+  // Restore terminal focus when context menu closes
+  const handleContextMenuOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      requestAnimationFrame(() => terminalRef.current?.focus());
+    }
+  }, []);
+
   return (
     <ContextMenu
+      onOpenChange={handleContextMenuOpenChange}
       content={
         <>
           <MenuItem

@@ -396,14 +396,20 @@ function TerminalsView() {
 
         // Build pane children (only when multiple panes)
         const paneChildren: TreeNodeType[] = hasMultiplePanes
-          ? panes.map((pane, i) => ({
-              id: `${tab.id}:${pane.id}`,
-              label: resolveLabel(pane, i),
-              icon: pane.processName
-                ? <Terminal className="w-3 h-3" />
-                : <FolderOpen className="w-3 h-3" />,
-              isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
-            }))
+          ? panes.map((pane, i) => {
+              const isPaneZoomed = zoomedPane?.tabId === tab.id && zoomedPane?.paneId === pane.id;
+              return {
+                id: `${tab.id}:${pane.id}`,
+                label: resolveLabel(pane, i),
+                icon: pane.processName
+                  ? <Terminal className="w-3 h-3" />
+                  : <FolderOpen className="w-3 h-3" />,
+                isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
+                badge: isPaneZoomed ? (
+                  <Maximize2 className="w-2.5 h-2.5 text-primary" />
+                ) : undefined,
+              };
+            })
           : [];
 
         return {
@@ -432,7 +438,7 @@ function TerminalsView() {
     }
 
     return nodes;
-  }, [terminalTabs, projects, terminalPanes, activeTabId, expandedIds]);
+  }, [terminalTabs, projects, terminalPanes, activeTabId, expandedIds, zoomedPane]);
 
   if (terminalTabs.length === 0) {
     return (

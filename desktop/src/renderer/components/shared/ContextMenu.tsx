@@ -6,12 +6,13 @@ import type { ReactNode } from "react";
 export interface ContextMenuProps {
   children: ReactNode;
   content: ReactNode;
+  onOpenChange?: (open: boolean) => void;
 }
 
 /** Wraps a trigger element with a right-click context menu */
-export function ContextMenu({ children, content }: ContextMenuProps) {
+export function ContextMenu({ children, content, onOpenChange }: ContextMenuProps) {
   return (
-    <RadixContextMenu.Root>
+    <RadixContextMenu.Root onOpenChange={onOpenChange}>
       <RadixContextMenu.Trigger asChild>{children}</RadixContextMenu.Trigger>
       <RadixContextMenu.Portal>
         <RadixContextMenu.Content
