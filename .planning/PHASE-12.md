@@ -87,7 +87,7 @@ Transform the Breadcrumb tab from a minimal STATE.md reader into a unified multi
 | ID | Title | Status | Complexity | Depends On |
 |----|-------|--------|------------|------------|
 | bdi.1 | PlanningService: parse .planning/ files & query .beads/beads.db | done | L | — |
-| bdi.2 | IPC channels, handlers & preload bridge for planning data | not_started | M | bdi.1 |
+| bdi.2 | IPC channels, handlers & preload bridge for planning data | done | M | bdi.1 |
 | bdi.3 | planningStore: Zustand store for caching planning data per project | not_started | M | bdi.2 |
 | bdi.4 | Dashboard shell: navigation, project selector & layout | not_started | M | bdi.3 |
 | bdi.5 | ProjectSummaryGrid: project overview cards with phase progress | not_started | M | bdi.3 |

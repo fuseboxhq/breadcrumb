@@ -55,6 +55,12 @@ export interface BreadcrumbAPI {
   resetSettings: () => Promise<{ success: boolean }>;
   onSettingsChanged: (callback: (settings: Record<string, unknown>) => void) => () => void;
 
+  // Planning operations
+  getPlanningCapabilities: (projectPath: string) => Promise<{ success: boolean; data?: { hasPlanning: boolean; hasBeads: boolean }; error?: string }>;
+  getPlanningPhases: (projectPath: string) => Promise<{ success: boolean; data?: Array<{ id: string; title: string; status: string; taskCount: number; completedCount: number; isActive: boolean }>; error?: string }>;
+  getPlanningPhaseDetail: (projectPath: string, phaseId: string) => Promise<{ success: boolean; data?: Record<string, unknown> | null; error?: string }>;
+  getPlanningBeadsTasks: (projectPath: string, epicId: string) => Promise<{ success: boolean; data?: Array<Record<string, unknown>>; error?: string }>;
+
   // Extension operations
   getExtensions: () => Promise<ExtensionInfoForRenderer[]>;
   activateExtension: (id: string) => Promise<{ success: boolean; error?: string }>;
@@ -135,6 +141,19 @@ const api: BreadcrumbAPI = {
     ipcRenderer.on(IPC_CHANNELS.SETTINGS_CHANGED, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.SETTINGS_CHANGED, handler);
   },
+
+  // Planning operations
+  getPlanningCapabilities: (projectPath) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLANNING_GET_CAPABILITIES, { projectPath }),
+
+  getPlanningPhases: (projectPath) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLANNING_GET_PHASES, { projectPath }),
+
+  getPlanningPhaseDetail: (projectPath, phaseId) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLANNING_GET_PHASE_DETAIL, { projectPath, phaseId }),
+
+  getPlanningBeadsTasks: (projectPath, epicId) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLANNING_GET_BEADS_TASKS, { projectPath, epicId }),
 
   // Extension operations
   getExtensions: () => ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_LIST),

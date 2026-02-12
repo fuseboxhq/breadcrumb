@@ -85,6 +85,12 @@ export const IPC_CHANNELS = {
   MEMORY_READ: "memory:read",
   MEMORY_WRITE: "memory:write",
 
+  // Planning channels
+  PLANNING_GET_CAPABILITIES: "planning:get-capabilities",
+  PLANNING_GET_PHASES: "planning:get-phases",
+  PLANNING_GET_PHASE_DETAIL: "planning:get-phase-detail",
+  PLANNING_GET_BEADS_TASKS: "planning:get-beads-tasks",
+
   // Extension channels
   EXTENSIONS_LIST: "extensions:list",
   EXTENSIONS_ACTIVATE: "extensions:activate",
