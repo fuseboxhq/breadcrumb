@@ -5,6 +5,11 @@ import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
 import { TreeView, type TreeNode as TreeNodeType } from "../sidebar/TreeView";
 import {
+  ContextMenu,
+  MenuItem,
+  MenuSeparator,
+} from "../shared/ContextMenu";
+import {
   FolderTree,
   Terminal,
   LayoutGrid,
@@ -19,6 +24,9 @@ import {
   Columns2,
   Copy,
   Trash2,
+  SplitSquareVertical,
+  Rows3,
+  Pencil,
 } from "lucide-react";
 
 const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
@@ -160,48 +168,79 @@ function ExplorerView() {
 
           return (
             <div key={project.id} className="px-2 mb-0.5">
-              {/* Project card */}
-              <button
-                onClick={() => {
-                  setActiveProject(project.id);
-                  setExpandedIds((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(project.id)) next.delete(project.id);
-                    else next.add(project.id);
-                    return next;
-                  });
-                }}
-                className={`group w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-default ${
-                  isActive
-                    ? "bg-primary/10 border border-primary/20"
-                    : "text-foreground-secondary hover:bg-muted/50 border border-transparent"
-                }`}
+              {/* Project card with context menu */}
+              <ContextMenu
+                content={
+                  <>
+                    <MenuItem
+                      icon={<Plus className="w-3.5 h-3.5" />}
+                      label="New Terminal"
+                      onSelect={() =>
+                        addTab({
+                          id: `terminal-${Date.now()}`,
+                          type: "terminal",
+                          title: project.name,
+                          projectId: project.id,
+                        })
+                      }
+                    />
+                    <MenuItem
+                      icon={<Copy className="w-3.5 h-3.5" />}
+                      label="Copy Path"
+                      onSelect={() => handleCopyPath(project.path)}
+                    />
+                    <MenuSeparator />
+                    <MenuItem
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
+                      label="Remove Project"
+                      destructive
+                      onSelect={() => removeProject(project.id)}
+                    />
+                  </>
+                }
               >
-                <ChevronRight
-                  className={`w-3 h-3 shrink-0 text-foreground-muted transition-transform duration-150 ${
-                    isExpanded ? "rotate-90" : ""
+                <button
+                  onClick={() => {
+                    setActiveProject(project.id);
+                    setExpandedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(project.id)) next.delete(project.id);
+                      else next.add(project.id);
+                      return next;
+                    });
+                  }}
+                  className={`group w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-default ${
+                    isActive
+                      ? "bg-primary/10 border border-primary/20"
+                      : "text-foreground-secondary hover:bg-muted/50 border border-transparent"
                   }`}
-                />
-                <FolderOpen
-                  className={`w-4 h-4 shrink-0 ${
-                    isActive ? "text-primary" : "text-foreground-muted"
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>
-                    {project.name}
+                >
+                  <ChevronRight
+                    className={`w-3 h-3 shrink-0 text-foreground-muted transition-transform duration-150 ${
+                      isExpanded ? "rotate-90" : ""
+                    }`}
+                  />
+                  <FolderOpen
+                    className={`w-4 h-4 shrink-0 ${
+                      isActive ? "text-primary" : "text-foreground-muted"
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>
+                      {project.name}
+                    </div>
+                    <div className="text-2xs text-foreground-muted truncate">
+                      {project.path}
+                    </div>
                   </div>
-                  <div className="text-2xs text-foreground-muted truncate">
-                    {project.path}
-                  </div>
-                </div>
-                {terminalCount > 0 && (
-                  <span className="shrink-0 flex items-center gap-0.5 text-2xs text-foreground-muted tabular-nums">
-                    <Terminal className="w-2.5 h-2.5" />
-                    {terminalCount}
-                  </span>
-                )}
-              </button>
+                  {terminalCount > 0 && (
+                    <span className="shrink-0 flex items-center gap-0.5 text-2xs text-foreground-muted tabular-nums">
+                      <Terminal className="w-2.5 h-2.5" />
+                      {terminalCount}
+                    </span>
+                  )}
+                </button>
+              </ContextMenu>
 
               {/* Expanded project actions */}
               {isExpanded && (
@@ -269,6 +308,8 @@ function TerminalsView() {
   const setActivePane = useAppStore((s) => s.setActivePane);
   const removeTab = useAppStore((s) => s.removeTab);
   const addTab = useAppStore((s) => s.addTab);
+  const addPane = useAppStore((s) => s.addPane);
+  const removePane = useAppStore((s) => s.removePane);
   const projects = useProjectsStore((s) => s.projects);
   const terminalTabs = tabs.filter((t) => t.type === "terminal");
 
@@ -418,6 +459,105 @@ function TerminalsView() {
                 <X className="w-3 h-3" />
               </button>
             );
+          }}
+          renderContextMenu={(node, children) => {
+            const isTab = terminalTabs.some((t) => t.id === node.id);
+            const isPane = node.id.includes(":");
+            const isGroup = node.id.startsWith("group-");
+
+            if (isTab) {
+              return (
+                <ContextMenu
+                  content={
+                    <>
+                      <MenuItem
+                        icon={<SplitSquareVertical className="w-3.5 h-3.5" />}
+                        label="Split Horizontal"
+                        shortcut="⌘D"
+                        onSelect={() => addPane(node.id, "horizontal")}
+                      />
+                      <MenuItem
+                        icon={<Rows3 className="w-3.5 h-3.5" />}
+                        label="Split Vertical"
+                        shortcut="⇧⌘D"
+                        onSelect={() => addPane(node.id, "vertical")}
+                      />
+                      <MenuSeparator />
+                      <MenuItem
+                        icon={<X className="w-3.5 h-3.5" />}
+                        label="Close Terminal"
+                        shortcut="⌘W"
+                        destructive
+                        onSelect={() => removeTab(node.id)}
+                      />
+                    </>
+                  }
+                >
+                  {children}
+                </ContextMenu>
+              );
+            }
+
+            if (isPane) {
+              const [tabId, paneId] = node.id.split(":");
+              const paneState = terminalPanes[tabId];
+              const pane = paneState?.panes.find((p) => p.id === paneId);
+              return (
+                <ContextMenu
+                  content={
+                    <>
+                      {pane?.cwd && (
+                        <>
+                          <MenuItem
+                            icon={<Copy className="w-3.5 h-3.5" />}
+                            label="Copy CWD"
+                            onSelect={() => navigator.clipboard.writeText(pane.cwd)}
+                          />
+                          <MenuSeparator />
+                        </>
+                      )}
+                      <MenuItem
+                        icon={<X className="w-3.5 h-3.5" />}
+                        label="Close Pane"
+                        destructive
+                        onSelect={() => removePane(tabId, paneId)}
+                      />
+                    </>
+                  }
+                >
+                  {children}
+                </ContextMenu>
+              );
+            }
+
+            if (isGroup) {
+              const projectId = node.id.replace("group-", "");
+              const project = projectId !== "ungrouped"
+                ? projects.find((p) => p.id === projectId)
+                : null;
+              return (
+                <ContextMenu
+                  content={
+                    <MenuItem
+                      icon={<Plus className="w-3.5 h-3.5" />}
+                      label="New Terminal"
+                      onSelect={() =>
+                        addTab({
+                          id: `terminal-${Date.now()}`,
+                          type: "terminal",
+                          title: project?.name || "Terminal",
+                          projectId: project?.id,
+                        })
+                      }
+                    />
+                  }
+                >
+                  {children}
+                </ContextMenu>
+              );
+            }
+
+            return <>{children}</>;
           }}
         />
       </div>
