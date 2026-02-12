@@ -5,6 +5,7 @@ import {
   PanelGroup,
   PanelResizeHandle,
   type ImperativePanelHandle,
+  type ImperativePanelGroupHandle,
 } from "react-resizable-panels";
 import { ActivityBar } from "./ActivityBar";
 import { SidebarPanel } from "./SidebarPanel";
@@ -25,24 +26,46 @@ export function AppShell() {
   const settingsLoaded = useSettingsLoaded();
   const layoutSettings = useLayoutSettings();
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
+  const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
   const setPanelSizes = useAppStore((s) => s.setPanelSizes);
   const restoreLayout = useAppStore((s) => s.restoreLayout);
+  const layoutRestoredRef = useRef(false);
 
   // Global hotkeys for right panel toggle and panel focus navigation
   useGlobalLayoutHotkeys();
 
   // Restore layout from persisted settings on mount
   useEffect(() => {
-    if (!settingsLoaded) return;
+    if (!settingsLoaded || layoutRestoredRef.current) return;
+    layoutRestoredRef.current = true;
+
+    const savedPanelSizes = layoutSettings.panelSizes;
+    const savedPanes = layoutSettings.rightPanel.panes.map((p) => ({
+      id: p.id,
+      type: p.type as "browser" | "planning",
+    }));
+
+    // Restore Zustand state
     restoreLayout({
       rightPanel: {
         isOpen: layoutSettings.rightPanel.isOpen,
-        panes: layoutSettings.rightPanel.panes.map((p) => ({
-          id: p.id,
-          type: p.type as "browser" | "planning",
-        })),
+        panes: savedPanes,
       },
-      panelSizes: layoutSettings.panelSizes,
+      panelSizes: savedPanelSizes,
+    });
+
+    // Restore panel sizes imperatively (after a tick so PanelGroup is mounted)
+    requestAnimationFrame(() => {
+      if (panelGroupRef.current) {
+        const sizes = sidebarCollapsed
+          ? [savedPanelSizes.center, savedPanelSizes.rightPanel]
+          : [savedPanelSizes.sidebar, savedPanelSizes.center, savedPanelSizes.rightPanel];
+        try {
+          panelGroupRef.current.setLayout(sizes);
+        } catch {
+          // Layout may not be compatible — use defaults
+        }
+      }
     });
   }, [settingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -89,6 +112,7 @@ export function AppShell() {
 
         {/* Main Layout: Sidebar + Center + Right Panel */}
         <PanelGroup
+          ref={panelGroupRef}
           direction="horizontal"
           className="flex-1"
           onLayout={handleLayout}
