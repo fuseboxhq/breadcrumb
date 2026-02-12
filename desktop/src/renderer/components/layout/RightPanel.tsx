@@ -2,7 +2,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useAppStore, useRightPanelPanes, type RightPanelPaneType } from "../../store/appStore";
 import { BrowserPanel } from "../browser/BrowserPanel";
 import { PlanningPanel } from "../breadcrumb/PlanningPanel";
-import { Globe, LayoutGrid, X } from "lucide-react";
+import { Globe, LayoutGrid, X, PanelRight } from "lucide-react";
 
 const PANE_META: Record<RightPanelPaneType, { label: string; icon: typeof Globe; color: string }> = {
   browser: { label: "Browser", icon: Globe, color: "text-dracula-cyan" },
@@ -15,14 +15,18 @@ export function RightPanel() {
 
   if (panes.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center bg-background">
-        <div className="text-center">
+      <div
+        className="h-full flex items-center justify-center bg-background"
+        role="region"
+        aria-label="Right panel"
+      >
+        <div className="text-center animate-fade-in">
           <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
-            <LayoutGrid className="w-5 h-5 text-foreground-muted" />
+            <PanelRight className="w-5 h-5 text-foreground-muted" />
           </div>
           <p className="text-xs text-foreground-muted">Right panel</p>
           <p className="text-2xs text-foreground-muted/60 mt-1">
-            Open browser or planning from the sidebar
+            Open browser or planning from the activity bar
           </p>
         </div>
       </div>
@@ -33,7 +37,11 @@ export function RightPanel() {
   if (panes.length === 1) {
     const pane = panes[0];
     return (
-      <div className="h-full flex flex-col bg-background">
+      <div
+        className="h-full flex flex-col bg-background"
+        role="region"
+        aria-label={`Right panel: ${PANE_META[pane.type].label}`}
+      >
         <PaneHeader type={pane.type} onClose={() => removeRightPanelPane(pane.id)} />
         <div className="flex-1 overflow-hidden">
           <PaneContent type={pane.type} />
@@ -44,7 +52,12 @@ export function RightPanel() {
 
   // Multiple panes — nested vertical PanelGroup
   return (
-    <PanelGroup direction="vertical" className="h-full bg-background">
+    <PanelGroup
+      direction="vertical"
+      className="h-full bg-background"
+      role="region"
+      aria-label="Right panel"
+    >
       {panes.map((pane, i) => (
         <RightPanelPaneSlot key={pane.id} index={i} total={panes.length}>
           <PaneHeader type={pane.type} onClose={() => removeRightPanelPane(pane.id)} />
@@ -70,7 +83,10 @@ function RightPanelPaneSlot({
   return (
     <>
       {index > 0 && (
-        <PanelResizeHandle className="h-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative">
+        <PanelResizeHandle
+          className="h-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+          aria-label="Resize right panel panes"
+        >
           <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-primary/40 transition-default" />
         </PanelResizeHandle>
       )}
@@ -98,8 +114,9 @@ function PaneHeader({ type, onClose }: { type: RightPanelPaneType; onClose: () =
       </div>
       <button
         onClick={onClose}
-        className="p-1 rounded hover:bg-muted/50 text-foreground-muted hover:text-foreground-secondary transition-default"
+        className="p-1 rounded hover:bg-muted/50 text-foreground-muted hover:text-foreground-secondary transition-default focus:outline-none focus:ring-1 focus:ring-primary/40"
         title={`Close ${meta.label}`}
+        aria-label={`Close ${meta.label} pane`}
       >
         <X className="w-3 h-3" />
       </button>

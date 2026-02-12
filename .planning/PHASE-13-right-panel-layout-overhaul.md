@@ -1,6 +1,6 @@
 # Phase 13: Right Panel Layout Overhaul
 
-**Status:** planned
+**Status:** complete
 **Beads Epic:** breadcrumb-pli
 **Created:** 2026-02-12
 
@@ -118,7 +118,7 @@ The core architectural change is splitting the current `Workspace` panel into tw
 | breadcrumb-pli.4 | Wire sidebar entries to open in right panel | done | Medium | pli.3 |
 | breadcrumb-pli.5 | Hotkey toggle & keyboard panel navigation | done | Medium | pli.2 |
 | breadcrumb-pli.6 | Layout persistence & restoration | done | Medium | pli.1 |
-| breadcrumb-pli.7 | Polish & design system compliance | open | Low | pli.4, pli.5, pli.6 |
+| breadcrumb-pli.7 | Polish & design system compliance | done | Low | pli.4, pli.5, pli.6 |
 
 ### Task Details
 

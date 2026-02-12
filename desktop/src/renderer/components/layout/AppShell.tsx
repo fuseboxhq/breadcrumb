@@ -129,7 +129,10 @@ export function AppShell() {
               >
                 <SidebarPanel />
               </Panel>
-              <PanelResizeHandle className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative">
+              <PanelResizeHandle
+                className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+                aria-label="Resize sidebar"
+              >
                 <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-primary/40 transition-default" />
               </PanelResizeHandle>
             </>
@@ -137,14 +140,17 @@ export function AppShell() {
 
           {/* Center — Terminal Workspace */}
           <Panel id="center" order={2} minSize={30}>
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full" role="region" aria-label="Terminal workspace">
               <TabBar />
               <WorkspaceContent />
             </div>
           </Panel>
 
           {/* Right Panel — Browser + Planning (collapsible) */}
-          <PanelResizeHandle className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative">
+          <PanelResizeHandle
+            className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+            aria-label="Resize right panel"
+          >
             <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-primary/40 transition-default" />
           </PanelResizeHandle>
           <Panel

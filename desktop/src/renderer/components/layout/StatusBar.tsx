@@ -1,5 +1,5 @@
-import { GitBranch, Terminal, Puzzle, Wifi, FolderOpen } from "lucide-react";
-import { useAppStore } from "../../store/appStore";
+import { GitBranch, Terminal, Puzzle, Wifi, FolderOpen, PanelRight } from "lucide-react";
+import { useAppStore, useRightPanelOpen, useRightPanelPanes } from "../../store/appStore";
 import { useActiveProject, useProjectsStore } from "../../store/projectsStore";
 
 export function StatusBar() {
@@ -7,6 +7,9 @@ export function StatusBar() {
   const terminalCount = tabs.filter((t) => t.type === "terminal").length;
   const activeProject = useActiveProject();
   const projectCount = useProjectsStore((s) => s.projects.length);
+  const rightPanelOpen = useRightPanelOpen();
+  const rightPanelPanes = useRightPanelPanes();
+  const toggleRightPanel = useAppStore((s) => s.toggleRightPanel);
 
   return (
     <div className="h-6 bg-background-raised border-t border-border flex items-center justify-between px-3 shrink-0 select-none">
@@ -35,6 +38,14 @@ export function StatusBar() {
 
       {/* Right section */}
       <div className="flex items-center gap-3">
+        {/* Right panel toggle */}
+        <StatusItem
+          icon={PanelRight}
+          label={rightPanelOpen ? `${rightPanelPanes.length} pane${rightPanelPanes.length !== 1 ? "s" : ""}` : "Panel"}
+          color={rightPanelOpen ? "text-primary" : undefined}
+          onClick={toggleRightPanel}
+        />
+
         {/* Extensions */}
         <StatusItem icon={Puzzle} label="0 extensions" />
 
