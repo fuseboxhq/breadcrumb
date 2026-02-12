@@ -18,6 +18,11 @@ export function registerTerminalIPCHandlers(mainWindow: BrowserWindow): () => vo
   };
   terminalService.on("exit", exitHandler);
 
+  const processChangeHandler = (data: { sessionId: string; processName: string; processLabel: string }) => {
+    mainWindow.webContents.send(IPC_CHANNELS.TERMINAL_PROCESS_CHANGE, data);
+  };
+  terminalService.on("processChange", processChangeHandler);
+
   ipcMain.handle(
     IPC_CHANNELS.TERMINAL_CREATE,
     async (_, config: { id: string; name: string; workingDirectory: string; cols?: number; rows?: number }) => {
@@ -63,6 +68,7 @@ export function registerTerminalIPCHandlers(mainWindow: BrowserWindow): () => vo
   return () => {
     terminalService.off("data", dataHandler);
     terminalService.off("exit", exitHandler);
+    terminalService.off("processChange", processChangeHandler);
     ipcMain.removeHandler(IPC_CHANNELS.TERMINAL_CREATE);
     ipcMain.removeHandler(IPC_CHANNELS.TERMINAL_WRITE);
     ipcMain.removeHandler(IPC_CHANNELS.TERMINAL_RESIZE);

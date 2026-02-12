@@ -73,7 +73,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 | ID | Title | Status | Complexity | Depends On |
 |----|-------|--------|------------|------------|
-| sps.1 | Process detection service & IPC channel | open | M | — |
+| sps.1 | Process detection service & IPC channel | done | M | — |
 | sps.2 | Pane label state & resolution pipeline | open | M | sps.1 |
 | sps.3 | Pane label UI in sidebar & terminal toolbar | open | M | sps.2 |
 | sps.4 | Terminal viewport context menu | open | M | — |

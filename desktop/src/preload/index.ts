@@ -13,6 +13,12 @@ export interface TerminalExitEvent {
   signal?: number;
 }
 
+export interface TerminalProcessChangeEvent {
+  sessionId: string;
+  processName: string;
+  processLabel: string;
+}
+
 export interface BreadcrumbAPI {
   // System
   getWorkingDirectory: () => Promise<string>;
@@ -34,6 +40,7 @@ export interface BreadcrumbAPI {
   terminateTerminal: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
   onTerminalData: (callback: (data: TerminalDataEvent) => void) => () => void;
   onTerminalExit: (callback: (data: TerminalExitEvent) => void) => () => void;
+  onTerminalProcessChange: (callback: (data: TerminalProcessChangeEvent) => void) => () => void;
 
   // Git operations
   getGitInfo: (workingDirectory: string) => Promise<{
@@ -101,6 +108,13 @@ const api: BreadcrumbAPI = {
       callback(data);
     ipcRenderer.on(IPC_CHANNELS.TERMINAL_EXIT, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_EXIT, handler);
+  },
+
+  onTerminalProcessChange: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, data: TerminalProcessChangeEvent) =>
+      callback(data);
+    ipcRenderer.on(IPC_CHANNELS.TERMINAL_PROCESS_CHANGE, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_PROCESS_CHANGE, handler);
   },
 
   // Git operations
