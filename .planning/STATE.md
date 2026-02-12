@@ -7,7 +7,7 @@
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
 PHASE-09: Terminal Experience (complete)
-PHASE-10: Workspace Sidebar Overhaul (not_started)
+PHASE-10: Workspace Sidebar Overhaul (planned — 7 tasks, ready for execution)
 
 ## Completed Phases
 
