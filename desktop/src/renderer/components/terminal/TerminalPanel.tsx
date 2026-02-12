@@ -1,13 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { useAppStore } from "../../store/appStore";
+import { useAppStore, useTabPanes } from "../../store/appStore";
 import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen } from "lucide-react";
-
-interface TerminalPane {
-  id: string;
-  sessionId: string;
-}
 
 interface TerminalPanelProps {
   tabId: string;
@@ -21,84 +16,83 @@ function folderName(cwd: string): string {
 }
 
 export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
-  const [panes, setPanes] = useState<TerminalPane[]>([
-    { id: "pane-1", sessionId: `${tabId}-1` },
-  ]);
-  const [activePane, setActivePane] = useState("pane-1");
-  const [splitDirection, setSplitDirection] = useState<"horizontal" | "vertical">("horizontal");
-  const [paneCwds, setPaneCwds] = useState<Record<string, string>>({});
-  const updateTab = useAppStore((s) => s.updateTab);
-  const activePaneRef = useRef(activePane);
+  // Read pane state from shared store
+  const tabPaneState = useTabPanes(tabId);
+  const panes = tabPaneState?.panes || [];
+  const activePane = tabPaneState?.activePane || "pane-1";
+  const splitDirection = tabPaneState?.splitDirection || "horizontal";
 
-  // Keep ref in sync for use in callbacks
+  // Store actions
+  const initializeTabPanes = useAppStore((s) => s.initializeTabPanes);
+  const storeAddPane = useAppStore((s) => s.addPane);
+  const storeRemovePane = useAppStore((s) => s.removePane);
+  const storeSetActivePane = useAppStore((s) => s.setActivePane);
+  const storeToggleSplitDirection = useAppStore((s) => s.toggleSplitDirection);
+  const storeUpdatePaneCwd = useAppStore((s) => s.updatePaneCwd);
+  const updateTab = useAppStore((s) => s.updateTab);
+
+  // Initialize panes on mount (idempotent)
   useEffect(() => {
-    activePaneRef.current = activePane;
-  }, [activePane]);
+    initializeTabPanes(tabId, workingDirectory);
+  }, [tabId, workingDirectory, initializeTabPanes]);
 
   // When active pane's CWD changes, update the tab title
   const handleCwdChange = useCallback((paneId: string, cwd: string) => {
-    setPaneCwds((prev) => ({ ...prev, [paneId]: cwd }));
-    // Only update tab title if this is the active pane
-    if (paneId === activePaneRef.current) {
+    storeUpdatePaneCwd(tabId, paneId, cwd);
+    // Read current active pane from store to avoid stale closures
+    const currentActivePane = useAppStore.getState().terminalPanes[tabId]?.activePane;
+    if (paneId === currentActivePane) {
       updateTab(tabId, { title: folderName(cwd) });
     }
-  }, [tabId, updateTab]);
+  }, [tabId, storeUpdatePaneCwd, updateTab]);
 
   // When active pane switches, update tab title to that pane's CWD
   useEffect(() => {
-    const cwd = paneCwds[activePane];
-    if (cwd) {
-      updateTab(tabId, { title: folderName(cwd) });
+    const pane = panes.find((p) => p.id === activePane);
+    if (pane?.cwd) {
+      updateTab(tabId, { title: folderName(pane.cwd) });
     }
-  }, [activePane, paneCwds, tabId, updateTab]);
+  }, [activePane, panes, tabId, updateTab]);
 
   const addPane = useCallback((direction?: "horizontal" | "vertical") => {
-    if (direction) setSplitDirection(direction);
-    const id = `pane-${Date.now()}`;
-    const sessionId = `${tabId}-${Date.now()}`;
-    setPanes((prev) => [...prev, { id, sessionId }]);
-    setActivePane(id);
-  }, [tabId]);
+    storeAddPane(tabId, direction);
+  }, [tabId, storeAddPane]);
 
   const removePane = useCallback((paneId: string) => {
-    setPanes((prev) => {
-      const next = prev.filter((p) => p.id !== paneId);
-      if (next.length === 0) return prev;
-      return next;
-    });
-    setActivePane((prev) => {
-      if (prev === paneId) {
-        const remaining = panes.filter((p) => p.id !== paneId);
-        return remaining[remaining.length - 1]?.id || panes[0].id;
-      }
-      return prev;
-    });
-  }, [panes]);
+    storeRemovePane(tabId, paneId);
+  }, [tabId, storeRemovePane]);
+
+  const setActivePane = useCallback((paneId: string) => {
+    storeSetActivePane(tabId, paneId);
+  }, [tabId, storeSetActivePane]);
 
   const toggleDirection = useCallback(() => {
-    setSplitDirection((d) => (d === "horizontal" ? "vertical" : "horizontal"));
-  }, []);
+    storeToggleSplitDirection(tabId);
+  }, [tabId, storeToggleSplitDirection]);
 
   // Navigate to adjacent pane
   const navigatePane = useCallback((direction: "next" | "prev") => {
-    const currentIndex = panes.findIndex((p) => p.id === activePane);
+    const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+    const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
+    const currentIndex = currentPanes.findIndex((p) => p.id === currentActive);
     if (currentIndex === -1) return;
     let nextIndex: number;
     if (direction === "next") {
-      nextIndex = (currentIndex + 1) % panes.length;
+      nextIndex = (currentIndex + 1) % currentPanes.length;
     } else {
-      nextIndex = (currentIndex - 1 + panes.length) % panes.length;
+      nextIndex = (currentIndex - 1 + currentPanes.length) % currentPanes.length;
     }
-    setActivePane(panes[nextIndex].id);
-  }, [panes, activePane]);
+    storeSetActivePane(tabId, currentPanes[nextIndex].id);
+  }, [tabId, storeSetActivePane]);
 
   // Navigate to specific pane by number
   const navigateToPaneNumber = useCallback((num: number) => {
+    const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
     const index = num - 1;
-    if (index >= 0 && index < panes.length) {
-      setActivePane(panes[index].id);
+    if (index >= 0 && index < currentPanes.length) {
+      storeSetActivePane(tabId, currentPanes[index].id);
     }
-  }, [panes]);
+  }, [tabId, storeSetActivePane]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -120,10 +114,14 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       }
 
       // Cmd+W — close pane (only if multiple panes)
-      if (meta && e.key === "w" && panes.length > 1) {
-        e.preventDefault();
-        removePane(activePane);
-        return;
+      if (meta && e.key === "w") {
+        const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+        const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
+        if (currentPanes.length > 1 && currentActive) {
+          e.preventDefault();
+          removePane(currentActive);
+          return;
+        }
       }
 
       // Cmd+Option+Right/Left — navigate between panes
@@ -146,7 +144,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [addPane, removePane, navigatePane, navigateToPaneNumber, activePane, panes.length]);
+  }, [tabId, addPane, removePane, navigatePane, navigateToPaneNumber]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -154,8 +152,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       <div className="h-8 flex items-center justify-between px-2 bg-background-raised border-b border-border shrink-0">
         <div className="flex items-center gap-0.5">
           {panes.map((pane, index) => {
-            const cwd = paneCwds[pane.id];
-            const label = cwd ? folderName(cwd) : `${index + 1}`;
+            const label = pane.cwd ? folderName(pane.cwd) : `${index + 1}`;
             return (
               <button
                 key={pane.id}
@@ -168,7 +165,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                   }
                 `}
               >
-                {cwd ? <FolderOpen className="w-3 h-3 shrink-0" /> : <Terminal className="w-3 h-3 shrink-0" />}
+                {pane.cwd ? <FolderOpen className="w-3 h-3 shrink-0" /> : <Terminal className="w-3 h-3 shrink-0" />}
                 <span className="truncate">{label}</span>
                 {panes.length > 1 && (
                   <X
