@@ -197,6 +197,18 @@ export const usePlanningStore = create<PlanningStore>()(
           set((state) => {
             const p = ensureProject(state, projectPath);
             p.phaseDetails[phaseId] = result.data as unknown as PhaseDetail;
+            p.error = null;
+          });
+        } else if (result && !result.success) {
+          set((state) => {
+            const p = ensureProject(state, projectPath);
+            p.error = result.error || `Failed to load ${phaseId}`;
+          });
+        } else {
+          // data is null — file doesn't exist
+          set((state) => {
+            const p = ensureProject(state, projectPath);
+            p.error = `Phase file not found: ${phaseId}.md`;
           });
         }
       } catch (error) {
@@ -219,7 +231,10 @@ export const usePlanningStore = create<PlanningStore>()(
             const p = ensureProject(state, projectPath);
             p.beadsTasks[epicId] = result.data as unknown as BeadsTask[];
           });
+        } else if (result && !result.success) {
+          console.warn(`[planningStore] beads tasks error: ${result.error}`);
         }
+        // If data is empty/null, that's fine — no beads tasks for this epic
       } catch (error) {
         set((state) => {
           const p = ensureProject(state, projectPath);

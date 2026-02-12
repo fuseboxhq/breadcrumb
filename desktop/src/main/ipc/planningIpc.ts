@@ -51,9 +51,12 @@ export function registerPlanningIPCHandlers(): () => void {
     ) => {
       try {
         const validated = validatePath(projectPath);
+        console.log(`[Planning IPC] getPhaseDetail: ${validated} / ${phaseId}`);
         const detail = planningService.getPhaseDetail(validated, phaseId);
+        console.log(`[Planning IPC] getPhaseDetail result: ${detail ? 'found' : 'null'} (${detail?.tasks?.length ?? 0} tasks)`);
         return { success: true, data: detail };
       } catch (error) {
+        console.error(`[Planning IPC] getPhaseDetail error:`, error);
         return { success: false, error: String(error) };
       }
     }
