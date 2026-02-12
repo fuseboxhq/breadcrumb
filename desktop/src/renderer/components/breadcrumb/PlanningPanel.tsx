@@ -23,6 +23,11 @@ import {
   type PhaseTask,
 } from "../../store/planningStore";
 
+// Stable empty references to avoid Zustand snapshot infinite-loop
+const EMPTY_TASKS: PhaseTask[] = [];
+const EMPTY_BEADS: never[] = [];
+const EMPTY_PHASES: PhaseSummary[] = [];
+
 // ── Navigation State ─────────────────────────────────────────────────────────
 
 type DashboardView =
@@ -340,7 +345,7 @@ function ProjectPhases({
   onSelectPhase: (phaseId: string) => void;
 }) {
   const phases = usePlanningStore(
-    (s) => s.projects[projectPath]?.phases ?? []
+    (s) => s.projects[projectPath]?.phases ?? EMPTY_PHASES
   );
   const loading = usePlanningStore(
     (s) => s.projects[projectPath]?.loading ?? false
@@ -526,8 +531,8 @@ function PhaseDetailView({
   );
   const beadsTasks = usePlanningStore((s) => {
     const d = s.projects[projectPath]?.phaseDetails[phaseId];
-    if (!d?.beadsEpic) return [];
-    return s.projects[projectPath]?.beadsTasks[d.beadsEpic] ?? [];
+    if (!d?.beadsEpic) return EMPTY_BEADS;
+    return s.projects[projectPath]?.beadsTasks[d.beadsEpic] ?? EMPTY_BEADS;
   });
 
   useEffect(() => {

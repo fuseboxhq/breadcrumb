@@ -247,6 +247,11 @@ export const usePlanningStore = create<PlanningStore>()(
 
 // ── Selectors ────────────────────────────────────────────────────────────────
 
+// Stable empty references — returning new [] in a Zustand selector causes
+// infinite re-renders because React's useSyncExternalStore compares by reference.
+const EMPTY_PHASES: PhaseSummary[] = [];
+const EMPTY_BEADS_TASKS: BeadsTask[] = [];
+
 export const useProjectCapabilities = (projectPath: string | null) =>
   usePlanningStore(
     (s) => (projectPath ? s.projects[projectPath]?.capabilities : null) ?? null
@@ -254,7 +259,7 @@ export const useProjectCapabilities = (projectPath: string | null) =>
 
 export const useProjectPhases = (projectPath: string | null) =>
   usePlanningStore(
-    (s) => (projectPath ? s.projects[projectPath]?.phases : null) ?? []
+    (s) => (projectPath ? s.projects[projectPath]?.phases : null) ?? EMPTY_PHASES
   );
 
 export const usePhaseDetail = (
@@ -273,8 +278,8 @@ export const useProjectBeadsTasks = (
 ) =>
   usePlanningStore((s) =>
     projectPath && epicId
-      ? s.projects[projectPath]?.beadsTasks[epicId] ?? []
-      : []
+      ? s.projects[projectPath]?.beadsTasks[epicId] ?? EMPTY_BEADS_TASKS
+      : EMPTY_BEADS_TASKS
   );
 
 export const useProjectPlanningLoading = (projectPath: string | null) =>
