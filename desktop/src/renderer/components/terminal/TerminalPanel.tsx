@@ -52,17 +52,22 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const handleCwdChange = useCallback((paneId: string, cwd: string) => {
     storeUpdatePaneCwd(tabId, paneId, cwd);
     // Read current active pane from store to avoid stale closures
-    const currentActivePane = useAppStore.getState().terminalPanes[tabId]?.activePane;
+    const state = useAppStore.getState();
+    const currentActivePane = state.terminalPanes[tabId]?.activePane;
     if (paneId === currentActivePane) {
-      updateTab(tabId, { title: folderName(cwd) });
+      const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
+      // Prefer process label over CWD for tab title
+      const title = pane?.processLabel || folderName(cwd);
+      updateTab(tabId, { title });
     }
   }, [tabId, storeUpdatePaneCwd, updateTab]);
 
-  // When active pane switches, update tab title to that pane's CWD
+  // When active pane switches or process label changes, update tab title
   useEffect(() => {
     const pane = panes.find((p) => p.id === activePane);
-    if (pane?.cwd) {
-      updateTab(tabId, { title: folderName(pane.cwd) });
+    if (pane) {
+      const title = pane.processLabel || (pane.cwd ? folderName(pane.cwd) : undefined);
+      if (title) updateTab(tabId, { title });
     }
   }, [activePane, panes, tabId, updateTab]);
 
