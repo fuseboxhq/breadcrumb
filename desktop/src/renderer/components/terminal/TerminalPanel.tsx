@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { useAppStore, useTabPanes, resolveLabel } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen, Cpu } from "lucide-react";
+import { useAppStore, useTabPanes, useZoomedPane, resolveLabel } from "../../store/appStore";
+import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen, Cpu, Maximize2, Minimize2 } from "lucide-react";
 
 interface TerminalPanelProps {
   tabId: string;
@@ -35,7 +35,13 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const storeToggleSplitDirection = useAppStore((s) => s.toggleSplitDirection);
   const storeUpdatePaneCwd = useAppStore((s) => s.updatePaneCwd);
   const setPaneCustomLabel = useAppStore((s) => s.setPaneCustomLabel);
+  const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
   const updateTab = useAppStore((s) => s.updateTab);
+
+  // Zoom state
+  const zoomedPane = useZoomedPane();
+  const isZoomed = zoomedPane?.tabId === tabId;
+  const zoomedPaneData = isZoomed ? panes.find((p) => p.id === zoomedPane.paneId) : null;
 
   // Initialize panes on mount (idempotent)
   useEffect(() => {
@@ -246,6 +252,23 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         </div>
 
         <div className="flex items-center gap-0.5">
+          {panes.length > 1 && (
+            <button
+              onClick={() => togglePaneZoom(tabId, activePane)}
+              className={`p-1 rounded-md transition-default ${
+                isZoomed
+                  ? "text-primary hover:text-primary/80 hover:bg-primary/10"
+                  : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
+              }`}
+              title={isZoomed ? "Restore panes (⇧⌘↵)" : "Maximize pane (⇧⌘↵)"}
+            >
+              {isZoomed ? (
+                <Minimize2 className="w-3.5 h-3.5" />
+              ) : (
+                <Maximize2 className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
           <button
             onClick={toggleDirection}
             className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
@@ -269,7 +292,15 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
 
       {/* Terminal panes */}
       <div className="flex-1 min-h-0">
-        {panes.length === 1 ? (
+        {/* Zoomed: render only the zoomed pane at full size */}
+        {isZoomed && zoomedPaneData ? (
+          <TerminalInstance
+            sessionId={zoomedPaneData.sessionId}
+            isActive={true}
+            workingDirectory={workingDirectory}
+            onCwdChange={(cwd) => handleCwdChange(zoomedPaneData.id, cwd)}
+          />
+        ) : panes.length === 1 ? (
           <TerminalInstance
             sessionId={panes[0].sessionId}
             isActive={true}

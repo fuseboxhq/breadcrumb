@@ -63,6 +63,9 @@ export interface AppState {
   // Terminal panes (keyed by tabId)
   terminalPanes: Record<string, TabPaneState>;
 
+  // Zoom state — temporarily maximize a single pane
+  zoomedPane: { tabId: string; paneId: string } | null;
+
   // Project
   currentProjectPath: string | null;
 
@@ -92,6 +95,10 @@ export interface AppActions {
   setPaneCustomLabel: (tabId: string, paneId: string, label: string | null) => void;
   clearTabPanes: (tabId: string) => void;
 
+  // Zoom
+  togglePaneZoom: (tabId: string, paneId: string) => void;
+  clearPaneZoom: () => void;
+
   // Project
   setCurrentProjectPath: (path: string | null) => void;
 
@@ -113,6 +120,7 @@ const initialState: AppState = {
   ],
   activeTabId: "welcome",
   terminalPanes: {},
+  zoomedPane: null,
   currentProjectPath: null,
   theme: "dark",
 };
@@ -155,6 +163,10 @@ export const useAppStore = create<AppStore>()(
         state.activeTabId = newActiveId;
         // Clean up pane state when removing terminal tab
         delete state.terminalPanes[id];
+        // Clear zoom if this tab was zoomed
+        if (state.zoomedPane?.tabId === id) {
+          state.zoomedPane = null;
+        }
       }),
 
     setActiveTab: (id) =>
@@ -222,6 +234,10 @@ export const useAppStore = create<AppStore>()(
         if (tabState.activePane === paneId) {
           tabState.activePane = newPanes[newPanes.length - 1].id;
         }
+        // Clear zoom if zoomed pane was removed
+        if (state.zoomedPane?.tabId === tabId && state.zoomedPane?.paneId === paneId) {
+          state.zoomedPane = null;
+        }
       }),
 
     setActivePane: (tabId, paneId) =>
@@ -273,6 +289,21 @@ export const useAppStore = create<AppStore>()(
         delete state.terminalPanes[tabId];
       }),
 
+    // Zoom
+    togglePaneZoom: (tabId, paneId) =>
+      set((state) => {
+        if (state.zoomedPane?.tabId === tabId && state.zoomedPane?.paneId === paneId) {
+          state.zoomedPane = null;
+        } else {
+          state.zoomedPane = { tabId, paneId };
+        }
+      }),
+
+    clearPaneZoom: () =>
+      set((state) => {
+        state.zoomedPane = null;
+      }),
+
     // Project
     setCurrentProjectPath: (path) =>
       set((state) => {
@@ -305,3 +336,4 @@ export const useActivePane = (tabId: string) =>
   useAppStore((s) => s.terminalPanes[tabId]?.activePane);
 export const useSplitDirection = (tabId: string) =>
   useAppStore((s) => s.terminalPanes[tabId]?.splitDirection || "horizontal");
+export const useZoomedPane = () => useAppStore((s) => s.zoomedPane);
