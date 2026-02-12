@@ -155,44 +155,48 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
-    // Fit first to get actual dimensions, THEN create PTY with those
-    // dimensions. This avoids the initial-resize SIGWINCH that causes
-    // duplicate/re-wrapped prompts when the PTY starts at 120x30 but
-    // the actual pane is much smaller.
-    const createPtyWithDimensions = (cwd: string) => {
-      let cols = 120;
-      let rows = 30;
+    // --- PTY lifecycle ---
+    // The PTY is created lazily on the first stable resize, NOT eagerly.
+    // This avoids dimension mismatches (PTY at 120x30 vs actual 20x10)
+    // and resize storms from PanelGroup layout transitions that cause
+    // duplicate prompts and zsh PROMPT_EOL_MARK artifacts.
+
+    let ptyCreated = false;
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    let destroyed = false;
+
+    // Resolve working directory upfront (async but fast)
+    let resolvedCwd: string | null = workingDirectory || null;
+    if (!resolvedCwd) {
+      window.breadcrumbAPI?.getWorkingDirectory().then((dir) => {
+        resolvedCwd = dir || "/";
+        // If the ResizeObserver already fired but couldn't create the PTY
+        // because cwd wasn't resolved yet, create it now
+        if (!ptyCreated && !destroyed) {
+          tryCreatePty();
+        }
+      }).catch(() => {
+        resolvedCwd = "/";
+      });
+    }
+
+    const tryCreatePty = () => {
+      if (ptyCreated || destroyed || !resolvedCwd) return;
       try {
         const dims = fitAddon.proposeDimensions();
         if (dims && dims.cols > 0 && dims.rows > 0) {
-          cols = dims.cols;
-          rows = dims.rows;
-          terminal.resize(cols, rows);
+          ptyCreated = true;
+          terminal.resize(dims.cols, dims.rows);
+          window.breadcrumbAPI?.createTerminal({
+            id: sessionId,
+            name: sessionId,
+            workingDirectory: resolvedCwd,
+            cols: dims.cols,
+            rows: dims.rows,
+          });
         }
-      } catch { /* use defaults */ }
-
-      window.breadcrumbAPI?.createTerminal({
-        id: sessionId,
-        name: sessionId,
-        workingDirectory: cwd,
-        cols,
-        rows,
-      });
+      } catch { /* ignore — will retry on next resize */ }
     };
-
-    // Defer PTY creation to next frame so the DOM has laid out and
-    // fitAddon can measure the real container size.
-    requestAnimationFrame(() => {
-      if (workingDirectory) {
-        createPtyWithDimensions(workingDirectory);
-      } else {
-        window.breadcrumbAPI?.getWorkingDirectory().then((workingDir) => {
-          createPtyWithDimensions(workingDir || "/");
-        }).catch(() => {
-          createPtyWithDimensions("/");
-        });
-      }
-    });
 
     // Forward keystrokes to PTY
     const dataDisposable = terminal.onData((data) => {
@@ -212,9 +216,17 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
       }
     });
 
-    // Resize observer
-    const resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => {
+    // Debounced resize handler — collapses rapid PanelGroup layout
+    // transitions into a single PTY resize (avoids SIGWINCH storms).
+    // On the very first callback, creates the PTY with actual dimensions.
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (destroyed) return;
+        if (!ptyCreated) {
+          tryCreatePty();
+          return;
+        }
         try {
           const dims = fitAddon.proposeDimensions();
           if (dims && dims.cols > 0 && dims.rows > 0) {
@@ -224,11 +236,15 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
             }
           }
         } catch { /* ignore */ }
-      });
-    });
+      }, 80);
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(containerRef.current);
 
     return () => {
+      destroyed = true;
+      clearTimeout(resizeTimer);
       dataDisposable.dispose();
       cleanupShell();
       cleanupData?.();
