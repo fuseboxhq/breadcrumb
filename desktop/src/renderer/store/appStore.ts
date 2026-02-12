@@ -26,6 +26,23 @@ export interface TerminalPane {
   sessionId: string;
   cwd: string;
   lastActivity?: number;
+  /** Raw process name from pty.process (e.g., "node", "vim") */
+  processName?: string;
+  /** Friendly display name (e.g., "Node.js", "Vim") */
+  processLabel?: string;
+  /** User-set custom label — overrides auto-detection */
+  customLabel?: string;
+}
+
+/** Resolve the display label for a pane: customLabel > processLabel > CWD folder > "Pane N" */
+export function resolveLabel(pane: TerminalPane, index: number): string {
+  if (pane.customLabel) return pane.customLabel;
+  if (pane.processLabel) return pane.processLabel;
+  if (pane.cwd) {
+    const parts = pane.cwd.replace(/\/+$/, "").split("/");
+    return parts[parts.length - 1] || pane.cwd;
+  }
+  return `Pane ${index + 1}`;
 }
 
 export interface TabPaneState {
@@ -71,6 +88,8 @@ export interface AppActions {
   setActivePane: (tabId: string, paneId: string) => void;
   toggleSplitDirection: (tabId: string) => void;
   updatePaneCwd: (tabId: string, paneId: string, cwd: string) => void;
+  updatePaneProcess: (tabId: string, paneId: string, processName: string, processLabel: string) => void;
+  setPaneCustomLabel: (tabId: string, paneId: string, label: string | null) => void;
   clearTabPanes: (tabId: string) => void;
 
   // Project
@@ -229,6 +248,23 @@ export const useAppStore = create<AppStore>()(
         if (pane) {
           pane.cwd = cwd;
           pane.lastActivity = Date.now();
+        }
+      }),
+
+    updatePaneProcess: (tabId, paneId, processName, processLabel) =>
+      set((state) => {
+        const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
+        if (pane) {
+          pane.processName = processName;
+          pane.processLabel = processLabel;
+        }
+      }),
+
+    setPaneCustomLabel: (tabId, paneId, label) =>
+      set((state) => {
+        const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
+        if (pane) {
+          pane.customLabel = label || undefined;
         }
       }),
 
