@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
+import { TreeView, type TreeNode as TreeNodeType } from "../sidebar/TreeView";
 import {
   FolderTree,
   Terminal,
@@ -14,6 +15,8 @@ import {
   Plus,
   ChevronRight,
   RotateCcw,
+  X,
+  Columns2,
 } from "lucide-react";
 
 const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
@@ -186,11 +189,133 @@ function ExplorerView() {
   );
 }
 
+/** Extract folder name from path */
+function folderName(cwd: string): string {
+  const parts = cwd.replace(/\/+$/, "").split("/");
+  return parts[parts.length - 1] || cwd;
+}
+
 function TerminalsView() {
   const tabs = useAppStore((s) => s.tabs);
-  const { setActiveTab } = useAppStore();
+  const activeTabId = useAppStore((s) => s.activeTabId);
+  const terminalPanes = useAppStore((s) => s.terminalPanes);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setActivePane = useAppStore((s) => s.setActivePane);
+  const removeTab = useAppStore((s) => s.removeTab);
+  const addTab = useAppStore((s) => s.addTab);
   const projects = useProjectsStore((s) => s.projects);
   const terminalTabs = tabs.filter((t) => t.type === "terminal");
+
+  // Track expanded state for tree nodes
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Auto-expand project groups and active tab
+  useEffect(() => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      // Expand all project groups by default
+      for (const tab of terminalTabs) {
+        const groupKey = `group-${tab.projectId || "ungrouped"}`;
+        next.add(groupKey);
+      }
+      // Expand active tab if it has multiple panes
+      if (activeTabId) {
+        const paneState = terminalPanes[activeTabId];
+        if (paneState && paneState.panes.length > 1) {
+          next.add(activeTabId);
+        }
+      }
+      return next;
+    });
+  }, [terminalTabs.length, activeTabId, terminalPanes]);
+
+  const handleToggle = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSelect = useCallback(
+    (id: string) => {
+      // If it's a pane node (format: "tabId:paneId")
+      if (id.includes(":")) {
+        const [tabId, paneId] = id.split(":");
+        setActiveTab(tabId);
+        setActivePane(tabId, paneId);
+        return;
+      }
+      // If it's a tab node, switch to that tab
+      const tab = terminalTabs.find((t) => t.id === id);
+      if (tab) {
+        setActiveTab(tab.id);
+        return;
+      }
+    },
+    [terminalTabs, setActiveTab, setActivePane]
+  );
+
+  // Build tree data
+  const treeNodes = useMemo(() => {
+    // Group terminals by project
+    const grouped = new Map<string | null, typeof terminalTabs>();
+    for (const tab of terminalTabs) {
+      const key = tab.projectId || null;
+      const list = grouped.get(key) || [];
+      list.push(tab);
+      grouped.set(key, list);
+    }
+
+    const nodes: TreeNodeType[] = [];
+
+    for (const [projectId, groupTabs] of grouped.entries()) {
+      const project = projectId ? projects.find((p) => p.id === projectId) : null;
+      const groupId = `group-${projectId || "ungrouped"}`;
+
+      const tabNodes: TreeNodeType[] = groupTabs.map((tab) => {
+        const paneState = terminalPanes[tab.id];
+        const panes = paneState?.panes || [];
+        const hasMultiplePanes = panes.length > 1;
+
+        // Build pane children (only when multiple panes)
+        const paneChildren: TreeNodeType[] = hasMultiplePanes
+          ? panes.map((pane, i) => ({
+              id: `${tab.id}:${pane.id}`,
+              label: pane.cwd ? folderName(pane.cwd) : `Pane ${i + 1}`,
+              icon: <FolderOpen className="w-3 h-3" />,
+              isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
+            }))
+          : [];
+
+        return {
+          id: tab.id,
+          label: tab.title,
+          icon: <Terminal className="w-3.5 h-3.5" />,
+          isActive: tab.id === activeTabId,
+          children: paneChildren.length > 0 ? paneChildren : undefined,
+          expanded: expandedIds.has(tab.id),
+          badge: hasMultiplePanes ? (
+            <span className="flex items-center gap-0.5">
+              <Columns2 className="w-2.5 h-2.5" />
+              {panes.length}
+            </span>
+          ) : undefined,
+        };
+      });
+
+      nodes.push({
+        id: groupId,
+        label: project?.name || "General",
+        icon: <FolderTree className="w-3.5 h-3.5" />,
+        children: tabNodes,
+        expanded: expandedIds.has(groupId),
+      });
+    }
+
+    return nodes;
+  }, [terminalTabs, projects, terminalPanes, activeTabId, expandedIds]);
 
   if (terminalTabs.length === 0) {
     return (
@@ -202,37 +327,55 @@ function TerminalsView() {
     );
   }
 
-  // Group terminals by project
-  const grouped = new Map<string | null, typeof terminalTabs>();
-  for (const tab of terminalTabs) {
-    const key = tab.projectId || null;
-    const list = grouped.get(key) || [];
-    list.push(tab);
-    grouped.set(key, list);
-  }
-
   return (
-    <div className="py-1">
-      {Array.from(grouped.entries()).map(([projectId, groupTabs]) => {
-        const project = projectId ? projects.find((p) => p.id === projectId) : null;
-        return (
-          <div key={projectId || "ungrouped"} className="mb-2">
-            <div className="px-4 py-1 text-2xs font-semibold uppercase tracking-widest text-foreground-muted">
-              {project?.name || "General"}
-            </div>
-            {groupTabs.map((tab) => (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto scrollbar-thin py-1">
+        <TreeView
+          nodes={treeNodes}
+          label="Terminal sessions"
+          selectedId={activeTabId}
+          onSelect={handleSelect}
+          onToggle={handleToggle}
+          renderActions={(node) => {
+            // Only show close button on terminal tab nodes (not groups or panes)
+            const isTab = terminalTabs.some((t) => t.id === node.id);
+            if (!isTab) return null;
+            return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="w-full flex items-center gap-2 px-4 py-1.5 text-left text-sm text-foreground-secondary hover:bg-muted/50 transition-default"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeTab(node.id);
+                }}
+                className="p-0.5 rounded hover:bg-destructive/20 hover:text-destructive transition-default"
+                title="Close terminal"
               >
-                <Terminal className="w-3.5 h-3.5 text-foreground-muted" />
-                <span className="truncate">{tab.title}</span>
+                <X className="w-3 h-3" />
               </button>
-            ))}
-          </div>
-        );
-      })}
+            );
+          }}
+        />
+      </div>
+
+      {/* New terminal footer */}
+      <div className="border-t border-border p-2 shrink-0">
+        <button
+          onClick={() => {
+            const activeProject = projects.find((p) =>
+              terminalTabs.some((t) => t.projectId === p.id)
+            );
+            addTab({
+              id: `terminal-${Date.now()}`,
+              type: "terminal",
+              title: activeProject?.name || "Terminal",
+              projectId: activeProject?.id,
+            });
+          }}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span className="text-2xs">New Terminal</span>
+        </button>
+      </div>
     </div>
   );
 }
