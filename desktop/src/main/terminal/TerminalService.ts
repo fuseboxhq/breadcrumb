@@ -442,9 +442,10 @@ export class TerminalService extends EventEmitter {
       const gen = (this.inspectGeneration.get(sessionId) || 0) + 1;
       this.inspectGeneration.set(sessionId, gen);
 
-      // Shells are the resting state — clear processLabel so CWD shows through
+      // Shells are the resting state — emit shell name but empty processLabel
+      // so the renderer can show "zsh - foldername" via resolveLabel
       if (SHELL_NAMES.has(rawName)) {
-        this.emitLabel(sessionId, "", "");
+        this.emitLabel(sessionId, rawName, "");
         return;
       }
 

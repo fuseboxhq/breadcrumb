@@ -30,7 +30,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
-import { ClaudeIcon } from "../icons/ClaudeIcon";
+import { ProcessIcon } from "../icons/ProcessIcon";
 
 const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
   explorer: { label: "Explorer", icon: FolderTree },
@@ -402,11 +402,7 @@ function TerminalsView() {
               return {
                 id: `${tab.id}:${pane.id}`,
                 label: resolveLabel(pane, i),
-                icon: pane.processName === "claude"
-                  ? <ClaudeIcon className="w-3 h-3" />
-                  : pane.processName
-                    ? <Terminal className="w-3 h-3" />
-                    : <FolderOpen className="w-3 h-3" />,
+                icon: <ProcessIcon processName={pane.processName} className="w-3 h-3" />,
                 isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
                 badge: isPaneZoomed ? (
                   <Maximize2 className="w-2.5 h-2.5 text-primary" />
@@ -417,9 +413,7 @@ function TerminalsView() {
 
         // When single pane, reflect its process icon on the tab node
         const singlePane = !hasMultiplePanes && panes.length === 1 ? panes[0] : null;
-        const tabIcon = singlePane?.processName === "claude"
-          ? <ClaudeIcon className="w-3.5 h-3.5" />
-          : <Terminal className="w-3.5 h-3.5" />;
+        const tabIcon = <ProcessIcon processName={singlePane?.processName} className="w-3.5 h-3.5" />;
 
         return {
           id: tab.id,

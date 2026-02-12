@@ -36,14 +36,22 @@ export interface TerminalPane {
   claudeInstanceNumber?: number;
 }
 
-/** Resolve the display label for a pane: customLabel > processLabel > CWD folder > "Pane N" */
+/** Extract folder name from an absolute path */
+function folderFromCwd(cwd: string): string {
+  const parts = cwd.replace(/\/+$/, "").split("/");
+  return parts[parts.length - 1] || cwd;
+}
+
+/** Resolve the display label for a pane: customLabel > processLabel > "shell - folder" > shell > folder > "Pane N" */
 export function resolveLabel(pane: TerminalPane, index: number): string {
   if (pane.customLabel) return pane.customLabel;
   if (pane.processLabel) return pane.processLabel;
-  if (pane.cwd) {
-    const parts = pane.cwd.replace(/\/+$/, "").split("/");
-    return parts[parts.length - 1] || pane.cwd;
+  // Shell with CWD → "zsh - foldername"
+  if (pane.processName && pane.cwd) {
+    return `${pane.processName} — ${folderFromCwd(pane.cwd)}`;
   }
+  if (pane.processName) return pane.processName;
+  if (pane.cwd) return folderFromCwd(pane.cwd);
   return `Pane ${index + 1}`;
 }
 

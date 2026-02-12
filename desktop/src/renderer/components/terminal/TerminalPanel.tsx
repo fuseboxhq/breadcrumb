@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen, Cpu, Maximize2, Minimize2 } from "lucide-react";
-import { ClaudeIcon } from "../icons/ClaudeIcon";
+import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2 } from "lucide-react";
+import { ProcessIcon } from "../icons/ProcessIcon";
 
 interface TerminalPanelProps {
   tabId: string;
@@ -208,7 +208,6 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         <div className="flex items-center gap-0.5">
           {panes.map((pane, index) => {
             const label = resolveLabel(pane, index);
-            const PaneIcon = pane.processName === "claude" ? ClaudeIcon : pane.processName ? Cpu : pane.cwd ? FolderOpen : Terminal;
 
             if (renamingPaneId === pane.id) {
               return (
@@ -241,7 +240,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                 `}
                 title={`${label}${pane.customLabel ? " (custom)" : pane.processLabel ? ` — ${pane.processLabel}` : ""}\nDouble-click to rename`}
               >
-                <PaneIcon className="w-3 h-3 shrink-0" />
+                <ProcessIcon processName={pane.processName} className="w-3 h-3 shrink-0" />
                 <span className="truncate">{label}</span>
                 {pane.customLabel && (
                   <span
