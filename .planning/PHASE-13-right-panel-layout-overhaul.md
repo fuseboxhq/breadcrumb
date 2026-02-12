@@ -114,7 +114,7 @@ The core architectural change is splitting the current `Workspace` panel into tw
 |----|-------|--------|------------|------------|
 | breadcrumb-pli.1 | Layout state & persistence foundation | done | Medium | — |
 | breadcrumb-pli.2 | Restructure AppShell to 3-column layout | done | High | pli.1 |
-| breadcrumb-pli.3 | Build RightPanel component with nested panes | open | Medium | pli.2 |
+| breadcrumb-pli.3 | Build RightPanel component with nested panes | done | Medium | pli.2 |
 | breadcrumb-pli.4 | Wire sidebar entries to open in right panel | open | Medium | pli.3 |
 | breadcrumb-pli.5 | Hotkey toggle & keyboard panel navigation | open | Medium | pli.2 |
 | breadcrumb-pli.6 | Layout persistence & restoration | open | Medium | pli.1 |
