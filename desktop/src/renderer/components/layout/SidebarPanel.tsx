@@ -30,6 +30,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
+import { ClaudeIcon } from "../icons/ClaudeIcon";
 
 const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
   explorer: { label: "Explorer", icon: FolderTree },
@@ -401,9 +402,11 @@ function TerminalsView() {
               return {
                 id: `${tab.id}:${pane.id}`,
                 label: resolveLabel(pane, i),
-                icon: pane.processName
-                  ? <Terminal className="w-3 h-3" />
-                  : <FolderOpen className="w-3 h-3" />,
+                icon: pane.processName === "claude"
+                  ? <ClaudeIcon className="w-3 h-3" />
+                  : pane.processName
+                    ? <Terminal className="w-3 h-3" />
+                    : <FolderOpen className="w-3 h-3" />,
                 isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
                 badge: isPaneZoomed ? (
                   <Maximize2 className="w-2.5 h-2.5 text-primary" />

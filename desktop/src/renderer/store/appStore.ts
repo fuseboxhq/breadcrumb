@@ -32,6 +32,8 @@ export interface TerminalPane {
   processLabel?: string;
   /** User-set custom label — overrides auto-detection */
   customLabel?: string;
+  /** Instance number for Claude Code sessions (Claude #1, #2, etc.) */
+  claudeInstanceNumber?: number;
 }
 
 /** Resolve the display label for a pane: customLabel > processLabel > CWD folder > "Pane N" */
@@ -270,8 +272,36 @@ export const useAppStore = create<AppStore>()(
     updatePaneProcess: (tabId, paneId, processName, processLabel) =>
       set((state) => {
         const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
-        if (pane) {
-          pane.processName = processName;
+        if (!pane) return;
+
+        const wasClaude = pane.processName === "claude";
+        const isClaude = processName === "claude";
+
+        pane.processName = processName;
+
+        if (isClaude) {
+          // Assign a Claude instance number if this pane doesn't already have one
+          if (!pane.claudeInstanceNumber) {
+            // Collect all existing Claude instance numbers across all tabs
+            const usedNumbers = new Set<number>();
+            for (const tabState of Object.values(state.terminalPanes)) {
+              for (const p of tabState.panes) {
+                if (p.claudeInstanceNumber && p.id !== pane.id) {
+                  usedNumbers.add(p.claudeInstanceNumber);
+                }
+              }
+            }
+            // Find lowest available number
+            let num = 1;
+            while (usedNumbers.has(num)) num++;
+            pane.claudeInstanceNumber = num;
+          }
+          pane.processLabel = `Claude #${pane.claudeInstanceNumber}`;
+        } else {
+          // Clear Claude instance number when no longer running Claude
+          if (wasClaude) {
+            pane.claudeInstanceNumber = undefined;
+          }
           pane.processLabel = processLabel;
         }
       }),

@@ -3,6 +3,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel } from "../../store/appStore";
 import { Plus, SplitSquareVertical, Rows3, X, Terminal, FolderOpen, Cpu, Maximize2, Minimize2 } from "lucide-react";
+import { ClaudeIcon } from "../icons/ClaudeIcon";
 
 interface TerminalPanelProps {
   tabId: string;
@@ -207,7 +208,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         <div className="flex items-center gap-0.5">
           {panes.map((pane, index) => {
             const label = resolveLabel(pane, index);
-            const PaneIcon = pane.processName ? Cpu : pane.cwd ? FolderOpen : Terminal;
+            const PaneIcon = pane.processName === "claude" ? ClaudeIcon : pane.processName ? Cpu : pane.cwd ? FolderOpen : Terminal;
 
             if (renamingPaneId === pane.id) {
               return (
