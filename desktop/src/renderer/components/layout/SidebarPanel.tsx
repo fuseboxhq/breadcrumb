@@ -3,6 +3,7 @@ import { useAppStore, resolveLabel, type SidebarView } from "../../store/appStor
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
+import { PlanningPanel } from "../breadcrumb/PlanningPanel";
 import { TreeView, type TreeNode as TreeNodeType } from "../sidebar/TreeView";
 import {
   ContextMenu,
@@ -74,7 +75,7 @@ function SidebarContent({ view }: { view: SidebarView }) {
     case "terminals":
       return <TerminalsView />;
     case "breadcrumb":
-      return <BreadcrumbPlaceholder />;
+      return <PlanningPanel />;
     case "browser":
       return <BrowserPlaceholder />;
     case "extensions":
@@ -629,15 +630,6 @@ function TerminalsView() {
   );
 }
 
-function BreadcrumbPlaceholder() {
-  return (
-    <EmptyState
-      icon={LayoutGrid}
-      title="Planning"
-      description="Phase management will appear here"
-    />
-  );
-}
 
 function BrowserPlaceholder() {
   return (
