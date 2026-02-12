@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback } from "react";
+import { useGlobalLayoutHotkeys } from "../../hooks/useGlobalLayoutHotkeys";
 import {
   Panel,
   PanelGroup,
@@ -26,6 +27,9 @@ export function AppShell() {
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
   const setPanelSizes = useAppStore((s) => s.setPanelSizes);
   const restoreLayout = useAppStore((s) => s.restoreLayout);
+
+  // Global hotkeys for right panel toggle and panel focus navigation
+  useGlobalLayoutHotkeys();
 
   // Restore layout from persisted settings on mount
   useEffect(() => {

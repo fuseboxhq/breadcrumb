@@ -35,7 +35,7 @@ export function CommandPalette() {
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { addTab, setSidebarView } = useAppStore();
+  const { addTab, setSidebarView, addRightPanelPane, toggleRightPanel } = useAppStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
@@ -108,32 +108,35 @@ export function CommandPalette() {
     {
       id: "new-browser",
       label: "Open Browser",
-      description: "Browse the web or preview dev server",
+      description: "Open browser in right panel",
       icon: Globe,
       category: "Actions",
       shortcut: "⌘B",
       action: () => {
-        addTab({
-          id: `browser-${Date.now()}`,
-          type: "browser",
-          title: "Browser",
-          url: "https://localhost:3000",
-        });
+        addRightPanelPane("browser");
         setOpen(false);
       },
     },
     {
       id: "open-planner",
       label: "Open Planner",
-      description: "View phases, tasks, and project status",
+      description: "Open planning dashboard in right panel",
       icon: LayoutGrid,
       category: "Actions",
       action: () => {
-        addTab({
-          id: `breadcrumb-${Date.now()}`,
-          type: "breadcrumb",
-          title: "Planner",
-        });
+        addRightPanelPane("planning");
+        setOpen(false);
+      },
+    },
+    {
+      id: "toggle-right-panel",
+      label: "Toggle Right Panel",
+      description: "Show or hide the right panel",
+      icon: LayoutGrid,
+      category: "Navigation",
+      shortcut: "⌘⇧B",
+      action: () => {
+        toggleRightPanel();
         setOpen(false);
       },
     },
