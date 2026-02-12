@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
@@ -125,9 +125,11 @@ function ExplorerView() {
     navigator.clipboard.writeText(path);
   }, []);
 
-  // Auto-expand active project
+  // Auto-expand when a NEW project becomes active (not on re-click)
+  const prevActiveIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (activeProject) {
+    if (activeProject && activeProject.id !== prevActiveIdRef.current) {
+      prevActiveIdRef.current = activeProject.id;
       setExpandedIds((prev) => {
         const next = new Set(prev);
         next.add(activeProject.id);
@@ -201,7 +203,9 @@ function ExplorerView() {
               >
                 <button
                   onClick={() => {
-                    setActiveProject(project.id);
+                    if (!isActive) {
+                      setActiveProject(project.id);
+                    }
                     setExpandedIds((prev) => {
                       const next = new Set(prev);
                       if (next.has(project.id)) next.delete(project.id);
