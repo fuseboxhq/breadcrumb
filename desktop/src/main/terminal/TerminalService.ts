@@ -253,6 +253,11 @@ const NODE_COMMAND_PATTERNS: Array<{
       return { processName: "node", processLabel: "Node.js" };
     },
   },
+  // Catch-all: any node invocation (interactive REPL, unknown scripts, etc.)
+  {
+    test: (args) => /\bnode\b/i.test(args),
+    label: () => ({ processName: "node", processLabel: "Node.js" }),
+  },
 ];
 
 /** Patterns for Python processes */
@@ -299,6 +304,11 @@ const PYTHON_COMMAND_PATTERNS: Array<{
         processLabel: script ? `Python: ${script}` : "Python",
       };
     },
+  },
+  // Catch-all: any python invocation (interactive REPL, modules, etc.)
+  {
+    test: (args) => /python3?/i.test(args),
+    label: () => ({ processName: "python", processLabel: "Python" }),
   },
 ];
 
