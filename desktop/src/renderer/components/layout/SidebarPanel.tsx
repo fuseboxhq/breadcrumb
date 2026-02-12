@@ -27,6 +27,8 @@ import {
   SplitSquareVertical,
   Rows3,
   Pencil,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
@@ -314,6 +316,8 @@ function TerminalsView() {
   const addTab = useAppStore((s) => s.addTab);
   const addPane = useAppStore((s) => s.addPane);
   const removePane = useAppStore((s) => s.removePane);
+  const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
+  const zoomedPane = useAppStore((s) => s.zoomedPane);
   const projects = useProjectsStore((s) => s.projects);
   const terminalTabs = tabs.filter((t) => t.type === "terminal");
 
@@ -513,6 +517,8 @@ function TerminalsView() {
               const [tabId, paneId] = node.id.split(":");
               const paneState = terminalPanes[tabId];
               const pane = paneState?.panes.find((p) => p.id === paneId);
+              const isPaneZoomed = zoomedPane?.tabId === tabId && zoomedPane?.paneId === paneId;
+              const canZoom = (paneState?.panes.length || 0) > 1;
               return (
                 <ContextMenu
                   content={
@@ -521,11 +527,21 @@ function TerminalsView() {
                         icon={<Pencil className="w-3.5 h-3.5" />}
                         label="Rename Pane"
                         onSelect={() => {
-                          // Focus the pane tab and trigger rename via store
                           setActiveTab(tabId);
                           setActivePane(tabId, paneId);
                         }}
                       />
+                      {canZoom && (
+                        <MenuItem
+                          icon={isPaneZoomed
+                            ? <Minimize2 className="w-3.5 h-3.5" />
+                            : <Maximize2 className="w-3.5 h-3.5" />
+                          }
+                          label={isPaneZoomed ? "Restore Panes" : "Maximize Pane"}
+                          shortcut="⇧⌘↵"
+                          onSelect={() => togglePaneZoom(tabId, paneId)}
+                        />
+                      )}
                       {pane?.cwd && (
                         <MenuItem
                           icon={<Copy className="w-3.5 h-3.5" />}

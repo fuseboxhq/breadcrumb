@@ -137,6 +137,17 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
     const handler = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
 
+      // Cmd+Shift+Enter — toggle zoom on active pane
+      if (meta && e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+        const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
+        if (currentPanes.length > 1 && currentActive) {
+          togglePaneZoom(tabId, currentActive);
+        }
+        return;
+      }
+
       // Cmd+D — split horizontal
       if (meta && !e.shiftKey && e.key === "d") {
         e.preventDefault();
@@ -182,7 +193,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [tabId, addPane, removePane, navigatePane, navigateToPaneNumber]);
+  }, [tabId, addPane, removePane, navigatePane, navigateToPaneNumber, togglePaneZoom]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -299,6 +310,11 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
             isActive={true}
             workingDirectory={workingDirectory}
             onCwdChange={(cwd) => handleCwdChange(zoomedPaneData.id, cwd)}
+            onSplitHorizontal={() => addPane("horizontal")}
+            onSplitVertical={() => addPane("vertical")}
+            onToggleZoom={() => togglePaneZoom(tabId, zoomedPaneData.id)}
+            isZoomed={true}
+            canZoom={true}
           />
         ) : panes.length === 1 ? (
           <TerminalInstance
@@ -306,6 +322,8 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
             isActive={true}
             workingDirectory={workingDirectory}
             onCwdChange={(cwd) => handleCwdChange(panes[0].id, cwd)}
+            onSplitHorizontal={() => addPane("horizontal")}
+            onSplitVertical={() => addPane("vertical")}
           />
         ) : (
           <PanelGroup direction={splitDirection}>
@@ -344,6 +362,11 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                       isActive={activePane === pane.id}
                       workingDirectory={workingDirectory}
                       onCwdChange={(cwd) => handleCwdChange(pane.id, cwd)}
+                      onSplitHorizontal={() => addPane("horizontal")}
+                      onSplitVertical={() => addPane("vertical")}
+                      onToggleZoom={() => togglePaneZoom(tabId, pane.id)}
+                      isZoomed={false}
+                      canZoom={panes.length > 1}
                     />
                   </div>
                 </Panel>

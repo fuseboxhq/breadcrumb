@@ -12,7 +12,7 @@ import {
   MenuItem,
   MenuSeparator,
 } from "../shared/ContextMenu";
-import { Copy, ClipboardPaste, CheckSquare, Eraser } from "lucide-react";
+import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3 } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
@@ -20,6 +20,12 @@ interface TerminalInstanceProps {
   isActive: boolean;
   workingDirectory?: string;
   onCwdChange?: (cwd: string) => void;
+  // Context menu actions passed from TerminalPanel
+  onSplitHorizontal?: () => void;
+  onSplitVertical?: () => void;
+  onToggleZoom?: () => void;
+  isZoomed?: boolean;
+  canZoom?: boolean;
 }
 
 // Dracula-inspired terminal color scheme
@@ -48,7 +54,17 @@ const TERMINAL_THEME = {
   brightWhite: "#ffffff",
 };
 
-export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdChange }: TerminalInstanceProps) {
+export function TerminalInstance({
+  sessionId,
+  isActive,
+  workingDirectory,
+  onCwdChange,
+  onSplitHorizontal,
+  onSplitVertical,
+  onToggleZoom,
+  isZoomed,
+  canZoom,
+}: TerminalInstanceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -354,6 +370,38 @@ export function TerminalInstance({ sessionId, isActive, workingDirectory, onCwdC
             shortcut="⌘L"
             onSelect={handleClear}
           />
+          {(onSplitHorizontal || onSplitVertical || canZoom) && (
+            <>
+              <MenuSeparator />
+              {canZoom && onToggleZoom && (
+                <MenuItem
+                  icon={isZoomed
+                    ? <Minimize2 className="w-3.5 h-3.5" />
+                    : <Maximize2 className="w-3.5 h-3.5" />
+                  }
+                  label={isZoomed ? "Restore Panes" : "Maximize Pane"}
+                  shortcut="⇧⌘↵"
+                  onSelect={onToggleZoom}
+                />
+              )}
+              {onSplitHorizontal && (
+                <MenuItem
+                  icon={<SplitSquareVertical className="w-3.5 h-3.5" />}
+                  label="Split Horizontal"
+                  shortcut="⌘D"
+                  onSelect={onSplitHorizontal}
+                />
+              )}
+              {onSplitVertical && (
+                <MenuItem
+                  icon={<Rows3 className="w-3.5 h-3.5" />}
+                  label="Split Vertical"
+                  shortcut="⇧⌘D"
+                  onSelect={onSplitVertical}
+                />
+              )}
+            </>
+          )}
         </>
       }
     >
