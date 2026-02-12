@@ -6,14 +6,15 @@ import {
   Clock,
   RefreshCw,
   ChevronRight,
-  ChevronLeft,
   AlertCircle,
   Database,
   FileText,
   FolderOpen,
   ArrowLeft,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
-import { SkeletonCard } from "../ui/Skeleton";
+import { SkeletonCard, SkeletonList } from "../ui/Skeleton";
 import { useProjects, useProjectsStore } from "../../store/projectsStore";
 import {
   usePlanningStore,
@@ -91,6 +92,7 @@ export function PlanningPanel() {
               onClick={navigateBack}
               className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default shrink-0"
               title="Back"
+              aria-label="Navigate back"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -100,8 +102,10 @@ export function PlanningPanel() {
         </div>
         <button
           onClick={handleRefresh}
-          className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default shrink-0"
+          disabled={refreshing}
+          className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default shrink-0 disabled:opacity-50"
           title="Refresh all projects"
+          aria-label="Refresh all projects"
         >
           <RefreshCw
             className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
@@ -208,6 +212,8 @@ function ProjectOverview({
     }} />;
   }
 
+  const refreshProject = usePlanningStore((s) => s.refreshProject);
+
   return (
     <div className="p-4 space-y-3">
       <p className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted px-1">
@@ -217,6 +223,7 @@ function ProjectOverview({
         {projects.map((project) => {
           const data = planningData[project.path];
           const loading = data?.loading ?? true;
+          const error = data?.error;
           const capabilities = data?.capabilities;
           const phases = data?.phases ?? [];
           const activePhase = phases.find((p) => p.isActive);
@@ -228,10 +235,28 @@ function ProjectOverview({
             return <SkeletonCard key={project.id} />;
           }
 
+          if (error && !data?.lastFetched) {
+            return (
+              <div key={project.id} className="p-4 rounded-xl border border-border space-y-2">
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="w-4 h-4 text-dracula-purple shrink-0" />
+                  <span className="text-sm font-semibold text-foreground truncate">
+                    {project.name}
+                  </span>
+                </div>
+                <ErrorAlert
+                  message={`Failed to load project data: ${error}`}
+                  onRetry={() => refreshProject(project.path)}
+                />
+              </div>
+            );
+          }
+
           return (
             <button
               key={project.id}
               onClick={() => onSelectProject(project.path, project.name)}
+              aria-label={`Open ${project.name} project`}
               className="group w-full text-left p-4 rounded-xl border border-border hover:border-border-strong hover:bg-background-raised transition-default"
             >
               <div className="flex items-center gap-2 mb-2.5">
@@ -241,16 +266,16 @@ function ProjectOverview({
                 </span>
                 <div className="ml-auto flex items-center gap-1 shrink-0">
                   {capabilities?.hasPlanning && (
-                    <span title=".planning/ detected">
+                    <span title=".planning/ detected" aria-label="Has planning data">
                       <FileText className="w-3 h-3 text-dracula-green" />
                     </span>
                   )}
                   {capabilities?.hasBeads && (
-                    <span title=".beads/ detected">
+                    <span title=".beads/ detected" aria-label="Has Beads database">
                       <Database className="w-3 h-3 text-dracula-cyan" />
                     </span>
                   )}
-                  <ChevronRight className="w-3.5 h-3.5 text-foreground-muted opacity-0 group-hover:opacity-100 transition-default" />
+                  <ChevronRight className="w-3.5 h-3.5 text-foreground-muted opacity-0 group-hover:opacity-100 transition-default" aria-hidden="true" />
                 </div>
               </div>
 
@@ -265,7 +290,13 @@ function ProjectOverview({
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden">
+                    <div
+                      className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={completedPhases}
+                      aria-valuemax={phases.length}
+                      aria-label={`${completedPhases} of ${phases.length} phases complete`}
+                    >
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
@@ -311,6 +342,28 @@ function ProjectPhases({
   const phases = usePlanningStore(
     (s) => s.projects[projectPath]?.phases ?? []
   );
+  const loading = usePlanningStore(
+    (s) => s.projects[projectPath]?.loading ?? false
+  );
+  const error = usePlanningStore(
+    (s) => s.projects[projectPath]?.error ?? null
+  );
+  const refreshProject = usePlanningStore((s) => s.refreshProject);
+
+  if (loading && phases.length === 0) {
+    return <SkeletonList rows={4} />;
+  }
+
+  if (error && phases.length === 0) {
+    return (
+      <div className="p-4">
+        <ErrorAlert
+          message={`Failed to load phases: ${error}`}
+          onRetry={() => refreshProject(projectPath)}
+        />
+      </div>
+    );
+  }
 
   if (phases.length === 0) {
     return (
@@ -413,6 +466,7 @@ function PhaseCard({
   return (
     <button
       onClick={() => onSelect(phase.id)}
+      aria-label={`${phase.id}: ${phase.title} — ${phase.completedCount} of ${phase.taskCount} tasks done`}
       className="group w-full text-left p-3.5 rounded-xl border border-border hover:border-border-strong hover:bg-background-raised transition-default"
     >
       <div className="flex items-center gap-2 mb-2">
@@ -427,7 +481,12 @@ function PhaseCard({
       </div>
       {phase.taskCount > 0 && (
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden">
+          <div
+            className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={phase.completedCount}
+            aria-valuemax={phase.taskCount}
+          >
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
@@ -462,6 +521,9 @@ function PhaseDetailView({
   const detail = usePlanningStore(
     (s) => s.projects[projectPath]?.phaseDetails[phaseId] ?? null
   );
+  const error = usePlanningStore(
+    (s) => s.projects[projectPath]?.error ?? null
+  );
   const beadsTasks = usePlanningStore((s) => {
     const d = s.projects[projectPath]?.phaseDetails[phaseId];
     if (!d?.beadsEpic) return [];
@@ -478,6 +540,17 @@ function PhaseDetailView({
       fetchBeadsTasks(projectPath, detail.beadsEpic);
     }
   }, [projectPath, detail?.beadsEpic, fetchBeadsTasks]);
+
+  if (!detail && error) {
+    return (
+      <div className="p-4">
+        <ErrorAlert
+          message={`Failed to load phase detail: ${error}`}
+          onRetry={() => fetchPhaseDetail(projectPath, phaseId)}
+        />
+      </div>
+    );
+  }
 
   if (!detail) {
     return (
@@ -786,6 +859,33 @@ function CollapsibleSection({
         {title}
       </button>
       {open && <div className="animate-fade-in">{children}</div>}
+    </div>
+  );
+}
+
+function ErrorAlert({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 p-3 rounded-lg border border-destructive/30 bg-destructive/5 animate-fade-in">
+      <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-foreground-secondary">{message}</p>
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-medium text-destructive hover:bg-destructive/10 transition-default shrink-0"
+          aria-label="Retry loading"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Retry
+        </button>
+      )}
     </div>
   );
 }
