@@ -61,6 +61,38 @@ export interface TabPaneState {
   splitDirection: "horizontal" | "vertical";
 }
 
+// Right panel pane types
+export type RightPanelPaneType = "browser" | "planning";
+
+export interface RightPanelPane {
+  id: string;
+  type: RightPanelPaneType;
+}
+
+export interface LayoutState {
+  rightPanel: {
+    isOpen: boolean;
+    panes: RightPanelPane[];
+  };
+  panelSizes: {
+    sidebar: number;
+    center: number;
+    rightPanel: number;
+  };
+}
+
+export const DEFAULT_LAYOUT: LayoutState = {
+  rightPanel: {
+    isOpen: false,
+    panes: [],
+  },
+  panelSizes: {
+    sidebar: 18,
+    center: 82,
+    rightPanel: 0,
+  },
+};
+
 export interface AppState {
   // Sidebar
   sidebarView: SidebarView;
@@ -75,6 +107,9 @@ export interface AppState {
 
   // Zoom state — temporarily maximize a single pane
   zoomedPane: { tabId: string; paneId: string } | null;
+
+  // Layout — 3-column panel system
+  layout: LayoutState;
 
   // Project
   currentProjectPath: string | null;
@@ -109,6 +144,14 @@ export interface AppActions {
   togglePaneZoom: (tabId: string, paneId: string) => void;
   clearPaneZoom: () => void;
 
+  // Layout — right panel
+  setRightPanelOpen: (isOpen: boolean) => void;
+  toggleRightPanel: () => void;
+  addRightPanelPane: (type: RightPanelPaneType) => void;
+  removeRightPanelPane: (paneId: string) => void;
+  setPanelSizes: (sizes: { sidebar: number; center: number; rightPanel: number }) => void;
+  restoreLayout: (layout: LayoutState) => void;
+
   // Project
   setCurrentProjectPath: (path: string | null) => void;
 
@@ -131,12 +174,32 @@ const initialState: AppState = {
   activeTabId: "welcome",
   terminalPanes: {},
   zoomedPane: null,
+  layout: DEFAULT_LAYOUT,
   currentProjectPath: null,
   theme: "dark",
 };
 
+// Debounced layout persistence — writes to electron-store via IPC
+let persistLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function persistLayout(getLayout: () => LayoutState) {
+  if (persistLayoutTimeout) clearTimeout(persistLayoutTimeout);
+  persistLayoutTimeout = setTimeout(() => {
+    const layout = getLayout();
+    const settingsPayload = {
+      rightPanel: {
+        isOpen: layout.rightPanel.isOpen,
+        panes: layout.rightPanel.panes.map((p) => ({ id: p.id, type: p.type, size: 50 })),
+      },
+      panelSizes: layout.panelSizes,
+    };
+    window.breadcrumbAPI?.setSetting("layout", settingsPayload);
+    persistLayoutTimeout = null;
+  }, 300);
+}
+
 export const useAppStore = create<AppStore>()(
-  immer((set) => ({
+  immer((set, get) => ({
     ...initialState,
 
     // Sidebar
@@ -348,6 +411,70 @@ export const useAppStore = create<AppStore>()(
         state.zoomedPane = null;
       }),
 
+    // Layout — right panel
+    setRightPanelOpen: (isOpen) =>
+      set((state) => {
+        state.layout.rightPanel.isOpen = isOpen;
+        if (isOpen && state.layout.panelSizes.rightPanel === 0) {
+          // Expand to default size
+          state.layout.panelSizes = { sidebar: 18, center: 52, rightPanel: 30 };
+        } else if (!isOpen) {
+          // Collapse: give right panel space back to center
+          state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
+          state.layout.panelSizes.rightPanel = 0;
+        }
+        persistLayout(() => get().layout);
+      }),
+
+    toggleRightPanel: () =>
+      set((state) => {
+        const wasOpen = state.layout.rightPanel.isOpen;
+        state.layout.rightPanel.isOpen = !wasOpen;
+        if (!wasOpen && state.layout.panelSizes.rightPanel === 0) {
+          state.layout.panelSizes = { sidebar: 18, center: 52, rightPanel: 30 };
+        } else if (wasOpen) {
+          state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
+          state.layout.panelSizes.rightPanel = 0;
+        }
+        persistLayout(() => get().layout);
+      }),
+
+    addRightPanelPane: (type) =>
+      set((state) => {
+        // Don't add duplicate pane types
+        if (state.layout.rightPanel.panes.some((p) => p.type === type)) return;
+        const id = `rp-${type}-${Date.now()}`;
+        state.layout.rightPanel.panes.push({ id, type });
+        state.layout.rightPanel.isOpen = true;
+        if (state.layout.panelSizes.rightPanel === 0) {
+          state.layout.panelSizes = { sidebar: 18, center: 52, rightPanel: 30 };
+        }
+        persistLayout(() => get().layout);
+      }),
+
+    removeRightPanelPane: (paneId) =>
+      set((state) => {
+        state.layout.rightPanel.panes = state.layout.rightPanel.panes.filter((p) => p.id !== paneId);
+        // Auto-collapse when last pane removed
+        if (state.layout.rightPanel.panes.length === 0) {
+          state.layout.rightPanel.isOpen = false;
+          state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
+          state.layout.panelSizes.rightPanel = 0;
+        }
+        persistLayout(() => get().layout);
+      }),
+
+    setPanelSizes: (sizes) =>
+      set((state) => {
+        state.layout.panelSizes = sizes;
+        persistLayout(() => get().layout);
+      }),
+
+    restoreLayout: (layout) =>
+      set((state) => {
+        state.layout = layout;
+      }),
+
     // Project
     setCurrentProjectPath: (path) =>
       set((state) => {
@@ -381,3 +508,9 @@ export const useActivePane = (tabId: string) =>
 export const useSplitDirection = (tabId: string) =>
   useAppStore((s) => s.terminalPanes[tabId]?.splitDirection || "horizontal");
 export const useZoomedPane = () => useAppStore((s) => s.zoomedPane);
+
+// Layout selector hooks
+export const useLayout = () => useAppStore((s) => s.layout);
+export const useRightPanelOpen = () => useAppStore((s) => s.layout.rightPanel.isOpen);
+export const useRightPanelPanes = () => useAppStore((s) => s.layout.rightPanel.panes);
+export const usePanelSizes = () => useAppStore((s) => s.layout.panelSizes);

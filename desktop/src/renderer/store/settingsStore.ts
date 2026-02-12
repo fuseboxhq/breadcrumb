@@ -9,8 +9,27 @@ export interface TerminalSettings {
   defaultShell: string;
 }
 
+export interface RightPanelPane {
+  id: string;
+  type: "browser" | "planning";
+  size: number;
+}
+
+export interface LayoutSettings {
+  rightPanel: {
+    isOpen: boolean;
+    panes: RightPanelPane[];
+  };
+  panelSizes: {
+    sidebar: number;
+    center: number;
+    rightPanel: number;
+  };
+}
+
 export interface AppSettings {
   terminal: TerminalSettings;
+  layout: LayoutSettings;
 }
 
 const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
@@ -27,9 +46,15 @@ interface SettingsState {
   loaded: boolean;
 }
 
+const DEFAULT_LAYOUT_SETTINGS: LayoutSettings = {
+  rightPanel: { isOpen: false, panes: [] },
+  panelSizes: { sidebar: 18, center: 82, rightPanel: 0 },
+};
+
 interface SettingsActions {
   loadSettings: () => Promise<void>;
   updateTerminalSetting: <K extends keyof TerminalSettings>(key: K, value: TerminalSettings[K]) => Promise<void>;
+  updateLayoutSetting: (layout: LayoutSettings) => Promise<void>;
   resetSettings: () => Promise<void>;
 }
 
@@ -38,21 +63,28 @@ export type SettingsStore = SettingsState & SettingsActions;
 export const useSettingsStore = create<SettingsStore>((set) => ({
   settings: {
     terminal: DEFAULT_TERMINAL_SETTINGS,
+    layout: DEFAULT_LAYOUT_SETTINGS,
   },
   loaded: false,
 
   loadSettings: async () => {
     const all = await window.breadcrumbAPI?.getSettings() as unknown as AppSettings | undefined;
-    if (all?.terminal) {
-      set({
-        settings: {
-          terminal: { ...DEFAULT_TERMINAL_SETTINGS, ...(all.terminal as Partial<TerminalSettings>) },
+    set({
+      settings: {
+        terminal: { ...DEFAULT_TERMINAL_SETTINGS, ...(all?.terminal as Partial<TerminalSettings> || {}) },
+        layout: {
+          rightPanel: {
+            ...DEFAULT_LAYOUT_SETTINGS.rightPanel,
+            ...(all?.layout?.rightPanel || {}),
+          },
+          panelSizes: {
+            ...DEFAULT_LAYOUT_SETTINGS.panelSizes,
+            ...(all?.layout?.panelSizes || {}),
+          },
         },
-        loaded: true,
-      });
-    } else {
-      set({ loaded: true });
-    }
+      },
+      loaded: true,
+    });
   },
 
   updateTerminalSetting: async (key, value) => {
@@ -65,14 +97,25 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     }));
   },
 
+  updateLayoutSetting: async (layout) => {
+    await window.breadcrumbAPI?.setSetting("layout", layout);
+    set((state) => ({
+      settings: { ...state.settings, layout },
+    }));
+  },
+
   resetSettings: async () => {
     await window.breadcrumbAPI?.resetSettings();
     set({
-      settings: { terminal: DEFAULT_TERMINAL_SETTINGS },
+      settings: {
+        terminal: DEFAULT_TERMINAL_SETTINGS,
+        layout: DEFAULT_LAYOUT_SETTINGS,
+      },
     });
   },
 }));
 
 // Selector hooks
 export const useTerminalSettings = () => useSettingsStore((s) => s.settings.terminal);
+export const useLayoutSettings = () => useSettingsStore((s) => s.settings.layout);
 export const useSettingsLoaded = () => useSettingsStore((s) => s.loaded);

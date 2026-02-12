@@ -9,8 +9,27 @@ export interface TerminalSettings {
   defaultShell: string;
 }
 
+export interface RightPanelPane {
+  id: string;
+  type: "browser" | "planning";
+  size: number; // percentage within right panel
+}
+
+export interface LayoutSettings {
+  rightPanel: {
+    isOpen: boolean;
+    panes: RightPanelPane[];
+  };
+  panelSizes: {
+    sidebar: number;
+    center: number;
+    rightPanel: number;
+  };
+}
+
 export interface AppSettings {
   terminal: TerminalSettings;
+  layout: LayoutSettings;
 }
 
 const schema = {
@@ -30,6 +49,40 @@ const schema = {
       },
       cursorBlink: { type: "boolean" as const, default: true },
       defaultShell: { type: "string" as const, default: process.env.SHELL || "/bin/zsh" },
+    },
+    default: {},
+  },
+  layout: {
+    type: "object" as const,
+    properties: {
+      rightPanel: {
+        type: "object" as const,
+        properties: {
+          isOpen: { type: "boolean" as const, default: false },
+          panes: {
+            type: "array" as const,
+            items: {
+              type: "object" as const,
+              properties: {
+                id: { type: "string" as const },
+                type: { type: "string" as const, enum: ["browser", "planning"] },
+                size: { type: "number" as const, minimum: 0, maximum: 100 },
+              },
+            },
+            default: [],
+          },
+        },
+        default: { isOpen: false, panes: [] },
+      },
+      panelSizes: {
+        type: "object" as const,
+        properties: {
+          sidebar: { type: "number" as const, default: 18, minimum: 0, maximum: 40 },
+          center: { type: "number" as const, default: 82, minimum: 30, maximum: 100 },
+          rightPanel: { type: "number" as const, default: 0, minimum: 0, maximum: 60 },
+        },
+        default: { sidebar: 18, center: 82, rightPanel: 0 },
+      },
     },
     default: {},
   },
