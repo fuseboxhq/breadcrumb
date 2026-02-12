@@ -220,13 +220,18 @@ export const useAppStore = create<AppStore>()(
           tabState.splitDirection = direction;
         }
 
+        // Inherit CWD from the currently active pane so the new pane
+        // immediately shows a useful label instead of "Pane N"
+        const activeP = tabState.panes.find((p) => p.id === tabState.activePane);
+        const inheritCwd = activeP?.cwd || "";
+
         const id = `pane-${Date.now()}`;
         const sessionId = `${tabId}-${Date.now()}`;
 
         tabState.panes.push({
           id,
           sessionId,
-          cwd: "",
+          cwd: inheritCwd,
           lastActivity: Date.now(),
         });
         tabState.activePane = id;

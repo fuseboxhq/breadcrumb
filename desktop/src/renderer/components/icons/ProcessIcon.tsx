@@ -71,6 +71,29 @@ function BrandIcon({ def, ...props }: SVGProps<SVGSVGElement> & { def: IconDef }
   );
 }
 
+/** Aliases for process names that map to the same icon (e.g. python3 → python) */
+const PROCESS_ICON_ALIASES: Record<string, string> = {
+  python3: "python",
+  python2: "python",
+  "node.js": "node",
+  nodejs: "node",
+  npx: "npm",
+};
+
+function findIconDef(processName: string): IconDef | undefined {
+  // Direct match first
+  if (PROCESS_ICONS[processName]) return PROCESS_ICONS[processName];
+  // Alias lookup
+  const alias = PROCESS_ICON_ALIASES[processName];
+  if (alias && PROCESS_ICONS[alias]) return PROCESS_ICONS[alias];
+  // Strip trailing version digits: "python3" → "python", "ruby3" → "ruby"
+  const stripped = processName.replace(/\d+(\.\d+)*$/, "");
+  if (stripped && stripped !== processName && PROCESS_ICONS[stripped]) {
+    return PROCESS_ICONS[stripped];
+  }
+  return undefined;
+}
+
 interface ProcessIconProps {
   processName?: string;
   className?: string;
@@ -81,7 +104,7 @@ interface ProcessIconProps {
  * Usage: <ProcessIcon processName={pane.processName} className="w-3 h-3" />
  */
 export function ProcessIcon({ processName, className }: ProcessIconProps) {
-  const def = processName ? PROCESS_ICONS[processName] : undefined;
+  const def = processName ? findIconDef(processName) : undefined;
 
   if (def) {
     return <BrandIcon def={def} className={className} />;
