@@ -3,7 +3,6 @@ import { useAppStore, resolveLabel, type SidebarView } from "../../store/appStor
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
-import { PlanningPanel } from "../breadcrumb/PlanningPanel";
 import { TreeView, type TreeNode as TreeNodeType } from "../sidebar/TreeView";
 import {
   ContextMenu,
@@ -13,8 +12,6 @@ import {
 import {
   FolderTree,
   Terminal,
-  LayoutGrid,
-  Globe,
   Puzzle,
   Settings,
   FolderOpen,
@@ -33,11 +30,9 @@ import {
 } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 
-const VIEW_TITLES: Record<SidebarView, { label: string; icon: typeof Terminal }> = {
+const VIEW_TITLES: Partial<Record<SidebarView, { label: string; icon: typeof Terminal }>> = {
   explorer: { label: "Explorer", icon: FolderTree },
   terminals: { label: "Terminals", icon: Terminal },
-  breadcrumb: { label: "Breadcrumb", icon: LayoutGrid },
-  browser: { label: "Browser", icon: Globe },
   extensions: { label: "Extensions", icon: Puzzle },
   settings: { label: "Settings", icon: Settings },
 };
@@ -48,7 +43,10 @@ export function SidebarPanel() {
 
   if (collapsed) return null;
 
-  const { label, icon: Icon } = VIEW_TITLES[sidebarView];
+  const viewMeta = VIEW_TITLES[sidebarView];
+  if (!viewMeta) return null;
+
+  const { label, icon: Icon } = viewMeta;
 
   return (
     <div className="h-full bg-background-raised flex flex-col overflow-hidden animate-slide-in-right">
@@ -74,14 +72,14 @@ function SidebarContent({ view }: { view: SidebarView }) {
       return <ExplorerView />;
     case "terminals":
       return <TerminalsView />;
-    case "breadcrumb":
-      return <PlanningPanel />;
-    case "browser":
-      return <BrowserPlaceholder />;
     case "extensions":
       return <ExtensionsPanel />;
     case "settings":
       return <SettingsView />;
+    default:
+      // breadcrumb and browser no longer render in sidebar
+      // (they open in the right panel via ActivityBar)
+      return null;
   }
 }
 
@@ -630,16 +628,6 @@ function TerminalsView() {
   );
 }
 
-
-function BrowserPlaceholder() {
-  return (
-    <EmptyState
-      icon={Globe}
-      title="Browser"
-      description="Bookmarks and history"
-    />
-  );
-}
 
 function SettingsView() {
   const { loadSettings, updateTerminalSetting, resetSettings, loaded } = useSettingsStore();

@@ -6,24 +6,31 @@ import {
   Settings,
   FolderTree,
 } from "lucide-react";
-import { useAppStore, type SidebarView } from "../../store/appStore";
+import { useAppStore, useRightPanelPanes, type SidebarView } from "../../store/appStore";
 
-const ACTIVITY_ITEMS: { view: SidebarView; icon: typeof Terminal; label: string }[] = [
+// Views that toggle sidebar panels
+const SIDEBAR_ITEMS: { view: SidebarView; icon: typeof Terminal; label: string }[] = [
   { view: "explorer", icon: FolderTree, label: "Explorer" },
   { view: "terminals", icon: Terminal, label: "Terminals" },
-  { view: "breadcrumb", icon: LayoutGrid, label: "Breadcrumb" },
-  { view: "browser", icon: Globe, label: "Browser" },
   { view: "extensions", icon: Puzzle, label: "Extensions" },
+];
+
+// Views that open in the right panel
+const RIGHT_PANEL_ITEMS: { type: "browser" | "planning"; icon: typeof Terminal; label: string }[] = [
+  { type: "planning", icon: LayoutGrid, label: "Breadcrumb" },
+  { type: "browser", icon: Globe, label: "Browser" },
 ];
 
 export function ActivityBar() {
   const sidebarView = useAppStore((s) => s.sidebarView);
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
-  const { setSidebarView } = useAppStore();
+  const rightPanelPanes = useRightPanelPanes();
+  const { setSidebarView, addRightPanelPane, removeRightPanelPane } = useAppStore();
 
   return (
     <div className="w-12 bg-background border-r border-border flex flex-col items-center py-2 gap-0.5 shrink-0">
-      {ACTIVITY_ITEMS.map(({ view, icon: Icon, label }) => {
+      {/* Sidebar toggle items */}
+      {SIDEBAR_ITEMS.map(({ view, icon: Icon, label }) => {
         const isActive = sidebarView === view && !sidebarCollapsed;
         return (
           <ActivityButton
@@ -32,6 +39,28 @@ export function ActivityBar() {
             label={label}
             isActive={isActive}
             onClick={() => setSidebarView(view)}
+          />
+        );
+      })}
+
+      {/* Right panel launchers */}
+      {RIGHT_PANEL_ITEMS.map(({ type, icon: Icon, label }) => {
+        const isActive = rightPanelPanes.some((p) => p.type === type);
+        return (
+          <ActivityButton
+            key={type}
+            icon={Icon}
+            label={label}
+            isActive={isActive}
+            onClick={() => {
+              if (isActive) {
+                // Toggle off: remove the pane
+                const pane = rightPanelPanes.find((p) => p.type === type);
+                if (pane) removeRightPanelPane(pane.id);
+              } else {
+                addRightPanelPane(type);
+              }
+            }}
           />
         );
       })}
