@@ -1,12 +1,13 @@
 # Project State
 
-**Current Phase:** PHASE-09
-**Last Updated:** 2026-02-11
+**Current Phase:** PHASE-10
+**Last Updated:** 2026-02-12
 
 ## Active Work
 
 PHASE-05: Add /bc:view command for opening dashboard (not_started)
-PHASE-09: Terminal Experience (not_started)
+PHASE-09: Terminal Experience (complete)
+PHASE-10: Workspace Sidebar Overhaul (not_started)
 
 ## Completed Phases
 
