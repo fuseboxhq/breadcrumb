@@ -1,22 +1,24 @@
 import { BrowserWindow, ipcMain } from "electron";
 import { IPC_CHANNELS, BrowserBounds } from "../../shared/types";
+import { BrowserViewManager } from "../browser/BrowserViewManager";
 
 let handlersRegistered = false;
+let browserManager: BrowserViewManager | null = null;
 
 /**
  * Register browser IPC handlers for the embedded WebContentsView browser.
- * Returns a cleanup function to remove all listeners.
- *
- * Handler implementations will be wired to BrowserViewManager in task ahr.2.
+ * Returns a cleanup function to remove all listeners and destroy the view.
  */
 export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => void {
   if (handlersRegistered) return () => {};
   handlersRegistered = true;
 
+  browserManager = new BrowserViewManager(mainWindow);
+
   // Create the browser WebContentsView
   ipcMain.handle(IPC_CHANNELS.BROWSER_CREATE, async () => {
     try {
-      // TODO: Wire to BrowserViewManager.create() in ahr.2
+      await browserManager!.create();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -26,7 +28,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Navigate to URL
   ipcMain.handle(IPC_CHANNELS.BROWSER_NAVIGATE, async (_, url: string) => {
     try {
-      // TODO: Wire to BrowserViewManager.navigate(url) in ahr.2
+      await browserManager!.navigate(url);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -36,7 +38,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Go back in navigation history
   ipcMain.handle(IPC_CHANNELS.BROWSER_GO_BACK, async () => {
     try {
-      // TODO: Wire to BrowserViewManager in ahr.2
+      browserManager!.goBack();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -46,7 +48,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Go forward in navigation history
   ipcMain.handle(IPC_CHANNELS.BROWSER_GO_FORWARD, async () => {
     try {
-      // TODO: Wire to BrowserViewManager in ahr.2
+      browserManager!.goForward();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -56,7 +58,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Reload current page
   ipcMain.handle(IPC_CHANNELS.BROWSER_RELOAD, async () => {
     try {
-      // TODO: Wire to BrowserViewManager in ahr.2
+      browserManager!.reload();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -66,7 +68,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Set browser WebContentsView bounds (called from ResizeObserver in renderer)
   ipcMain.handle(IPC_CHANNELS.BROWSER_SET_BOUNDS, async (_, bounds: BrowserBounds) => {
     try {
-      // TODO: Wire to BrowserViewManager.setBounds(bounds) in ahr.3
+      browserManager!.setBounds(bounds);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -76,7 +78,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Destroy the browser WebContentsView
   ipcMain.handle(IPC_CHANNELS.BROWSER_DESTROY, async () => {
     try {
-      // TODO: Wire to BrowserViewManager.destroy() in ahr.2
+      browserManager!.destroy();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -86,7 +88,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Open DevTools for the browser WebContentsView
   ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS, async () => {
     try {
-      // TODO: Wire to DevTools management in ahr.6
+      browserManager!.openDevTools();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -96,7 +98,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Close DevTools
   ipcMain.handle(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS, async () => {
     try {
-      // TODO: Wire to DevTools management in ahr.6
+      browserManager!.closeDevTools();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -104,9 +106,9 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   });
 
   // Set DevTools WebContentsView bounds
-  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, bounds: BrowserBounds) => {
+  // TODO: Wire to dedicated DevTools WebContentsView in ahr.6
+  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, _bounds: BrowserBounds) => {
     try {
-      // TODO: Wire to DevTools bounds management in ahr.6
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -114,6 +116,12 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   });
 
   return () => {
+    // Destroy the browser view on cleanup
+    if (browserManager) {
+      browserManager.destroy();
+      browserManager = null;
+    }
+
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_CREATE);
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_NAVIGATE);
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_GO_BACK);
@@ -126,4 +134,11 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS);
     handlersRegistered = false;
   };
+}
+
+/**
+ * Get the current BrowserViewManager instance (for use by other modules).
+ */
+export function getBrowserManager(): BrowserViewManager | null {
+  return browserManager;
 }
