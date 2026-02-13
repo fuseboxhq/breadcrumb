@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -6,7 +6,6 @@ import {
   Globe,
   ExternalLink,
   Lock,
-  Search,
 } from "lucide-react";
 
 interface BrowserPanelProps {
@@ -14,23 +13,138 @@ interface BrowserPanelProps {
 }
 
 export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
-  const [url, setUrl] = useState(initialUrl || "https://google.com");
+  const [url, setUrl] = useState(initialUrl || "https://localhost:3000");
   const [inputUrl, setInputUrl] = useState(url);
   const [loading, setLoading] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const createdRef = useRef(false);
 
-  const navigate = useCallback((newUrl: string) => {
-    let formatted = newUrl;
-    if (!formatted.startsWith("http://") && !formatted.startsWith("https://")) {
-      formatted = `https://${formatted}`;
-    }
-    setUrl(formatted);
-    setInputUrl(formatted);
+  // Create/destroy browser WebContentsView on mount/unmount
+  useEffect(() => {
+    const api = window.breadcrumbAPI?.browser;
+    if (!api) return;
+
+    let destroyed = false;
+
+    const init = async () => {
+      await api.create();
+      if (destroyed) {
+        await api.destroy();
+        return;
+      }
+      createdRef.current = true;
+
+      // Navigate to initial URL after creation
+      await api.navigate(initialUrl || "https://localhost:3000");
+    };
+
+    init();
+
+    return () => {
+      destroyed = true;
+      if (createdRef.current) {
+        api.destroy();
+        createdRef.current = false;
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Bounds syncing: ResizeObserver + rAF throttled IPC
+  useEffect(() => {
+    const el = contentRef.current;
+    const api = window.breadcrumbAPI?.browser;
+    if (!el || !api) return;
+
+    let rafId: number | null = null;
+
+    const sendBounds = () => {
+      const rect = el.getBoundingClientRect();
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+
+      // Hide view when content area is too small (panel collapsed)
+      if (width < 10 || height < 10) {
+        api.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
+        return;
+      }
+
+      api.setBounds({
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width,
+        height,
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        sendBounds();
+      });
+    });
+
+    resizeObserver.observe(el);
+
+    // Send initial bounds
+    sendBounds();
+
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+
+      // Move view off-screen on unmount (before destroy fires)
+      api.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
+    };
+  }, []);
+
+  // Subscribe to navigation events from main process
+  useEffect(() => {
+    const api = window.breadcrumbAPI?.browser;
+    if (!api) return;
+
+    const unsubNavigate = api.onNavigate((data) => {
+      setUrl(data.url);
+      setInputUrl(data.url);
+      setCanGoBack(data.canGoBack);
+      setCanGoForward(data.canGoForward);
+    });
+
+    const unsubLoading = api.onLoadingChange((data) => {
+      setLoading(data.isLoading);
+    });
+
+    return () => {
+      unsubNavigate();
+      unsubLoading();
+    };
+  }, []);
+
+  // Navigation handlers
+  const handleNavigate = useCallback((newUrl: string) => {
+    const api = window.breadcrumbAPI?.browser;
+    if (!api) return;
+    api.navigate(newUrl);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(inputUrl);
+    handleNavigate(inputUrl);
   };
+
+  const handleBack = useCallback(() => {
+    window.breadcrumbAPI?.browser?.goBack();
+  }, []);
+
+  const handleForward = useCallback(() => {
+    window.breadcrumbAPI?.browser?.goForward();
+  }, []);
+
+  const handleReload = useCallback(() => {
+    window.breadcrumbAPI?.browser?.reload();
+  }, []);
 
   const isSecure = url.startsWith("https://");
 
@@ -39,21 +153,28 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       {/* Navigation bar */}
       <div className="h-10 flex items-center gap-1.5 px-2 bg-background-raised border-b border-border shrink-0">
         <button
-          className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+          className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default disabled:opacity-30 disabled:pointer-events-none"
           title="Back"
+          aria-label="Go back"
+          onClick={handleBack}
+          disabled={!canGoBack}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <button
-          className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+          className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default disabled:opacity-30 disabled:pointer-events-none"
           title="Forward"
+          aria-label="Go forward"
+          onClick={handleForward}
+          disabled={!canGoForward}
         >
           <ArrowRight className="w-4 h-4" />
         </button>
         <button
           className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
           title="Reload"
-          onClick={() => navigate(url)}
+          aria-label="Reload page"
+          onClick={handleReload}
         >
           <RotateCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </button>
@@ -70,8 +191,10 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
               type="text"
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
+              onFocus={(e) => e.target.select()}
               className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-foreground-muted font-mono text-2xs"
               placeholder="Enter URL..."
+              aria-label="URL address bar"
             />
           </div>
         </form>
@@ -79,27 +202,14 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
         <button
           className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
           title="Open in external browser"
+          aria-label="Open in external browser"
         >
           <ExternalLink className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Browser content area (placeholder) */}
-      <div className="flex-1 flex items-center justify-center bg-background">
-        <div className="text-center animate-fade-in max-w-md px-8">
-          <div className="w-16 h-16 rounded-2xl bg-dracula-cyan/10 flex items-center justify-center mx-auto mb-6">
-            <Search className="w-8 h-8 text-dracula-cyan" />
-          </div>
-          <p className="text-sm font-medium text-foreground mb-2">Embedded Browser</p>
-          <p className="text-2xs text-foreground-muted mb-4 font-mono bg-background-raised px-3 py-1.5 rounded-lg inline-block">
-            {url}
-          </p>
-          <p className="text-2xs text-foreground-muted/60 leading-relaxed">
-            Full browser embedding via Electron's WebContentsView API will render
-            here with navigation controls, tab management, and security policies.
-          </p>
-        </div>
-      </div>
+      {/* Browser content area — WebContentsView overlays this div */}
+      <div ref={contentRef} className="flex-1" />
     </div>
   );
 }
