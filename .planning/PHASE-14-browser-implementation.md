@@ -1,6 +1,6 @@
 # Phase 14: Browser Implementation
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-ahr
 **Created:** 2026-02-12
 
@@ -148,13 +148,13 @@ The WebContentsView lives in the main process, overlaid on top of the BrowserWin
 
 | ID | Title | Status | Complexity | Depends On |
 |----|-------|--------|------------|------------|
-| breadcrumb-ahr.1 | Browser IPC channels & preload bridge | open | Medium | — |
-| breadcrumb-ahr.2 | BrowserViewManager — WebContentsView lifecycle | open | High | ahr.1 |
-| breadcrumb-ahr.3 | BrowserPanel bounds syncing & visibility | open | High | ahr.2 |
-| breadcrumb-ahr.4 | Navigation chrome wiring & loading states | open | Medium | ahr.3 |
-| breadcrumb-ahr.5 | DevTools bottom dock layout | open | Medium | ahr.3 |
-| breadcrumb-ahr.6 | DevTools WebContentsView integration | open | High | ahr.5 |
-| breadcrumb-ahr.7 | Polish, persistence & error pages | open | Medium | ahr.4, ahr.6 |
+| breadcrumb-ahr.1 | Browser IPC channels & preload bridge | done | Medium | — |
+| breadcrumb-ahr.2 | BrowserViewManager — WebContentsView lifecycle | done | High | ahr.1 |
+| breadcrumb-ahr.3 | BrowserPanel bounds syncing & visibility | done | High | ahr.2 |
+| breadcrumb-ahr.4 | Navigation chrome wiring & loading states | done | Medium | ahr.3 |
+| breadcrumb-ahr.5 | DevTools bottom dock layout | done | Medium | ahr.3 |
+| breadcrumb-ahr.6 | DevTools WebContentsView integration | done | High | ahr.5 |
+| breadcrumb-ahr.7 | Polish, persistence & error pages | done | Medium | ahr.4, ahr.6 |
 
 ### Task Details
 
