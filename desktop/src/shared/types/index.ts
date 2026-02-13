@@ -98,6 +98,24 @@ export const IPC_CHANNELS = {
   EXTENSIONS_COMMANDS: "extensions:commands",
   EXTENSIONS_EXECUTE_COMMAND: "extensions:execute-command",
   EXTENSIONS_STATUS_CHANGED: "extensions:status-changed",
+
+  // Browser channels (embedded WebContentsView browser)
+  BROWSER_CREATE: "browser:create",
+  BROWSER_NAVIGATE: "browser:navigate",
+  BROWSER_GO_BACK: "browser:go-back",
+  BROWSER_GO_FORWARD: "browser:go-forward",
+  BROWSER_RELOAD: "browser:reload",
+  BROWSER_SET_BOUNDS: "browser:set-bounds",
+  BROWSER_DESTROY: "browser:destroy",
+  BROWSER_OPEN_DEVTOOLS: "browser:open-devtools",
+  BROWSER_CLOSE_DEVTOOLS: "browser:close-devtools",
+  BROWSER_SET_DEVTOOLS_BOUNDS: "browser:set-devtools-bounds",
+
+  // Browser events (main → renderer)
+  BROWSER_NAVIGATE_EVENT: "browser:navigate-event",
+  BROWSER_LOADING_CHANGE: "browser:loading-change",
+  BROWSER_TITLE_CHANGE: "browser:title-change",
+  BROWSER_ERROR: "browser:error",
 } as const;
 
 // Session statistics
@@ -291,6 +309,34 @@ export interface ContentBlock {
   name?: string;
   input?: Record<string, unknown>;
   content?: string;
+}
+
+// Browser types
+export interface BrowserBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface BrowserNavigateEvent {
+  url: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+}
+
+export interface BrowserLoadingChangeEvent {
+  isLoading: boolean;
+}
+
+export interface BrowserTitleChangeEvent {
+  title: string;
+}
+
+export interface BrowserErrorEvent {
+  errorCode: number;
+  errorDescription: string;
+  validatedURL: string;
 }
 
 // Default built-in agents

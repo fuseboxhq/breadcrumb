@@ -6,6 +6,7 @@ import { registerTerminalIPCHandlers } from "./ipc/terminalIpc";
 import { registerExtensionIPCHandlers } from "./ipc/extensionIpc";
 import { registerSettingsIPCHandlers } from "./ipc/settingsIpc";
 import { registerPlanningIPCHandlers } from "./ipc/planningIpc";
+import { registerBrowserIPCHandlers } from "./ipc/browserIpc";
 import { terminalService } from "./terminal/TerminalService";
 import { ExtensionManager } from "./extensions/ExtensionManager";
 
@@ -15,6 +16,7 @@ let cleanupTerminalIPC: (() => void) | null = null;
 let cleanupExtensionIPC: (() => void) | null = null;
 let cleanupSettingsIPC: (() => void) | null = null;
 let cleanupPlanningIPC: (() => void) | null = null;
+let cleanupBrowserIPC: (() => void) | null = null;
 let extensionManager: ExtensionManager | null = null;
 
 function setupMainWindow(): void {
@@ -23,6 +25,7 @@ function setupMainWindow(): void {
   cleanupTerminalIPC = registerTerminalIPCHandlers(mainWindow);
   cleanupSettingsIPC = registerSettingsIPCHandlers(mainWindow);
   cleanupPlanningIPC = registerPlanningIPCHandlers();
+  cleanupBrowserIPC = registerBrowserIPCHandlers(mainWindow);
 
   // Initialize extension system
   try {
@@ -48,6 +51,7 @@ function cleanupMainWindow(): void {
   if (cleanupTerminalIPC) { cleanupTerminalIPC(); cleanupTerminalIPC = null; }
   if (cleanupExtensionIPC) { cleanupExtensionIPC(); cleanupExtensionIPC = null; }
   if (cleanupPlanningIPC) { cleanupPlanningIPC(); cleanupPlanningIPC = null; }
+  if (cleanupBrowserIPC) { cleanupBrowserIPC(); cleanupBrowserIPC = null; }
   if (cleanupSettingsIPC) { cleanupSettingsIPC(); cleanupSettingsIPC = null; }
 }
 

@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IPC_CHANNELS } from "../shared/types";
+import {
+  IPC_CHANNELS,
+  BrowserBounds,
+  BrowserNavigateEvent,
+  BrowserLoadingChangeEvent,
+  BrowserTitleChangeEvent,
+  BrowserErrorEvent,
+} from "../shared/types";
 
 // Terminal API types
 export interface TerminalDataEvent {
@@ -68,6 +75,24 @@ export interface BreadcrumbAPI {
   getExtensionCommands: () => Promise<string[]>;
   executeExtensionCommand: (commandId: string, ...args: unknown[]) => Promise<{ success: boolean; result?: unknown; error?: string }>;
   onExtensionsChanged: (callback: (extensions: ExtensionInfoForRenderer[]) => void) => () => void;
+
+  // Browser operations (embedded WebContentsView)
+  browser: {
+    create: () => Promise<{ success: boolean; error?: string }>;
+    navigate: (url: string) => Promise<{ success: boolean; error?: string }>;
+    goBack: () => Promise<{ success: boolean; error?: string }>;
+    goForward: () => Promise<{ success: boolean; error?: string }>;
+    reload: () => Promise<{ success: boolean; error?: string }>;
+    setBounds: (bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
+    destroy: () => Promise<{ success: boolean; error?: string }>;
+    openDevTools: () => Promise<{ success: boolean; error?: string }>;
+    closeDevTools: () => Promise<{ success: boolean; error?: string }>;
+    setDevToolsBounds: (bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
+    onNavigate: (callback: (data: BrowserNavigateEvent) => void) => () => void;
+    onLoadingChange: (callback: (data: BrowserLoadingChangeEvent) => void) => () => void;
+    onTitleChange: (callback: (data: BrowserTitleChangeEvent) => void) => () => void;
+    onError: (callback: (data: BrowserErrorEvent) => void) => () => void;
+  };
 }
 
 export interface ExtensionInfoForRenderer {
@@ -175,6 +200,67 @@ const api: BreadcrumbAPI = {
       callback(data);
     ipcRenderer.on(IPC_CHANNELS.EXTENSIONS_STATUS_CHANGED, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.EXTENSIONS_STATUS_CHANGED, handler);
+  },
+
+  // Browser operations
+  browser: {
+    create: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CREATE),
+
+    navigate: (url: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_NAVIGATE, url),
+
+    goBack: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GO_BACK),
+
+    goForward: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GO_FORWARD),
+
+    reload: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_RELOAD),
+
+    setBounds: (bounds: BrowserBounds) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_BOUNDS, bounds),
+
+    destroy: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_DESTROY),
+
+    openDevTools: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS),
+
+    closeDevTools: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS),
+
+    setDevToolsBounds: (bounds: BrowserBounds) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, bounds),
+
+    onNavigate: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserNavigateEvent) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BROWSER_NAVIGATE_EVENT, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_NAVIGATE_EVENT, handler);
+    },
+
+    onLoadingChange: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserLoadingChangeEvent) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BROWSER_LOADING_CHANGE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_LOADING_CHANGE, handler);
+    },
+
+    onTitleChange: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserTitleChangeEvent) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BROWSER_TITLE_CHANGE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_TITLE_CHANGE, handler);
+    },
+
+    onError: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserErrorEvent) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.BROWSER_ERROR, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_ERROR, handler);
+    },
   },
 };
 
