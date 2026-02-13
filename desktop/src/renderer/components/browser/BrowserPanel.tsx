@@ -9,13 +9,16 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
+import { useBrowserSettings } from "../../store/settingsStore";
 
 interface BrowserPanelProps {
   initialUrl?: string;
 }
 
 export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
-  const [url, setUrl] = useState(initialUrl || "https://localhost:3000");
+  const browserSettings = useBrowserSettings();
+  const startUrl = initialUrl || browserSettings.lastUrl || "https://localhost:3000";
+  const [url, setUrl] = useState(startUrl);
   const [inputUrl, setInputUrl] = useState(url);
   const [loading, setLoading] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
@@ -40,8 +43,8 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       }
       createdRef.current = true;
 
-      // Navigate to initial URL after creation
-      await api.navigate(initialUrl || "https://localhost:3000");
+      // Navigate to persisted or initial URL after creation
+      await api.navigate(startUrl);
     };
 
     init();
@@ -115,6 +118,9 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       setCanGoBack(data.canGoBack);
       setCanGoForward(data.canGoForward);
       setError(null); // Clear error on successful navigation
+
+      // Persist last URL for next session
+      window.breadcrumbAPI?.setSetting("browser.lastUrl", data.url);
     });
 
     const unsubLoading = api.onLoadingChange((data) => {

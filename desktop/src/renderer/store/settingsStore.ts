@@ -27,9 +27,14 @@ export interface LayoutSettings {
   };
 }
 
+export interface BrowserSettings {
+  lastUrl: string;
+}
+
 export interface AppSettings {
   terminal: TerminalSettings;
   layout: LayoutSettings;
+  browser: BrowserSettings;
 }
 
 const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
@@ -39,6 +44,10 @@ const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
   cursorStyle: "block",
   cursorBlink: true,
   defaultShell: "/bin/zsh",
+};
+
+const DEFAULT_BROWSER_SETTINGS: BrowserSettings = {
+  lastUrl: "https://localhost:3000",
 };
 
 interface SettingsState {
@@ -64,6 +73,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   settings: {
     terminal: DEFAULT_TERMINAL_SETTINGS,
     layout: DEFAULT_LAYOUT_SETTINGS,
+    browser: DEFAULT_BROWSER_SETTINGS,
   },
   loaded: false,
 
@@ -82,6 +92,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
             ...(all?.layout?.panelSizes || {}),
           },
         },
+        browser: { ...DEFAULT_BROWSER_SETTINGS, ...(all?.browser as Partial<BrowserSettings> || {}) },
       },
       loaded: true,
     });
@@ -110,6 +121,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       settings: {
         terminal: DEFAULT_TERMINAL_SETTINGS,
         layout: DEFAULT_LAYOUT_SETTINGS,
+        browser: DEFAULT_BROWSER_SETTINGS,
       },
     });
   },
@@ -118,4 +130,5 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 // Selector hooks
 export const useTerminalSettings = () => useSettingsStore((s) => s.settings.terminal);
 export const useLayoutSettings = () => useSettingsStore((s) => s.settings.layout);
+export const useBrowserSettings = () => useSettingsStore((s) => s.settings.browser);
 export const useSettingsLoaded = () => useSettingsStore((s) => s.loaded);

@@ -27,9 +27,14 @@ export interface LayoutSettings {
   };
 }
 
+export interface BrowserSettings {
+  lastUrl: string;
+}
+
 export interface AppSettings {
   terminal: TerminalSettings;
   layout: LayoutSettings;
+  browser: BrowserSettings;
 }
 
 const schema = {
@@ -83,6 +88,13 @@ const schema = {
         },
         default: { sidebar: 18, center: 82, rightPanel: 0 },
       },
+    },
+    default: {},
+  },
+  browser: {
+    type: "object" as const,
+    properties: {
+      lastUrl: { type: "string" as const, default: "https://localhost:3000" },
     },
     default: {},
   },

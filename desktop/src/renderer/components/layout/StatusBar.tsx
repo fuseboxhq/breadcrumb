@@ -1,5 +1,5 @@
-import { GitBranch, Terminal, Puzzle, Wifi, FolderOpen, PanelRight } from "lucide-react";
-import { useAppStore, useRightPanelOpen, useRightPanelPanes } from "../../store/appStore";
+import { GitBranch, Terminal, Puzzle, Wifi, FolderOpen, PanelRight, Bug } from "lucide-react";
+import { useAppStore, useRightPanelOpen, useRightPanelPanes, useDevToolsDockOpen } from "../../store/appStore";
 import { useActiveProject, useProjectsStore } from "../../store/projectsStore";
 
 export function StatusBar() {
@@ -10,6 +10,8 @@ export function StatusBar() {
   const rightPanelOpen = useRightPanelOpen();
   const rightPanelPanes = useRightPanelPanes();
   const toggleRightPanel = useAppStore((s) => s.toggleRightPanel);
+  const devToolsDockOpen = useDevToolsDockOpen();
+  const toggleDevToolsDock = useAppStore((s) => s.toggleDevToolsDock);
 
   return (
     <div className="h-6 bg-background-raised border-t border-border flex items-center justify-between px-3 shrink-0 select-none">
@@ -44,6 +46,14 @@ export function StatusBar() {
           label={rightPanelOpen ? `${rightPanelPanes.length} pane${rightPanelPanes.length !== 1 ? "s" : ""}` : "Panel"}
           color={rightPanelOpen ? "text-primary" : undefined}
           onClick={toggleRightPanel}
+        />
+
+        {/* DevTools toggle */}
+        <StatusItem
+          icon={Bug}
+          label="DevTools"
+          color={devToolsDockOpen ? "text-dracula-orange" : undefined}
+          onClick={toggleDevToolsDock}
         />
 
         {/* Extensions */}
