@@ -43,6 +43,25 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       }
       createdRef.current = true;
 
+      // Send bounds now that view exists in main process.
+      // The ResizeObserver useEffect may have already sent bounds, but they
+      // arrived as pendingBounds (view not yet initialized). Sending again
+      // ensures the 50ms init timer has fresh bounds to apply.
+      const el = contentRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+        if (width >= 10 && height >= 10) {
+          api.setBounds({
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width,
+            height,
+          });
+        }
+      }
+
       // Navigate to persisted or initial URL after creation
       await api.navigate(startUrl);
     };
@@ -146,6 +165,34 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       unsubError();
     };
   }, []);
+
+  // Hide WebContentsView when error overlay is showing.
+  // The native view sits on top of all DOM content, so we must move it
+  // off-screen for the React error overlay to be visible.
+  useEffect(() => {
+    const api = window.breadcrumbAPI?.browser;
+    if (!api || !createdRef.current) return;
+
+    if (error) {
+      api.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
+    } else {
+      // Restore bounds when error clears
+      const el = contentRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+        if (width >= 10 && height >= 10) {
+          api.setBounds({
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width,
+            height,
+          });
+        }
+      }
+    }
+  }, [error]);
 
   // Navigation handlers
   const handleNavigate = useCallback((newUrl: string) => {

@@ -22,6 +22,7 @@ export class BrowserViewManager {
   private mainWindow: BrowserWindow;
   private pendingBounds: BrowserBounds | null = null;
   private initialized = false;
+  private lastBounds: BrowserBounds | null = null;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
@@ -63,11 +64,12 @@ export class BrowserViewManager {
     });
 
     // Mark as initialized after delay (setBounds race condition workaround)
+    // Apply any bounds that arrived before or during creation.
     this.initialized = false;
     setTimeout(() => {
       this.initialized = true;
       if (this.pendingBounds) {
-        this.setBounds(this.pendingBounds);
+        this.applyBounds(this.pendingBounds);
         this.pendingBounds = null;
       }
     }, 50);
@@ -98,10 +100,12 @@ export class BrowserViewManager {
     this.view = null;
     this.initialized = false;
     this.pendingBounds = null;
+    this.lastBounds = null;
   }
 
   /**
    * Navigate to a URL. Normalizes bare URLs with https:// prefix.
+   * Catches loadURL errors gracefully — errors are reported via did-fail-load event.
    */
   async navigate(url: string): Promise<void> {
     if (!this.view) return;
@@ -117,7 +121,13 @@ export class BrowserViewManager {
       }
     }
 
-    await this.view.webContents.loadURL(normalizedUrl);
+    try {
+      await this.view.webContents.loadURL(normalizedUrl);
+    } catch {
+      // loadURL rejects on network errors. The did-fail-load event
+      // also fires and sends the error to the renderer via IPC.
+      // We don't re-throw so the IPC handler always returns success.
+    }
   }
 
   /**
@@ -150,22 +160,17 @@ export class BrowserViewManager {
 
   /**
    * Set the bounds (position and size) of the WebContentsView.
-   * If the view hasn't finished initializing, stores bounds to apply later.
+   * Stores as pending if the view hasn't been created or initialized yet.
    */
   setBounds(bounds: BrowserBounds): void {
-    if (!this.view) return;
-
-    if (!this.initialized) {
+    // Store bounds even when view doesn't exist yet — they'll be applied
+    // when the initialization timer fires after create().
+    if (!this.view || !this.initialized) {
       this.pendingBounds = bounds;
       return;
     }
 
-    this.view.setBounds({
-      x: Math.round(bounds.x),
-      y: Math.round(bounds.y),
-      width: Math.round(bounds.width),
-      height: Math.round(bounds.height),
-    });
+    this.applyBounds(bounds);
   }
 
   /**
@@ -175,6 +180,14 @@ export class BrowserViewManager {
   hide(): void {
     if (!this.view) return;
     this.view.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
+  }
+
+  /**
+   * Show the WebContentsView at last known bounds (after hiding).
+   */
+  show(): void {
+    if (!this.view || !this.lastBounds) return;
+    this.applyBounds(this.lastBounds);
   }
 
   /**
@@ -239,6 +252,23 @@ export class BrowserViewManager {
    */
   isActive(): boolean {
     return this.view !== null;
+  }
+
+  /**
+   * Actually apply bounds to the view. Stores as lastBounds for show().
+   */
+  private applyBounds(bounds: BrowserBounds): void {
+    if (!this.view) return;
+
+    const rounded = {
+      x: Math.round(bounds.x),
+      y: Math.round(bounds.y),
+      width: Math.round(bounds.width),
+      height: Math.round(bounds.height),
+    };
+
+    this.lastBounds = rounded;
+    this.view.setBounds(rounded);
   }
 
   /**
