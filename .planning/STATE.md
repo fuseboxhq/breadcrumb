@@ -9,7 +9,7 @@ PHASE-05: Add /bc:view command for opening dashboard (not_started)
 PHASE-09: Terminal Experience (complete)
 PHASE-10: Workspace Sidebar Overhaul (complete)
 PHASE-12: Breadcrumb Dashboard Integration (not_started)
-PHASE-14: Browser Implementation (not_started)
+PHASE-14: Browser Implementation (in_progress) - 7 tasks
 ## Completed Phases
 
 PHASE-13: Right Panel Layout Overhaul (complete) - 7/7 tasks done
