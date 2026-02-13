@@ -110,6 +110,7 @@ export const IPC_CHANNELS = {
   BROWSER_OPEN_DEVTOOLS: "browser:open-devtools",
   BROWSER_CLOSE_DEVTOOLS: "browser:close-devtools",
   BROWSER_SET_DEVTOOLS_BOUNDS: "browser:set-devtools-bounds",
+  BROWSER_OPEN_EXTERNAL: "browser:open-external",
 
   // Browser events (main → renderer)
   BROWSER_NAVIGATE_EVENT: "browser:navigate-event",

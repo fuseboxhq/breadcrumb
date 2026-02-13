@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, shell } from "electron";
 import { IPC_CHANNELS, BrowserBounds } from "../../shared/types";
 import { BrowserViewManager } from "../browser/BrowserViewManager";
 
@@ -105,6 +105,16 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
     }
   });
 
+  // Open URL in system's default browser
+  ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_EXTERNAL, async (_, url: string) => {
+    try {
+      await shell.openExternal(url);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  });
+
   // Set DevTools WebContentsView bounds
   // TODO: Wire to dedicated DevTools WebContentsView in ahr.6
   ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, _bounds: BrowserBounds) => {
@@ -131,6 +141,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_DESTROY);
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS);
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS);
+    ipcMain.removeHandler(IPC_CHANNELS.BROWSER_OPEN_EXTERNAL);
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS);
     handlersRegistered = false;
   };

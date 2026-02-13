@@ -6,6 +6,8 @@ import {
   Globe,
   ExternalLink,
   Lock,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 interface BrowserPanelProps {
@@ -18,6 +20,8 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   const [loading, setLoading] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [pageTitle, setPageTitle] = useState("");
+  const [error, setError] = useState<{ code: number; description: string; url: string } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const createdRef = useRef(false);
 
@@ -110,15 +114,30 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       setInputUrl(data.url);
       setCanGoBack(data.canGoBack);
       setCanGoForward(data.canGoForward);
+      setError(null); // Clear error on successful navigation
     });
 
     const unsubLoading = api.onLoadingChange((data) => {
       setLoading(data.isLoading);
     });
 
+    const unsubTitle = api.onTitleChange((data) => {
+      setPageTitle(data.title);
+    });
+
+    const unsubError = api.onError((data) => {
+      setError({
+        code: data.errorCode,
+        description: data.errorDescription,
+        url: data.validatedURL,
+      });
+    });
+
     return () => {
       unsubNavigate();
       unsubLoading();
+      unsubTitle();
+      unsubError();
     };
   }, []);
 
@@ -143,6 +162,15 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   }, []);
 
   const handleReload = useCallback(() => {
+    window.breadcrumbAPI?.browser?.reload();
+  }, []);
+
+  const handleOpenExternal = useCallback(() => {
+    window.breadcrumbAPI?.browser?.openExternal(url);
+  }, [url]);
+
+  const handleRetry = useCallback(() => {
+    setError(null);
     window.breadcrumbAPI?.browser?.reload();
   }, []);
 
@@ -203,13 +231,60 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
           className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
           title="Open in external browser"
           aria-label="Open in external browser"
+          onClick={handleOpenExternal}
         >
           <ExternalLink className="w-4 h-4" />
         </button>
       </div>
 
       {/* Browser content area — WebContentsView overlays this div */}
-      <div ref={contentRef} className="flex-1" />
+      <div ref={contentRef} className="flex-1 relative">
+        {error && <BrowserError error={error} onRetry={handleRetry} />}
+      </div>
+    </div>
+  );
+}
+
+function BrowserError({
+  error,
+  onRetry,
+}: {
+  error: { code: number; description: string; url: string };
+  onRetry: () => void;
+}) {
+  const isConnectionRefused = error.code === -102 || error.code === -106;
+  const isDns = error.code === -105 || error.code === -137;
+
+  let title = "Page failed to load";
+  let hint = error.description;
+
+  if (isConnectionRefused) {
+    title = "Connection refused";
+    hint = "Make sure your dev server is running, then retry.";
+  } else if (isDns) {
+    title = "Server not found";
+    hint = "Check the URL and your network connection.";
+  }
+
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
+      <div className="text-center animate-fade-in max-w-sm px-8">
+        <div className="w-14 h-14 rounded-2xl bg-dracula-red/10 flex items-center justify-center mx-auto mb-5">
+          <AlertTriangle className="w-7 h-7 text-dracula-red" />
+        </div>
+        <p className="text-sm font-medium text-foreground mb-1.5">{title}</p>
+        <p className="text-2xs text-foreground-muted mb-1 font-mono bg-background-raised px-3 py-1.5 rounded-lg inline-block break-all">
+          {error.url}
+        </p>
+        <p className="text-2xs text-foreground-muted/70 mb-5">{hint}</p>
+        <button
+          onClick={onRetry}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-default"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Retry
+        </button>
+      </div>
     </div>
   );
 }

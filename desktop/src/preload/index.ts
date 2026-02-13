@@ -88,6 +88,7 @@ export interface BreadcrumbAPI {
     openDevTools: () => Promise<{ success: boolean; error?: string }>;
     closeDevTools: () => Promise<{ success: boolean; error?: string }>;
     setDevToolsBounds: (bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
+    openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
     onNavigate: (callback: (data: BrowserNavigateEvent) => void) => () => void;
     onLoadingChange: (callback: (data: BrowserLoadingChangeEvent) => void) => () => void;
     onTitleChange: (callback: (data: BrowserTitleChangeEvent) => void) => () => void;
@@ -233,6 +234,9 @@ const api: BreadcrumbAPI = {
 
     setDevToolsBounds: (bounds: BrowserBounds) =>
       ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, bounds),
+
+    openExternal: (url: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_OPEN_EXTERNAL, url),
 
     onNavigate: (callback) => {
       const handler = (_: Electron.IpcRendererEvent, data: BrowserNavigateEvent) =>
