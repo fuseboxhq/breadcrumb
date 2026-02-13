@@ -6,11 +6,19 @@ import { useAppStore } from "../store/appStore";
  * - Cmd+Shift+B: Toggle right panel visibility
  * - Cmd+B: Open browser in right panel
  * - Cmd+Shift+P: Open planning in right panel (avoids conflict with Cmd+P)
+ * - Cmd+Option+I: Toggle DevTools dock
  */
 export function useGlobalLayoutHotkeys() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const isMeta = e.metaKey || e.ctrlKey;
+
+      // Cmd+Option+I → Toggle DevTools dock
+      if (isMeta && e.altKey && e.key === "i") {
+        e.preventDefault();
+        useAppStore.getState().toggleDevToolsDock();
+        return;
+      }
 
       // Cmd+Shift+B → Toggle right panel
       if (isMeta && e.shiftKey && e.key === "b") {

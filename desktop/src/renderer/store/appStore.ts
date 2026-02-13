@@ -79,6 +79,7 @@ export interface LayoutState {
     center: number;
     rightPanel: number;
   };
+  devToolsDockOpen: boolean;
 }
 
 export const DEFAULT_LAYOUT: LayoutState = {
@@ -91,6 +92,7 @@ export const DEFAULT_LAYOUT: LayoutState = {
     center: 82,
     rightPanel: 0,
   },
+  devToolsDockOpen: false,
 };
 
 export interface AppState {
@@ -151,6 +153,7 @@ export interface AppActions {
   removeRightPanelPane: (paneId: string) => void;
   setPanelSizes: (sizes: { sidebar: number; center: number; rightPanel: number }) => void;
   restoreLayout: (layout: LayoutState) => void;
+  toggleDevToolsDock: () => void;
 
   // Project
   setCurrentProjectPath: (path: string | null) => void;
@@ -416,8 +419,8 @@ export const useAppStore = create<AppStore>()(
       set((state) => {
         state.layout.rightPanel.isOpen = isOpen;
         if (isOpen && state.layout.panelSizes.rightPanel === 0) {
-          // Expand to default size
-          state.layout.panelSizes = { sidebar: 18, center: 52, rightPanel: 30 };
+          // Expand to default size (~2x sidebar)
+          state.layout.panelSizes = { sidebar: 18, center: 46, rightPanel: 36 };
         } else if (!isOpen) {
           // Collapse: give right panel space back to center
           state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
@@ -431,7 +434,7 @@ export const useAppStore = create<AppStore>()(
         const wasOpen = state.layout.rightPanel.isOpen;
         state.layout.rightPanel.isOpen = !wasOpen;
         if (!wasOpen && state.layout.panelSizes.rightPanel === 0) {
-          state.layout.panelSizes = { sidebar: 18, center: 52, rightPanel: 30 };
+          state.layout.panelSizes = { sidebar: 18, center: 46, rightPanel: 36 };
         } else if (wasOpen) {
           state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
           state.layout.panelSizes.rightPanel = 0;
@@ -447,7 +450,7 @@ export const useAppStore = create<AppStore>()(
         state.layout.rightPanel.panes.push({ id, type });
         state.layout.rightPanel.isOpen = true;
         if (state.layout.panelSizes.rightPanel === 0) {
-          state.layout.panelSizes = { sidebar: 18, center: 52, rightPanel: 30 };
+          state.layout.panelSizes = { sidebar: 18, center: 46, rightPanel: 36 };
         }
         persistLayout(() => get().layout);
       }),
@@ -473,6 +476,11 @@ export const useAppStore = create<AppStore>()(
     restoreLayout: (layout) =>
       set((state) => {
         state.layout = layout;
+      }),
+
+    toggleDevToolsDock: () =>
+      set((state) => {
+        state.layout.devToolsDockOpen = !state.layout.devToolsDockOpen;
       }),
 
     // Project
@@ -514,3 +522,4 @@ export const useLayout = () => useAppStore((s) => s.layout);
 export const useRightPanelOpen = () => useAppStore((s) => s.layout.rightPanel.isOpen);
 export const useRightPanelPanes = () => useAppStore((s) => s.layout.rightPanel.panes);
 export const usePanelSizes = () => useAppStore((s) => s.layout.panelSizes);
+export const useDevToolsDockOpen = () => useAppStore((s) => s.layout.devToolsDockOpen);
