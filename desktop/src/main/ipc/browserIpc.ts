@@ -116,9 +116,9 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   });
 
   // Set DevTools WebContentsView bounds
-  // TODO: Wire to dedicated DevTools WebContentsView in ahr.6
-  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, _bounds: BrowserBounds) => {
+  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, bounds: BrowserBounds) => {
     try {
+      browserManager!.setDevToolsBounds(bounds);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };

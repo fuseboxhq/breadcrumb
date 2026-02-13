@@ -18,6 +18,7 @@ import {
  */
 export class BrowserViewManager {
   private view: WebContentsView | null = null;
+  private devToolsView: WebContentsView | null = null;
   private mainWindow: BrowserWindow;
   private pendingBounds: BrowserBounds | null = null;
   private initialized = false;
@@ -74,8 +75,12 @@ export class BrowserViewManager {
 
   /**
    * Destroy the browser WebContentsView and clean up resources.
+   * Also destroys DevTools view if open.
    */
   destroy(): void {
+    // Destroy DevTools first
+    this.destroyDevToolsView();
+
     if (!this.view) return;
 
     try {
@@ -173,21 +178,60 @@ export class BrowserViewManager {
   }
 
   /**
-   * Open DevTools for the browser WebContentsView (detached mode).
+   * Open DevTools in a dedicated WebContentsView.
+   * Lazily creates a pristine (never-navigated) view, sets it as the DevTools
+   * target via setDevToolsWebContents(), then opens in detach mode so Electron
+   * doesn't manage positioning (we handle it via setBounds from renderer).
    */
   openDevTools(): void {
     if (!this.view) return;
+
+    // Already open
+    if (this.devToolsView && this.view.webContents.isDevToolsOpened()) return;
+
+    // Must create a fresh pristine view each time — DevTools WebContents
+    // cannot have navigated before setDevToolsWebContents()
+    this.destroyDevToolsView();
+
+    this.devToolsView = new WebContentsView({
+      webPreferences: {
+        devTools: false, // DevTools of DevTools not needed
+      },
+    });
+
+    // Add to window (on top of browser view)
+    this.mainWindow.contentView.addChildView(this.devToolsView);
+
+    // Start off-screen until renderer sends bounds
+    this.devToolsView.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
+
+    // Point browser's DevTools to render in our dedicated view
+    this.view.webContents.setDevToolsWebContents(this.devToolsView.webContents);
     this.view.webContents.openDevTools({ mode: "detach" });
   }
 
   /**
-   * Close DevTools for the browser WebContentsView.
+   * Close DevTools and destroy the DevTools WebContentsView.
    */
   closeDevTools(): void {
-    if (!this.view) return;
-    if (this.view.webContents.isDevToolsOpened()) {
+    if (this.view?.webContents.isDevToolsOpened()) {
       this.view.webContents.closeDevTools();
     }
+    this.destroyDevToolsView();
+  }
+
+  /**
+   * Set the bounds for the DevTools WebContentsView.
+   */
+  setDevToolsBounds(bounds: BrowserBounds): void {
+    if (!this.devToolsView) return;
+
+    this.devToolsView.setBounds({
+      x: Math.round(bounds.x),
+      y: Math.round(bounds.y),
+      width: Math.round(bounds.width),
+      height: Math.round(bounds.height),
+    });
   }
 
   /**
@@ -198,10 +242,24 @@ export class BrowserViewManager {
   }
 
   /**
-   * Get the underlying webContents (for DevTools integration in ahr.6).
+   * Destroy the DevTools WebContentsView and clean up.
    */
-  getWebContents() {
-    return this.view?.webContents ?? null;
+  private destroyDevToolsView(): void {
+    if (!this.devToolsView) return;
+
+    try {
+      this.mainWindow.contentView.removeChildView(this.devToolsView);
+    } catch {
+      // May already be removed
+    }
+
+    try {
+      this.devToolsView.webContents.close();
+    } catch {
+      // May already be destroyed
+    }
+
+    this.devToolsView = null;
   }
 
   /**
