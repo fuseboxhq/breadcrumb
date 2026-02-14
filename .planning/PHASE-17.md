@@ -1,6 +1,6 @@
 # Phase 17: Sprint 3 — Architecture, Polish & UX Fixes
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-elm
 **Created:** 2026-02-14
 
@@ -67,11 +67,11 @@ The `frontend-design` skill will be active during execution of UI tasks (welcome
 
 | ID | Title | Status | Complexity | Findings |
 |----|-------|--------|------------|----------|
-| breadcrumb-elm.1 | Main thread performance: async PlanningService, adaptive polling, browser ready signal | open | High | M31, M33, M36 |
-| breadcrumb-elm.2 | First-run UX: welcome Open Project, extension folder button, confirm dialogs, scoped terminals | open | Medium | M1, M2, H8, M3, M4 |
-| breadcrumb-elm.3 | Visual polish: terminal theme tokens, browser bar fixes, a11y focus rings | open | Medium | M22, M23, M24, M25, M26 |
-| breadcrumb-elm.4 | Wiring fixes: PTY exit restart, planning state persistence, platform shell detection, extension commands | open | Medium | M5, M12, M17, M41 |
-| breadcrumb-elm.5 | Cross-cutting: TabBar scoped terminals, ProjectSwitcher a11y, Escape consistency | open | Low | M4, M25, M20 |
+| breadcrumb-elm.1 | Main thread performance: async PlanningService, adaptive polling, browser ready signal | done | High | M31, M33, M36 |
+| breadcrumb-elm.2 | First-run UX: welcome Open Project, extension folder button, confirm dialogs, scoped terminals | done | Medium | M1, M2, H8, M3, M4 |
+| breadcrumb-elm.3 | Visual polish: terminal theme tokens, browser bar fixes, a11y focus rings | done | Medium | M22, M23, M24, M25, M26 |
+| breadcrumb-elm.4 | Wiring fixes: PTY exit restart, planning state persistence, platform shell detection, extension commands | done | Medium | M5, M12, M17, M41 |
+| breadcrumb-elm.5 | Cross-cutting: TabBar scoped terminals, ProjectSwitcher a11y, Escape consistency | done | Low | M4, M25, M20 |
 
 ### Task Details
 
@@ -118,17 +118,17 @@ Leftover items that touch files already modified in other tasks:
 
 ## Completion Criteria
 
-- [ ] PlanningService uses async file I/O — no readFileSync calls remain
-- [ ] Terminal process detection uses adaptive polling (not fixed 200ms)
-- [ ] BrowserViewManager uses explicit ready signal instead of setTimeout
-- [ ] Welcome screen has "Open Project" button and basic onboarding guidance
-- [ ] Extension panel has "Open Extensions Folder" button
-- [ ] Terminal theme reads colors from CSS custom properties
-- [ ] All visual polish items (M23-M26) resolved
-- [ ] Project removal shows confirmation dialog
-- [ ] TabBar "+" creates project-scoped terminal
-- [ ] Shell detection works cross-platform (not just macOS)
-- [ ] TypeScript strict mode passes with no errors
+- [x] PlanningService uses async file I/O — no readFileSync calls remain
+- [x] Terminal process detection uses adaptive polling (not fixed 200ms)
+- [x] BrowserViewManager uses explicit ready signal instead of setTimeout
+- [x] Welcome screen has "Open Project" button and basic onboarding guidance
+- [x] Extension panel has "Open Extensions Folder" button
+- [x] Terminal theme reads colors from CSS custom properties
+- [x] All visual polish items (M23-M26) resolved
+- [x] Project removal shows confirmation dialog
+- [x] TabBar "+" creates project-scoped terminal
+- [x] Shell detection works cross-platform (not just macOS)
+- [x] TypeScript strict mode passes with no errors
 
 ## Sources
 
