@@ -1,6 +1,6 @@
 # Phase 16: Fix Critical & High-Priority PHASE-15 Findings
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-cz3
 **Created:** 2026-02-14
 
@@ -90,12 +90,12 @@ Work through items roughly in the sprint order from the findings report:
 
 | ID | Title | Status | Complexity | Dependencies | Findings |
 |----|-------|--------|------------|--------------|----------|
-| breadcrumb-cz3.1 | Security hardening: path traversal fix + openExternal URL validation | open | Medium | - | C1, H12 |
-| breadcrumb-cz3.2 | Fix broken features: cmd palette nav, process detection wiring, StatusBar | open | High | - | C2, C3, M38 |
-| breadcrumb-cz3.3 | Keyboard shortcuts: Cmd+W close, tab switching, region focus, Cmd+T, sidebar, activity bar | open | High | - | H3, H4, H5, M6, M14, M19 |
-| breadcrumb-cz3.4 | Accessibility & error quality: semantic HTML, event leak, null guards | open | Medium | - | H9, H10, H6, H7 |
-| breadcrumb-cz3.5 | Browser & URL fixes: default HTTP, URL normalization, remove debug logging | open | Low | - | H2, M7, M37 |
-| breadcrumb-cz3.6 | Project persistence & backend wiring: electron-store, async git, manifest validation, dead code separation | open | High | - | H1, M32, M35, H11 |
+| breadcrumb-cz3.1 | Security hardening: path traversal fix + openExternal URL validation | done | Medium | - | C1, H12 |
+| breadcrumb-cz3.2 | Fix broken features: cmd palette nav, process detection wiring, StatusBar | done | High | - | C2, C3, M38 |
+| breadcrumb-cz3.3 | Keyboard shortcuts: Cmd+W close, tab switching, region focus, Cmd+T, sidebar, activity bar | done | High | - | H3, H4, H5, M6, M14, M19 |
+| breadcrumb-cz3.4 | Accessibility & error quality: semantic HTML, event leak, null guards | done | Medium | - | H9, H10, H6, H7 |
+| breadcrumb-cz3.5 | Browser & URL fixes: default HTTP, URL normalization, remove debug logging | done | Low | - | H2, M7, M37 |
+| breadcrumb-cz3.6 | Project persistence & backend wiring: electron-store, async git, manifest validation, dead code separation | done | High | - | H1, M32, M35, H11 |
 
 ## Technical Decisions
 
@@ -108,13 +108,13 @@ Work through items roughly in the sprint order from the findings report:
 
 ## Completion Criteria
 
-- [ ] All 3 critical findings (C1, C2, C3) resolved
-- [ ] All 12 high-priority findings (H1-H12) resolved
-- [ ] Sprint 2 medium items (M6, M7, M14, M19, M32, M35, M37, M38) resolved
-- [ ] TypeScript strict mode passes with no errors
-- [ ] No security vulnerabilities in path validation or URL handling
-- [ ] Keyboard-driven workflow functional (tab switching, region focus, sidebar toggle, new terminal)
-- [ ] Terminal process detection working (process icons, Claude numbering visible)
+- [x] All 3 critical findings (C1, C2, C3) resolved
+- [x] All 12 high-priority findings (H1-H12) resolved
+- [x] Sprint 2 medium items (M6, M7, M14, M19, M32, M35, M37, M38) resolved
+- [x] TypeScript strict mode passes with no errors
+- [x] No security vulnerabilities in path validation or URL handling
+- [x] Keyboard-driven workflow functional (tab switching, region focus, sidebar toggle, new terminal)
+- [x] Terminal process detection working (process icons, Claude numbering visible)
 
 ## Sources
 
