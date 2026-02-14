@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-17: Sprint 3 — Architecture, Polish & UX Fixes (not_started)
+PHASE-17: Sprint 3 — Architecture, Polish & UX Fixes (in_progress) - 5 tasks
 
 ## Completed Phases
 
