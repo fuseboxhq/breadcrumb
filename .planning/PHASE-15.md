@@ -1,6 +1,6 @@
 # Phase 15: Desktop IDE Comprehensive Review
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-3s6
 **Created:** 2026-02-14
 
@@ -100,12 +100,12 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-3s6.1 | UX flow audit — walk through every user journey and document friction | open | Medium | - |
-| breadcrumb-3s6.2 | Feature gap analysis vs Cursor/Windsurf baseline | open | Medium | - |
-| breadcrumb-3s6.3 | Visual polish sweep — consistency, states, transitions, spacing | open | Medium | - |
-| breadcrumb-3s6.4 | Code quality & architecture review | open | High | - |
-| breadcrumb-3s6.5 | Integration & dead code review — Breadcrumb/Beads + stranded IPC channels | open | Medium | - |
-| breadcrumb-3s6.6 | Consolidated findings report — prioritized actionable backlog | open | High | 3s6.1-5 |
+| breadcrumb-3s6.1 | UX flow audit — walk through every user journey and document friction | done | Medium | - |
+| breadcrumb-3s6.2 | Feature gap analysis vs Cursor/Windsurf baseline | done | Medium | - |
+| breadcrumb-3s6.3 | Visual polish sweep — consistency, states, transitions, spacing | done | Medium | - |
+| breadcrumb-3s6.4 | Code quality & architecture review | done | High | - |
+| breadcrumb-3s6.5 | Integration & dead code review — Breadcrumb/Beads + stranded IPC channels | done | Medium | - |
+| breadcrumb-3s6.6 | Consolidated findings report — prioritized actionable backlog | done | High | 3s6.1-5 |
 
 ## Technical Decisions
 
@@ -118,12 +118,12 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 ## Completion Criteria
 
-- [ ] Complete user flow walkthrough documented with all friction points
-- [ ] Feature gap analysis vs Cursor/Windsurf baseline complete
-- [ ] Visual polish issues cataloged with descriptions
-- [ ] Code quality review covering architecture, state, error handling, performance
-- [ ] Integration points between IDE and Breadcrumb/Beads reviewed
-- [ ] All findings consolidated into a prioritized, actionable backlog
+- [x] Complete user flow walkthrough documented with all friction points
+- [x] Feature gap analysis vs Cursor/Windsurf baseline complete
+- [x] Visual polish issues cataloged with descriptions
+- [x] Code quality review covering architecture, state, error handling, performance
+- [x] Integration points between IDE and Breadcrumb/Beads reviewed
+- [x] All findings consolidated into a prioritized, actionable backlog
 
 ## Sources
 
