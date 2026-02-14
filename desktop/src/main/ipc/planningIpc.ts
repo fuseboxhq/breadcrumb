@@ -1,17 +1,9 @@
 import { ipcMain } from "electron";
-import path from "path";
 import { IPC_CHANNELS } from "../../shared/types";
 import { planningService } from "../planning/PlanningService";
+import { validatePath } from "../utils/pathValidation";
 
 let handlersRegistered = false;
-
-function validatePath(inputPath: string): string {
-  const resolved = path.resolve(inputPath);
-  if (inputPath.includes("..")) {
-    throw new Error("Path traversal not allowed");
-  }
-  return resolved;
-}
 
 export function registerPlanningIPCHandlers(): () => void {
   if (handlersRegistered) return () => {};
@@ -51,12 +43,9 @@ export function registerPlanningIPCHandlers(): () => void {
     ) => {
       try {
         const validated = validatePath(projectPath);
-        console.log(`[Planning IPC] getPhaseDetail: ${validated} / ${phaseId}`);
         const detail = planningService.getPhaseDetail(validated, phaseId);
-        console.log(`[Planning IPC] getPhaseDetail result: ${detail ? 'found' : 'null'} (${detail?.tasks?.length ?? 0} tasks)`);
         return { success: true, data: detail };
       } catch (error) {
-        console.error(`[Planning IPC] getPhaseDetail error:`, error);
         return { success: false, error: String(error) };
       }
     }

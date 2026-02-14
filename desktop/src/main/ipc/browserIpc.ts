@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from "electron";
 import { IPC_CHANNELS, BrowserBounds } from "../../shared/types";
 import { BrowserViewManager } from "../browser/BrowserViewManager";
+import { validateExternalUrl } from "../utils/pathValidation";
 
 let handlersRegistered = false;
 let browserManager: BrowserViewManager | null = null;
@@ -105,10 +106,11 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
     }
   });
 
-  // Open URL in system's default browser
+  // Open URL in system's default browser (http/https only)
   ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_EXTERNAL, async (_, url: string) => {
     try {
-      await shell.openExternal(url);
+      const validated = validateExternalUrl(url);
+      await shell.openExternal(validated);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };

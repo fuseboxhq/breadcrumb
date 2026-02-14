@@ -1,21 +1,10 @@
 import { BrowserWindow, ipcMain, dialog, app } from "electron";
-import path from "path";
 import fs from "fs/promises";
 import { IPC_CHANNELS } from "../../shared/types";
 import { gitService } from "../git/GitService";
+import { validatePath } from "../utils/pathValidation";
 
 let handlersRegistered = false;
-
-/**
- * Validate a path to prevent path traversal attacks.
- */
-function validatePath(inputPath: string): string {
-  const resolved = path.resolve(inputPath);
-  if (inputPath.includes("..")) {
-    throw new Error("Path traversal not allowed");
-  }
-  return resolved;
-}
 
 /**
  * Register core IPC handlers (non-terminal).
