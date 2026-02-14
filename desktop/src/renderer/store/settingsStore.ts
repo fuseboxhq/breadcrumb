@@ -43,7 +43,7 @@ const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
   scrollback: 5000,
   cursorStyle: "block",
   cursorBlink: true,
-  defaultShell: "/bin/zsh",
+  defaultShell: "",
 };
 
 const DEFAULT_BROWSER_SETTINGS: BrowserSettings = {

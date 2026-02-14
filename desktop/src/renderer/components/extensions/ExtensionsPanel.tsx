@@ -237,9 +237,11 @@ function ExtensionCard({
               </div>
               <div className="space-y-1">
                 {ext.commands.map((cmd) => (
-                  <div
+                  <button
                     key={cmd.command}
-                    className="text-2xs flex items-center gap-1.5"
+                    onClick={() => window.breadcrumbAPI?.executeExtensionCommand(cmd.command)}
+                    className="w-full text-left text-2xs flex items-center gap-1.5 px-1.5 py-0.5 rounded-md hover:bg-muted/50 transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+                    title={`Run ${cmd.command}`}
                   >
                     <code className="font-mono text-dracula-cyan/80">
                       {cmd.command}
@@ -247,7 +249,7 @@ function ExtensionCard({
                     <span className="text-foreground-muted">
                       — {cmd.title}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>

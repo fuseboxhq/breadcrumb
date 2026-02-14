@@ -75,10 +75,18 @@ interface ProjectPlanningData {
   lastFetched: number | null;
 }
 
+// ── Navigation State ─────────────────────────────────────────────────────────
+
+export type DashboardView =
+  | { kind: "overview" }
+  | { kind: "project"; projectPath: string; projectName: string }
+  | { kind: "phase"; projectPath: string; projectName: string; phaseId: string };
+
 // ── State ────────────────────────────────────────────────────────────────────
 
 interface PlanningState {
   projects: Record<string, ProjectPlanningData>;
+  navigationState: DashboardView;
 }
 
 interface PlanningActions {
@@ -88,6 +96,7 @@ interface PlanningActions {
   fetchBeadsTasks: (projectPath: string, epicId: string) => Promise<void>;
   refreshProject: (projectPath: string) => Promise<void>;
   clearProject: (projectPath: string) => void;
+  setNavigationState: (view: DashboardView) => void;
 }
 
 export type PlanningStore = PlanningState & PlanningActions;
@@ -119,6 +128,7 @@ function ensureProject(
 export const usePlanningStore = create<PlanningStore>()(
   immer((set) => ({
     projects: {},
+    navigationState: { kind: "overview" } as DashboardView,
 
     fetchCapabilities: async (projectPath) => {
       set((state) => {
@@ -257,6 +267,12 @@ export const usePlanningStore = create<PlanningStore>()(
         delete state.projects[projectPath];
       });
     },
+
+    setNavigationState: (view) => {
+      set((state) => {
+        state.navigationState = view;
+      });
+    },
   }))
 );
 
@@ -306,3 +322,9 @@ export const useProjectPlanningError = (projectPath: string | null) =>
   usePlanningStore(
     (s) => (projectPath ? s.projects[projectPath]?.error : null) ?? null
   );
+
+export const usePlanningNavigation = () =>
+  usePlanningStore((s) => s.navigationState);
+
+export const useSetPlanningNavigation = () =>
+  usePlanningStore((s) => s.setNavigationState);

@@ -18,6 +18,9 @@ import { SkeletonCard, SkeletonList } from "../ui/Skeleton";
 import { useProjects, useProjectsStore } from "../../store/projectsStore";
 import {
   usePlanningStore,
+  usePlanningNavigation,
+  useSetPlanningNavigation,
+  type DashboardView,
   type PhaseSummary,
   type PhaseDetail,
   type PhaseTask,
@@ -28,17 +31,11 @@ const EMPTY_TASKS: PhaseTask[] = [];
 const EMPTY_BEADS: never[] = [];
 const EMPTY_PHASES: PhaseSummary[] = [];
 
-// ── Navigation State ─────────────────────────────────────────────────────────
-
-type DashboardView =
-  | { kind: "overview" }
-  | { kind: "project"; projectPath: string; projectName: string }
-  | { kind: "phase"; projectPath: string; projectName: string; phaseId: string };
-
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 
 export function PlanningPanel() {
-  const [view, setView] = useState<DashboardView>({ kind: "overview" });
+  const view = usePlanningNavigation();
+  const setView = useSetPlanningNavigation();
   const projects = useProjects();
   const refreshProject = usePlanningStore((s) => s.refreshProject);
   const planningProjects = usePlanningStore((s) => s.projects);

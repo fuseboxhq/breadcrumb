@@ -12,7 +12,7 @@ import {
   MenuItem,
   MenuSeparator,
 } from "../shared/ContextMenu";
-import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3 } from "lucide-react";
+import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3, RotateCcw } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
@@ -123,6 +123,7 @@ export function TerminalInstance({
   const searchAddonRef = useRef<SearchAddon | null>(null);
   const [lastExitCode, setLastExitCode] = useState<number | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [ptyExited, setPtyExited] = useState(false);
   const terminalSettings = useTerminalSettings();
 
   // Stable ref for settings — used during terminal creation without
@@ -193,6 +194,23 @@ export function TerminalInstance({
     terminalRef.current?.clear();
     terminalRef.current?.focus();
   }, []);
+
+  const handleRestart = useCallback(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    const resolvedCwd = workingDirectory || "/";
+    setPtyExited(false);
+    terminal.clear();
+    const fitAddon = fitAddonRef.current;
+    const dims = fitAddon?.proposeDimensions();
+    window.breadcrumbAPI?.createTerminal({
+      id: sessionId,
+      name: sessionId,
+      workingDirectory: resolvedCwd,
+      cols: dims?.cols || terminal.cols,
+      rows: dims?.rows || terminal.rows,
+    });
+  }, [sessionId, workingDirectory]);
 
   // Cmd+F to toggle search, Cmd+L to clear
   useEffect(() => {
@@ -322,6 +340,7 @@ export function TerminalInstance({
     const cleanupExit = window.breadcrumbAPI?.onTerminalExit((event) => {
       if (event.sessionId === sessionId) {
         terminal.write(`\r\n[Process exited with code ${event.exitCode}]\r\n`);
+        setPtyExited(true);
       }
     });
 
@@ -480,6 +499,19 @@ export function TerminalInstance({
             terminalRef.current?.focus();
           }}
         />
+
+        {/* PTY exited — restart overlay */}
+        {ptyExited && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center p-4 bg-gradient-to-t from-background/90 to-transparent animate-fade-in">
+            <button
+              onClick={handleRestart}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-medium transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Restart Terminal
+            </button>
+          </div>
+        )}
 
         {/* Exit code badge */}
         {lastExitCode !== null && !searchVisible && (
