@@ -77,9 +77,9 @@ export function ProjectSwitcher() {
               projects.map((project) => {
                 const isActive = project.id === activeProject?.id;
                 return (
-                  <div
+                  <button
                     key={project.id}
-                    className={`group flex items-center gap-2 px-3 py-2 mx-1 rounded-lg cursor-pointer transition-default ${
+                    className={`group w-full flex items-center gap-2 px-3 py-2 mx-1 rounded-lg cursor-pointer transition-default text-left ${
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-foreground hover:bg-muted/50"
@@ -135,7 +135,7 @@ export function ProjectSwitcher() {
                         </button>
                       )}
                     </div>
-                  </div>
+                  </button>
                 );
               })
             )}

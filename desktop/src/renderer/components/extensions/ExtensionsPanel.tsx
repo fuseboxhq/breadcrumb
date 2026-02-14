@@ -79,14 +79,14 @@ export function ExtensionsPanel() {
         <div className="flex items-center gap-1">
           <button
             onClick={handleOpenFolder}
-            className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+            className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
             title="Open Extensions Folder"
           >
             <FolderOpen className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={loadExtensions}
-            className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+            className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
             title="Refresh"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />

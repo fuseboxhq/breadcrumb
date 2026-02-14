@@ -60,7 +60,7 @@ export function TabBar() {
                   removeTab(tab.id);
                 }}
                 aria-label={`Close ${tab.title}`}
-                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-default"
+                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none transition-default"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -71,7 +71,7 @@ export function TabBar() {
 
       <button
         onClick={handleNewTerminal}
-        className="h-full px-2.5 flex items-center text-foreground-muted hover:text-foreground-secondary hover:bg-background-raised/50 transition-default shrink-0"
+        className="h-full px-2.5 flex items-center text-foreground-muted hover:text-foreground-secondary hover:bg-background-raised/50 transition-default shrink-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
         title="New Terminal"
       >
         <Plus className="w-3.5 h-3.5" />

@@ -28,8 +28,8 @@ interface TerminalInstanceProps {
   canZoom?: boolean;
 }
 
-// Dracula-inspired terminal color scheme
-const TERMINAL_THEME = {
+// Fallback Dracula theme — used if CSS custom properties aren't available
+const FALLBACK_THEME = {
   background: "#0a0a0f",
   foreground: "#f2f2f2",
   cursor: "#f2f2f2",
@@ -53,6 +53,58 @@ const TERMINAL_THEME = {
   brightCyan: "#a4ffff",
   brightWhite: "#ffffff",
 };
+
+/**
+ * Read a CSS custom property as a resolved hex color.
+ * Properties use HSL format (e.g. "240 12% 4%"), convert via a temp element.
+ */
+function getCssColor(prop: string): string | null {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(prop).trim();
+  if (!raw) return null;
+  // If already hex, return as-is
+  if (raw.startsWith("#")) return raw;
+  // HSL components (e.g. "240 12% 4%") — resolve via temporary element
+  const el = document.createElement("div");
+  el.style.color = `hsl(${raw})`;
+  document.body.appendChild(el);
+  const resolved = getComputedStyle(el).color;
+  document.body.removeChild(el);
+  // Convert rgb(r, g, b) to hex
+  const match = resolved.match(/(\d+)/g);
+  if (!match || match.length < 3) return null;
+  const hex = "#" + match.slice(0, 3).map((n) => parseInt(n).toString(16).padStart(2, "0")).join("");
+  return hex;
+}
+
+/** Build terminal theme from CSS custom properties, falling back to hardcoded values. */
+function getTerminalTheme(): typeof FALLBACK_THEME {
+  const bg = getCssColor("--background") || FALLBACK_THEME.background;
+  const fg = getCssColor("--foreground") || FALLBACK_THEME.foreground;
+  return {
+    background: bg,
+    foreground: fg,
+    cursor: fg,
+    cursorAccent: bg,
+    selectionBackground: (getCssColor("--background-overlay") || FALLBACK_THEME.selectionBackground) + "80",
+    selectionForeground: fg,
+    black: getCssColor("--background-overlay") || FALLBACK_THEME.black,
+    red: getCssColor("--dracula-red") || FALLBACK_THEME.red,
+    green: getCssColor("--dracula-green") || FALLBACK_THEME.green,
+    yellow: getCssColor("--dracula-yellow") || FALLBACK_THEME.yellow,
+    blue: getCssColor("--dracula-cyan") || FALLBACK_THEME.blue,
+    magenta: getCssColor("--dracula-purple") || FALLBACK_THEME.magenta,
+    cyan: getCssColor("--dracula-cyan") || FALLBACK_THEME.cyan,
+    white: fg,
+    brightBlack: getCssColor("--foreground-muted") || FALLBACK_THEME.brightBlack,
+    brightRed: FALLBACK_THEME.brightRed,
+    brightGreen: FALLBACK_THEME.brightGreen,
+    brightYellow: FALLBACK_THEME.brightYellow,
+    brightBlue: FALLBACK_THEME.brightBlue,
+    brightMagenta: FALLBACK_THEME.brightMagenta,
+    brightCyan: FALLBACK_THEME.brightCyan,
+    brightWhite: FALLBACK_THEME.brightWhite,
+  };
+}
 
 export function TerminalInstance({
   sessionId,
@@ -172,7 +224,7 @@ export function TerminalInstance({
       cursorStyle: settings.cursorStyle,
       fontSize: settings.fontSize,
       fontFamily: settings.fontFamily,
-      theme: TERMINAL_THEME,
+      theme: getTerminalTheme(),
       scrollback: settings.scrollback,
       allowProposedApi: true,
     });

@@ -285,7 +285,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
           {panes.length > 1 && (
             <button
               onClick={() => togglePaneZoom(tabId, activePane)}
-              className={`p-1 rounded-md transition-default ${
+              className={`p-1 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none ${
                 isZoomed
                   ? "text-primary hover:text-primary/80 hover:bg-primary/10"
                   : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
@@ -301,7 +301,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
           )}
           <button
             onClick={toggleDirection}
-            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
+            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
             title={`Split ${splitDirection === "horizontal" ? "vertically" : "horizontally"} (⌘${splitDirection === "horizontal" ? "⇧D" : "D"})`}
           >
             {splitDirection === "horizontal" ? (
@@ -312,7 +312,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
           </button>
           <button
             onClick={() => addPane()}
-            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default"
+            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
             title="Split terminal (⌘D)"
           >
             <Plus className="w-3.5 h-3.5" />

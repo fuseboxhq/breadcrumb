@@ -250,7 +250,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Navigation bar */}
-      <div className="h-10 flex items-center gap-1.5 px-2 bg-background-raised border-b border-border shrink-0">
+      <div className="h-8 flex items-center gap-1.5 px-2 bg-background-raised border-b border-border shrink-0">
         <button
           className="p-1.5 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default disabled:opacity-30 disabled:pointer-events-none"
           title="Back"
@@ -291,7 +291,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               onFocus={(e) => e.target.select()}
-              className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-foreground-muted font-mono text-2xs"
+              className="flex-1 bg-transparent outline-none text-foreground placeholder:text-foreground-muted font-mono text-2xs"
               placeholder="Enter URL..."
               aria-label="URL address bar"
             />
