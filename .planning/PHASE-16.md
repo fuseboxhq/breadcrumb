@@ -1,6 +1,6 @@
 # Phase 16: Fix Critical & High-Priority PHASE-15 Findings
 
-**Status:** not_started
+**Status:** in_progress
 **Beads Epic:** breadcrumb-cz3
 **Created:** 2026-02-14
 
@@ -52,7 +52,27 @@ Address all critical and high-priority findings from the PHASE-15 Desktop IDE Co
 
 ## Research Summary
 
-All findings are already thoroughly documented in `.planning/research/phase-15-findings.md` with file paths, line numbers, descriptions, and recommended fixes. No additional research needed — proceed directly to planning and execution.
+**Overall Confidence:** HIGH
+
+All findings are already thoroughly documented in `.planning/research/phase-15-findings.md` with file paths, line numbers, descriptions, and recommended fixes. No additional research needed.
+
+### Task Details
+
+**Task 1 — Security Hardening (cz3.1):** Fix `validatePath()` in `handlers.ts` and `planningIpc.ts` to use allowlist pattern (resolve path, verify it starts with allowed root). Add URL scheme validation (`http:`/`https:` only) in `browserIpc.ts` before calling `shell.openExternal`.
+
+**Task 2 — Fix Broken Features (cz3.2):** (a) Change command palette "Show Breadcrumb"/"Show Browser Panel" from `setSidebarView()` to `addRightPanelPane()`. Also clean up `SidebarView` type to remove vestigial "breadcrumb"/"browser" values. (b) Subscribe to `onTerminalProcessChange` in renderer and wire to `updatePaneProcess` store action. (c) Wire StatusBar to actual git branch via `getGitInfo` IPC, and actual extension count via store/IPC. Remove hardcoded values.
+
+**Task 3 — Keyboard Shortcuts (cz3.3):** Add to `useGlobalLayoutHotkeys` or create dedicated hook: Cmd+W (close tab when single pane), Cmd+Shift+]/[ (tab switching), Cmd+1/2/3 (region focus), Cmd+T (new terminal), Cmd+\ (sidebar toggle), Cmd+Shift+E/T/X (activity bar views). Must prevent shortcuts from reaching terminal PTY when handled.
+
+**Task 4 — Accessibility & Error Quality (cz3.4):** (a) StatusBar: render items as `<span>` when no onClick. (b) TabBar: change close `<span>` to `<button aria-label="Close tab">`. (c) Fix extensionIpc event listener leak — store handler reference for proper removal. (d) Replace all `browserManager!` non-null assertions with explicit null guards returning error responses.
+
+**Task 5 — Browser & URL Fixes (cz3.5):** Change default browser URL from `https://localhost:3000` to `http://localhost:3000` in both `settingsStore.ts` and `SettingsStore.ts`. Add URL normalization in BrowserPanel (prepend `http://` for bare hostnames). Remove all 13 diagnostic `console.log` statements from `BrowserViewManager.ts`.
+
+**Task 6 — Project Persistence & Backend Wiring (cz3.6):** (a) Wire `PROJECT_*` IPC channels to persist projects via electron-store. Restore on app launch. (b) Replace `execSync` with `execFile` (promisified) in `GitService.ts`. (c) Improve extension manifest validation — check `activationEvents`, `extensionDependencies`, `contributes.commands` before casting. (d) Move 30 dead IPC channels + ~20 dead type interfaces from `shared/types/index.ts` to `shared/types/planned.ts`.
+
+### Design Guidance
+
+The `frontend-design` skill will be active during execution of UI tasks (keyboard shortcuts, StatusBar, TabBar). Follow guidelines for consistent interactive states and accessible markup.
 
 ## Recommended Approach
 
@@ -68,11 +88,14 @@ Work through items roughly in the sprint order from the findings report:
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| - | No tasks yet | - | - |
-
-Run `/bc:plan PHASE-16` to break down this phase into tasks.
+| ID | Title | Status | Complexity | Dependencies | Findings |
+|----|-------|--------|------------|--------------|----------|
+| breadcrumb-cz3.1 | Security hardening: path traversal fix + openExternal URL validation | open | Medium | - | C1, H12 |
+| breadcrumb-cz3.2 | Fix broken features: cmd palette nav, process detection wiring, StatusBar | open | High | - | C2, C3, M38 |
+| breadcrumb-cz3.3 | Keyboard shortcuts: Cmd+W close, tab switching, region focus, Cmd+T, sidebar, activity bar | open | High | - | H3, H4, H5, M6, M14, M19 |
+| breadcrumb-cz3.4 | Accessibility & error quality: semantic HTML, event leak, null guards | open | Medium | - | H9, H10, H6, H7 |
+| breadcrumb-cz3.5 | Browser & URL fixes: default HTTP, URL normalization, remove debug logging | open | Low | - | H2, M7, M37 |
+| breadcrumb-cz3.6 | Project persistence & backend wiring: electron-store, async git, manifest validation, dead code separation | open | High | - | H1, M32, M35, H11 |
 
 ## Technical Decisions
 
