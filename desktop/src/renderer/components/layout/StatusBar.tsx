@@ -1,4 +1,5 @@
-import { GitBranch, Terminal, Puzzle, Wifi, FolderOpen, PanelRight, Bug } from "lucide-react";
+import { useEffect, useState } from "react";
+import { GitBranch, Terminal, Puzzle, FolderOpen, PanelRight, Bug } from "lucide-react";
 import { useAppStore, useRightPanelOpen, useRightPanelPanes, useDevToolsDockOpen } from "../../store/appStore";
 import { useActiveProject, useProjectsStore } from "../../store/projectsStore";
 
@@ -13,12 +14,47 @@ export function StatusBar() {
   const devToolsDockOpen = useDevToolsDockOpen();
   const toggleDevToolsDock = useAppStore((s) => s.toggleDevToolsDock);
 
+  // Fetch real git branch for active project
+  const [gitBranch, setGitBranch] = useState<string | null>(null);
+  useEffect(() => {
+    if (!activeProject?.path) {
+      setGitBranch(null);
+      return;
+    }
+    let cancelled = false;
+    window.breadcrumbAPI?.getGitInfo(activeProject.path).then((result) => {
+      if (cancelled) return;
+      if (result?.success && result.gitInfo?.isGitRepo) {
+        setGitBranch(result.gitInfo.branch);
+      } else {
+        setGitBranch(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [activeProject?.path]);
+
+  // Fetch real extension count
+  const [extensionCount, setExtensionCount] = useState(0);
+  useEffect(() => {
+    window.breadcrumbAPI?.getExtensions().then((exts) => {
+      if (Array.isArray(exts)) setExtensionCount(exts.length);
+    });
+    const cleanup = window.breadcrumbAPI?.onExtensionsChanged(() => {
+      window.breadcrumbAPI?.getExtensions().then((exts) => {
+        if (Array.isArray(exts)) setExtensionCount(exts.length);
+      });
+    });
+    return () => cleanup?.();
+  }, []);
+
   return (
     <div className="h-6 bg-background-raised border-t border-border flex items-center justify-between px-3 shrink-0 select-none">
       {/* Left section */}
       <div className="flex items-center gap-3">
-        {/* Git branch */}
-        <StatusItem icon={GitBranch} label="main" color="text-dracula-purple" />
+        {/* Git branch — only shown when active project is a git repo */}
+        {gitBranch && (
+          <StatusItem icon={GitBranch} label={gitBranch} color="text-dracula-purple" />
+        )}
 
         {/* Active project */}
         {activeProject && (
@@ -56,11 +92,11 @@ export function StatusBar() {
           onClick={toggleDevToolsDock}
         />
 
-        {/* Extensions */}
-        <StatusItem icon={Puzzle} label="0 extensions" />
-
-        {/* Connection status */}
-        <StatusItem icon={Wifi} label="Connected" color="text-success" />
+        {/* Extensions — real count */}
+        <StatusItem
+          icon={Puzzle}
+          label={`${extensionCount} extension${extensionCount !== 1 ? "s" : ""}`}
+        />
       </div>
     </div>
   );
@@ -77,6 +113,16 @@ function StatusItem({
   color?: string;
   onClick?: () => void;
 }) {
+  // Render as span (non-interactive) when there's no click handler
+  if (!onClick) {
+    return (
+      <span className="flex items-center gap-1 text-2xs text-foreground-muted">
+        <Icon className={`w-3 h-3 ${color || ""}`} />
+        <span>{label}</span>
+      </span>
+    );
+  }
+
   return (
     <button
       onClick={onClick}

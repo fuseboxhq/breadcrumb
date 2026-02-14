@@ -159,18 +159,24 @@ export function CommandPalette() {
     {
       id: "view-breadcrumb",
       label: "Show Breadcrumb",
-      description: "Planning sidebar",
+      description: "Planning dashboard in right panel",
       icon: LayoutGrid,
       category: "Navigation",
-      action: () => navigateToView("breadcrumb"),
+      action: () => {
+        addRightPanelPane("planning");
+        setOpen(false);
+      },
     },
     {
       id: "view-browser",
       label: "Show Browser Panel",
-      description: "Browser sidebar",
+      description: "Browser in right panel",
       icon: Globe,
       category: "Navigation",
-      action: () => navigateToView("browser"),
+      action: () => {
+        addRightPanelPane("browser");
+        setOpen(false);
+      },
     },
     {
       id: "view-extensions",

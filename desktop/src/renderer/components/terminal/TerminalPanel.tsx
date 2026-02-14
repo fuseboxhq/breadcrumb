@@ -38,6 +38,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const setPaneCustomLabel = useAppStore((s) => s.setPaneCustomLabel);
   const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
   const updateTab = useAppStore((s) => s.updateTab);
+  const updatePaneProcess = useAppStore((s) => s.updatePaneProcess);
 
   // Zoom state
   const zoomedPane = useZoomedPane();
@@ -48,6 +49,19 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   useEffect(() => {
     initializeTabPanes(tabId, workingDirectory);
   }, [tabId, workingDirectory, initializeTabPanes]);
+
+  // Subscribe to terminal process changes from main process.
+  // Maps sessionId → paneId for this tab's panes, then calls updatePaneProcess.
+  useEffect(() => {
+    const cleanup = window.breadcrumbAPI?.onTerminalProcessChange((event) => {
+      const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+      const pane = currentPanes.find((p) => p.sessionId === event.sessionId);
+      if (pane) {
+        updatePaneProcess(tabId, pane.id, event.processName, event.processName);
+      }
+    });
+    return () => cleanup?.();
+  }, [tabId, updatePaneProcess]);
 
   // When active pane's CWD changes, update the tab title
   const handleCwdChange = useCallback((paneId: string, cwd: string) => {
