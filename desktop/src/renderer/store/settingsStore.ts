@@ -47,7 +47,7 @@ const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
 };
 
 const DEFAULT_BROWSER_SETTINGS: BrowserSettings = {
-  lastUrl: "https://localhost:3000",
+  lastUrl: "http://localhost:3000",
 };
 
 interface SettingsState {

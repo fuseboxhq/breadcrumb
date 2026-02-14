@@ -17,7 +17,7 @@ interface BrowserPanelProps {
 
 export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   const browserSettings = useBrowserSettings();
-  const startUrl = initialUrl || browserSettings.lastUrl || "https://localhost:3000";
+  const startUrl = initialUrl || browserSettings.lastUrl || "http://localhost:3000";
   const [url, setUrl] = useState(startUrl);
   const [inputUrl, setInputUrl] = useState(url);
   const [loading, setLoading] = useState(false);
@@ -27,26 +27,35 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   const [error, setError] = useState<{ code: number; description: string; url: string } | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const createdRef = useRef(false);
+  const generationRef = useRef(0);
 
-  // Create/destroy browser WebContentsView on mount/unmount
+  // Create/destroy browser WebContentsView on mount/unmount.
+  // Uses a generation counter to handle React Strict Mode double-mount:
+  // mount #1 → cleanup → mount #2. Without this, mount #1's async init()
+  // would destroy the singleton view after mount #2 starts using it.
   useEffect(() => {
     const api = window.breadcrumbAPI?.browser;
     if (!api) return;
 
+    const myGeneration = ++generationRef.current;
     let destroyed = false;
 
     const init = async () => {
       await api.create();
+
+      // Cleanup ran before create() IPC completed.
       if (destroyed) {
-        await api.destroy();
+        // Only destroy if no newer mount has started (real unmount).
+        // In Strict Mode, a newer mount already incremented generationRef,
+        // so we skip destroy to avoid killing the view it's using.
+        if (myGeneration === generationRef.current) {
+          await api.destroy();
+        }
         return;
       }
       createdRef.current = true;
 
       // Send bounds now that view exists in main process.
-      // The ResizeObserver useEffect may have already sent bounds, but they
-      // arrived as pendingBounds (view not yet initialized). Sending again
-      // ensures the 50ms init timer has fresh bounds to apply.
       const el = contentRef.current;
       if (el) {
         const rect = el.getBoundingClientRect();
@@ -203,7 +212,16 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleNavigate(inputUrl);
+    let normalized = inputUrl.trim();
+    if (normalized && !/^https?:\/\//i.test(normalized)) {
+      if (/^localhost/i.test(normalized) || /^127\.0\.0\.1/i.test(normalized)) {
+        normalized = `http://${normalized}`;
+      } else {
+        normalized = `https://${normalized}`;
+      }
+    }
+    setInputUrl(normalized);
+    handleNavigate(normalized);
   };
 
   const handleBack = useCallback(() => {

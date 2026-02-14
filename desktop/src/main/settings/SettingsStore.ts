@@ -94,7 +94,7 @@ const schema = {
   browser: {
     type: "object" as const,
     properties: {
-      lastUrl: { type: "string" as const, default: "https://localhost:3000" },
+      lastUrl: { type: "string" as const, default: "http://localhost:3000" },
     },
     default: {},
   },

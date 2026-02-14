@@ -169,7 +169,6 @@ export class BrowserViewManager {
       this.pendingBounds = bounds;
       return;
     }
-
     this.applyBounds(bounds);
   }
 
