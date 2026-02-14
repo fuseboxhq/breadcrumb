@@ -1,6 +1,6 @@
 # Phase 09: Terminal Experience
 
-**Status:** not_started
+**Status:** complete
 **Beads Epic:** breadcrumb-xrv
 **Created:** 2026-02-11
 
@@ -129,15 +129,15 @@ Register all terminal commands in command palette (new terminal, split, search, 
 
 ## Completion Criteria
 
-- [ ] Multi-project workspace: can open 2+ projects, each with their own terminal group and context
-- [ ] Project switcher accessible from title bar or sidebar
-- [ ] Terminals spawn in project root directory, tab names reflect cwd
-- [ ] Shell integration: command boundaries detected, exit codes shown, cwd tracked automatically
-- [ ] Clickable URLs in terminal output
-- [ ] Ctrl+F / Cmd+F search overlay with match highlighting and next/prev navigation
-- [ ] Split panes with keyboard shortcuts (Cmd+D horizontal, Cmd+Shift+D vertical, Cmd+W close)
-- [ ] Keyboard navigation between panes (Cmd+Option+Arrow or similar)
-- [ ] Terminal settings panel with font, size, scrollback, shell, cursor style preferences
-- [ ] Settings persist across app restarts
-- [ ] Terminal commands available in Cmd+K command palette
-- [ ] Warp-level visual polish: smooth transitions, proper focus states, command block hints
+- [x] Multi-project workspace: can open 2+ projects, each with their own terminal group and context
+- [x] Project switcher accessible from title bar or sidebar
+- [x] Terminals spawn in project root directory, tab names reflect cwd
+- [x] Shell integration: command boundaries detected, exit codes shown, cwd tracked automatically
+- [x] Clickable URLs in terminal output
+- [x] Ctrl+F / Cmd+F search overlay with match highlighting and next/prev navigation
+- [x] Split panes with keyboard shortcuts (Cmd+D horizontal, Cmd+Shift+D vertical, Cmd+W close)
+- [x] Keyboard navigation between panes (Cmd+Option+Arrow or similar)
+- [x] Terminal settings panel with font, size, scrollback, shell, cursor style preferences
+- [x] Settings persist across app restarts
+- [x] Terminal commands available in Cmd+K command palette
+- [x] Warp-level visual polish: smooth transitions, proper focus states, command block hints

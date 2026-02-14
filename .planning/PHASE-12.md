@@ -1,6 +1,6 @@
 # Phase 12: Breadcrumb Dashboard Integration
 
-**Status:** not_started
+**Status:** complete
 **Beads Epic:** breadcrumb-kuy
 **Created:** 2026-02-12
 
@@ -92,7 +92,7 @@ Transform the Breadcrumb tab from a minimal STATE.md reader into a unified multi
 | bdi.4 | Dashboard shell: navigation, project selector & layout | done | M | bdi.3 |
 | bdi.5 | ProjectSummaryGrid: project overview cards with phase progress | done | M | bdi.3 |
 | bdi.6 | PhaseDetail: phase drill-down with tasks, deps & completion criteria | done | L | bdi.3 |
-| bdi.7 | Polish: graceful degradation, error states & design system compliance | not_started | M | bdi.5, bdi.6 |
+| bdi.7 | Polish: graceful degradation, error states & design system compliance | done | M | bdi.5, bdi.6 |
 
 ## Task Details
 
@@ -255,14 +255,14 @@ Final polish pass:
 
 ## Completion Criteria
 
-- [ ] Breadcrumb tab shows a unified dashboard with all workspace projects
-- [ ] Each project card displays phase progress summary (active phase, completion %)
-- [ ] Clicking a project shows its phases with task counts and status
-- [ ] Clicking a phase shows full detail: tasks, dependencies, completion criteria
-- [ ] Data sourced from both `.planning/` files and `.beads/beads.db` where available
-- [ ] Projects without `.planning/` or `.beads/` degrade gracefully (shown but with limited data)
-- [ ] Dashboard works with the existing project system from the sidebar explorer
-- [ ] Follows the Dracula-inspired design system
+- [x] Breadcrumb tab shows a unified dashboard with all workspace projects
+- [x] Each project card displays phase progress summary (active phase, completion %)
+- [x] Clicking a project shows its phases with task counts and status
+- [x] Clicking a phase shows full detail: tasks, dependencies, completion criteria
+- [x] Data sourced from both `.planning/` files and `.beads/beads.db` where available
+- [x] Projects without `.planning/` or `.beads/` degrade gracefully (shown but with limited data)
+- [x] Dashboard works with the existing project system from the sidebar explorer
+- [x] Follows the Dracula-inspired design system
 
 ## Sources
 
