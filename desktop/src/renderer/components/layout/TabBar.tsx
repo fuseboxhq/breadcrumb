@@ -1,5 +1,6 @@
 import { X, Plus, Terminal, Sparkles } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
+import { useProjectsStore } from "../../store/projectsStore";
 
 const TAB_ICONS: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
@@ -12,13 +13,17 @@ export function TabBar() {
   const tabs = useAppStore((s) => s.tabs);
   const activeTabId = useAppStore((s) => s.activeTabId);
   const { setActiveTab, removeTab, addTab } = useAppStore();
+  const activeProject = useProjectsStore((s) =>
+    s.projects.find((p) => p.id === s.activeProjectId) || null
+  );
 
   const handleNewTerminal = () => {
     const id = `terminal-${Date.now()}`;
     addTab({
       id,
       type: "terminal",
-      title: `Terminal ${tabs.filter((t) => t.type === "terminal").length + 1}`,
+      title: activeProject ? activeProject.name : `Terminal ${tabs.filter((t) => t.type === "terminal").length + 1}`,
+      projectId: activeProject?.id,
     });
   };
 

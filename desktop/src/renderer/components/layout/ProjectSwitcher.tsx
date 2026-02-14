@@ -10,6 +10,7 @@ import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 
 export function ProjectSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const projects = useProjectsStore((s) => s.projects);
@@ -18,7 +19,10 @@ export function ProjectSwitcher() {
 
   // Close dropdown on outside click
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setConfirmingRemove(null);
+      return;
+    }
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -96,16 +100,40 @@ export function ProjectSwitcher() {
                       {isActive && (
                         <Check className="w-3.5 h-3.5 text-primary" />
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeProject(project.id);
-                        }}
-                        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted/50 transition-default"
-                        title="Remove project"
-                      >
-                        <X className="w-3 h-3 text-foreground-muted hover:text-destructive" />
-                      </button>
+                      {confirmingRemove === project.id ? (
+                        <div className="flex items-center gap-1 animate-fade-in">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeProject(project.id);
+                              setConfirmingRemove(null);
+                            }}
+                            className="px-1.5 py-0.5 rounded text-2xs font-medium bg-destructive/15 text-destructive hover:bg-destructive/25 transition-default"
+                          >
+                            Remove
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmingRemove(null);
+                            }}
+                            className="p-0.5 rounded hover:bg-muted/50 transition-default"
+                          >
+                            <X className="w-3 h-3 text-foreground-muted" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmingRemove(project.id);
+                          }}
+                          className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-muted/50 transition-default"
+                          title="Remove project"
+                        >
+                          <X className="w-3 h-3 text-foreground-muted hover:text-destructive" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

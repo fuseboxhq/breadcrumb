@@ -11,6 +11,7 @@ import {
   Database,
   Shield,
   Terminal,
+  FolderOpen,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 
@@ -61,6 +62,13 @@ export function ExtensionsPanel() {
     loadExtensions();
   };
 
+  const handleOpenFolder = async () => {
+    const home = await window.breadcrumbAPI?.getWorkingDirectory();
+    if (home) {
+      window.breadcrumbAPI?.browser.openExternal(`file://${home}/.breadcrumb/extensions`);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -68,13 +76,22 @@ export function ExtensionsPanel() {
         <span className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted">
           Installed
         </span>
-        <button
-          onClick={loadExtensions}
-          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
-          title="Refresh"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleOpenFolder}
+            className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+            title="Open Extensions Folder"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={loadExtensions}
+            className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Extension list */}

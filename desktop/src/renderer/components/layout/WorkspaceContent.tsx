@@ -7,6 +7,7 @@ import {
   Zap,
   Command,
   ArrowRight,
+  FolderOpen,
 } from "lucide-react";
 
 export function WorkspaceContent() {
@@ -55,11 +56,29 @@ function EmptyWorkspace() {
 
 function WelcomeView() {
   const { addTab, addRightPanelPane } = useAppStore();
+  const { addProject } = useProjectsStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
+  const projectCount = useProjectsStore((s) => s.projects.length);
+
+  const handleOpenProject = async () => {
+    const dir = await window.breadcrumbAPI?.selectDirectory();
+    if (dir) addProject(dir);
+  };
 
   const quickActions = [
+    {
+      icon: FolderOpen,
+      label: "Open Project",
+      description: projectCount > 0
+        ? "Add another project to your workspace"
+        : "Add a project folder to get started",
+      shortcut: "⌘O",
+      color: "text-dracula-orange",
+      bgColor: "bg-dracula-orange/10",
+      action: handleOpenProject,
+    },
     {
       icon: Terminal,
       label: "New Terminal",
@@ -102,6 +121,11 @@ function WelcomeView() {
           <p className="text-sm text-foreground-muted max-w-sm mx-auto leading-relaxed">
             Planning, terminals, browser, and extensions — all in one place.
           </p>
+          {projectCount === 0 && (
+            <p className="text-2xs text-foreground-muted/60 mt-3 max-w-xs mx-auto leading-relaxed">
+              Start by opening a project folder. Each project gets its own terminals, planning data, and workspace context.
+            </p>
+          )}
         </div>
 
         {/* Quick Actions */}
