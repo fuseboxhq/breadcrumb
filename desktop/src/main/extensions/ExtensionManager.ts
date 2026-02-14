@@ -257,13 +257,30 @@ export class ExtensionManager extends EventEmitter {
     if (!engines || typeof engines.breadcrumb !== "string") return null;
 
     // Check API version compatibility (basic check)
-    // In a full implementation we'd use semver.satisfies()
     const required = engines.breadcrumb;
     if (required && !this.isVersionCompatible(required)) {
       console.warn(
         `[ExtensionManager] ${raw.name} requires breadcrumb ${required}, have ${BREADCRUMB_API_VERSION}`
       );
       return null;
+    }
+
+    // Validate optional array fields are actually arrays
+    if (raw.activationEvents !== undefined && !Array.isArray(raw.activationEvents)) return null;
+    if (raw.extensionDependencies !== undefined && !Array.isArray(raw.extensionDependencies)) return null;
+
+    // Validate contributes.commands if present
+    if (raw.contributes !== undefined) {
+      if (typeof raw.contributes !== "object" || raw.contributes === null) return null;
+      const contributes = raw.contributes as Record<string, unknown>;
+      if (contributes.commands !== undefined) {
+        if (!Array.isArray(contributes.commands)) return null;
+        for (const cmd of contributes.commands) {
+          if (typeof cmd !== "object" || cmd === null) return null;
+          const c = cmd as Record<string, unknown>;
+          if (typeof c.command !== "string" || typeof c.title !== "string") return null;
+        }
+      }
     }
 
     return raw as unknown as ExtensionManifest;

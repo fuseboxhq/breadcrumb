@@ -1,4 +1,7 @@
-import { execSync } from "child_process";
+import { execFile } from "child_process";
+import { promisify } from "util";
+
+const execFileAsync = promisify(execFile);
 
 export type GitProvider = "github" | "gitlab" | "azure" | "other";
 
@@ -13,24 +16,22 @@ export interface GitInfo {
 const GIT_TIMEOUT_MS = 5000;
 
 export class GitService {
-  getGitInfo(workingDirectory: string): GitInfo {
-    if (!this.isGitRepo(workingDirectory)) {
+  async getGitInfo(workingDirectory: string): Promise<GitInfo> {
+    if (!(await this.isGitRepo(workingDirectory))) {
       return { isGitRepo: false, branch: "", remote: "", repoName: "", provider: null };
     }
 
-    const branch = this.getBranch(workingDirectory);
-    const remote = this.getRemote(workingDirectory);
+    const branch = await this.getBranch(workingDirectory);
+    const remote = await this.getRemote(workingDirectory);
     const { repoName, provider } = this.parseRemote(remote);
 
     return { isGitRepo: true, branch, remote, repoName, provider };
   }
 
-  private isGitRepo(workingDirectory: string): boolean {
+  private async isGitRepo(workingDirectory: string): Promise<boolean> {
     try {
-      execSync("git rev-parse --is-inside-work-tree", {
+      await execFileAsync("git", ["rev-parse", "--is-inside-work-tree"], {
         cwd: workingDirectory,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
         timeout: GIT_TIMEOUT_MS,
       });
       return true;
@@ -39,27 +40,25 @@ export class GitService {
     }
   }
 
-  private getBranch(workingDirectory: string): string {
+  private async getBranch(workingDirectory: string): Promise<string> {
     try {
-      return execSync("git rev-parse --abbrev-ref HEAD", {
+      const { stdout } = await execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
         cwd: workingDirectory,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
         timeout: GIT_TIMEOUT_MS,
-      }).trim();
+      });
+      return stdout.trim();
     } catch {
       return "";
     }
   }
 
-  private getRemote(workingDirectory: string): string {
+  private async getRemote(workingDirectory: string): Promise<string> {
     try {
-      return execSync("git remote get-url origin", {
+      const { stdout } = await execFileAsync("git", ["remote", "get-url", "origin"], {
         cwd: workingDirectory,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
         timeout: GIT_TIMEOUT_MS,
-      }).trim();
+      });
+      return stdout.trim();
     } catch {
       return "";
     }

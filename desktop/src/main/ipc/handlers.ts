@@ -49,7 +49,7 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
     async (_, { workingDirectory }: { workingDirectory: string }) => {
       try {
         const validatedPath = validatePath(workingDirectory);
-        const gitInfo = gitService.getGitInfo(validatedPath);
+        const gitInfo = await gitService.getGitInfo(validatedPath);
         return { success: true, gitInfo };
       } catch (error) {
         return { success: false, error: String(error) };

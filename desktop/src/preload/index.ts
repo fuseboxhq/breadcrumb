@@ -49,6 +49,11 @@ export interface BreadcrumbAPI {
   onTerminalExit: (callback: (data: TerminalExitEvent) => void) => () => void;
   onTerminalProcessChange: (callback: (data: TerminalProcessChangeEvent) => void) => () => void;
 
+  // Project operations
+  getRecentProjects: () => Promise<{ success: boolean; projects: Array<{ path: string; name: string; lastOpened: number }>; error?: string }>;
+  addRecentProject: (project: { path: string; name: string }) => Promise<{ success: boolean; error?: string }>;
+  removeRecentProject: (projectPath: string) => Promise<{ success: boolean; error?: string }>;
+
   // Git operations
   getGitInfo: (workingDirectory: string) => Promise<{
     success: boolean;
@@ -148,6 +153,16 @@ const api: BreadcrumbAPI = {
     ipcRenderer.on(IPC_CHANNELS.TERMINAL_PROCESS_CHANGE, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.TERMINAL_PROCESS_CHANGE, handler);
   },
+
+  // Project operations
+  getRecentProjects: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.PROJECT_GET_RECENT),
+
+  addRecentProject: (project) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PROJECT_ADD_RECENT, project),
+
+  removeRecentProject: (projectPath) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PROJECT_REMOVE_RECENT, projectPath),
 
   // Git operations
   getGitInfo: (workingDirectory) =>

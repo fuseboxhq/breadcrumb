@@ -14,6 +14,7 @@ interface ProjectsState {
 }
 
 interface ProjectsActions {
+  loadProjects: () => Promise<void>;
   addProject: (path: string, name?: string) => Project;
   removeProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
@@ -27,6 +28,20 @@ export type ProjectsStore = ProjectsState & ProjectsActions;
 export const useProjectsStore = create<ProjectsStore>((set, get) => ({
   projects: [],
   activeProjectId: null,
+
+  loadProjects: async () => {
+    const result = await window.breadcrumbAPI?.getRecentProjects();
+    if (result?.success && result.projects?.length) {
+      const projects: Project[] = result.projects.map((p) => ({
+        id: `project-${p.lastOpened}-${Math.random().toString(36).slice(2, 7)}`,
+        name: p.name,
+        path: p.path,
+        lastOpened: p.lastOpened,
+        terminalSessions: [],
+      }));
+      set({ projects, activeProjectId: projects[0]?.id || null });
+    }
+  },
 
   addProject: (path, name) => {
     // Check if project with this path already exists
@@ -55,10 +70,14 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
       activeProjectId: project.id,
     }));
 
+    // Persist to backend
+    window.breadcrumbAPI?.addRecentProject({ path: project.path, name: project.name });
+
     return project;
   },
 
   removeProject: (id) => {
+    const project = get().projects.find((p) => p.id === id);
     set((state) => {
       const newProjects = state.projects.filter((p) => p.id !== id);
       const newActiveId =
@@ -67,6 +86,11 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
           : state.activeProjectId;
       return { projects: newProjects, activeProjectId: newActiveId };
     });
+
+    // Persist removal to backend
+    if (project) {
+      window.breadcrumbAPI?.removeRecentProject(project.path);
+    }
   },
 
   setActiveProject: (id) => {
