@@ -1,6 +1,15 @@
-import { readFileSync, existsSync, readdirSync } from "fs";
+import { access, readFile, readdir } from "fs/promises";
 import { join } from "path";
 import Database from "better-sqlite3";
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,26 +77,27 @@ export interface BeadsTask {
 // ── Service ──────────────────────────────────────────────────────────────────
 
 export class PlanningService {
-  getProjectCapabilities(projectPath: string): ProjectCapabilities {
-    return {
-      hasPlanning: existsSync(join(projectPath, ".planning", "STATE.md")),
-      hasBeads: existsSync(join(projectPath, ".beads", "beads.db")),
-    };
+  async getProjectCapabilities(projectPath: string): Promise<ProjectCapabilities> {
+    const [hasPlanning, hasBeads] = await Promise.all([
+      fileExists(join(projectPath, ".planning", "STATE.md")),
+      fileExists(join(projectPath, ".beads", "beads.db")),
+    ]);
+    return { hasPlanning, hasBeads };
   }
 
-  getProjectPhases(projectPath: string): PhaseSummary[] {
+  async getProjectPhases(projectPath: string): Promise<PhaseSummary[]> {
     const stateFile = join(projectPath, ".planning", "STATE.md");
-    if (!existsSync(stateFile)) return [];
+    if (!(await fileExists(stateFile))) return [];
 
-    const content = readFileSync(stateFile, "utf-8");
+    const content = await readFile(stateFile, "utf-8");
     return this.parseStateFile(content);
   }
 
-  getPhaseDetail(projectPath: string, phaseId: string): PhaseDetail | null {
-    const phaseFile = this.resolvePhaseFile(projectPath, phaseId);
+  async getPhaseDetail(projectPath: string, phaseId: string): Promise<PhaseDetail | null> {
+    const phaseFile = await this.resolvePhaseFile(projectPath, phaseId);
     if (!phaseFile) return null;
 
-    const content = readFileSync(phaseFile, "utf-8");
+    const content = await readFile(phaseFile, "utf-8");
     return this.parsePhaseFile(content, phaseId);
   }
 
@@ -95,29 +105,29 @@ export class PlanningService {
    * Resolve phase file path — handles both `PHASE-XX.md` and
    * slugified names like `PHASE-XX-some-title.md`.
    */
-  private resolvePhaseFile(
+  private async resolvePhaseFile(
     projectPath: string,
     phaseId: string
-  ): string | null {
+  ): Promise<string | null> {
     const planningDir = join(projectPath, ".planning");
 
     // Try exact match first
     const exact = join(planningDir, `${phaseId}.md`);
-    if (existsSync(exact)) return exact;
+    if (await fileExists(exact)) return exact;
 
     // Try prefix match (e.g. PHASE-26-close-the-review-loop.md)
-    if (!existsSync(planningDir)) return null;
+    if (!(await fileExists(planningDir))) return null;
     const prefix = `${phaseId}-`;
-    const files = readdirSync(planningDir);
+    const files = await readdir(planningDir);
     const match = files.find(
       (f) => f.startsWith(prefix) && f.endsWith(".md")
     );
     return match ? join(planningDir, match) : null;
   }
 
-  getBeadsTasks(projectPath: string, epicId: string): BeadsTask[] {
+  async getBeadsTasks(projectPath: string, epicId: string): Promise<BeadsTask[]> {
     const dbPath = join(projectPath, ".beads", "beads.db");
-    if (!existsSync(dbPath)) return [];
+    if (!(await fileExists(dbPath))) return [];
 
     const db = new Database(dbPath, { readonly: true, fileMustExist: true });
     try {

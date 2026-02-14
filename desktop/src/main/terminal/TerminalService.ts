@@ -8,7 +8,9 @@ const execFileAsync = promisify(execFile);
 
 const DEFAULT_TERMINAL_COLS = 120;
 const DEFAULT_TERMINAL_ROWS = 30;
-const PROCESS_POLL_INTERVAL_MS = 200;
+const IDLE_POLL_INTERVAL_MS = 2000;
+const ACTIVE_POLL_INTERVAL_MS = 200;
+const ACTIVE_DURATION_MS = 5000;
 
 /** Maps raw process names from pty.process to friendly display names */
 export const PROCESS_FRIENDLY_NAMES: Record<string, string> = {
@@ -366,6 +368,8 @@ export class TerminalService extends EventEmitter {
   private lastEmittedLabel: Map<string, string> = new Map();
   /** Generation counter per session — prevents stale async results */
   private inspectGeneration: Map<string, number> = new Map();
+  /** Track whether each session is in "active" (fast) polling mode */
+  private activePolling: Map<string, NodeJS.Timeout | null> = new Map();
 
   constructor() {
     super();
@@ -433,11 +437,58 @@ export class TerminalService extends EventEmitter {
       this.emitProcessChange(sessionId, ptyProcess);
     }, 0);
 
+    // Start with idle (slow) polling — 2s baseline
     const interval = setInterval(() => {
       this.emitProcessChange(sessionId, ptyProcess);
-    }, PROCESS_POLL_INTERVAL_MS);
+    }, IDLE_POLL_INTERVAL_MS);
 
     this.processPollers.set(sessionId, interval);
+
+    // Use onData as activity signal to temporarily boost polling rate
+    ptyProcess.onData(() => {
+      this.boostPolling(sessionId, ptyProcess);
+    });
+  }
+
+  /**
+   * Temporarily switch to fast polling (200ms) for 5 seconds after terminal
+   * activity is detected. Resets the timer on each new data event.
+   */
+  private boostPolling(sessionId: string, ptyProcess: pty.IPty): void {
+    const existingTimeout = this.activePolling.get(sessionId);
+
+    if (!existingTimeout) {
+      // Switch from idle to active polling
+      const idleInterval = this.processPollers.get(sessionId);
+      if (idleInterval) clearInterval(idleInterval);
+
+      const activeInterval = setInterval(() => {
+        this.emitProcessChange(sessionId, ptyProcess);
+      }, ACTIVE_POLL_INTERVAL_MS);
+      this.processPollers.set(sessionId, activeInterval);
+    } else {
+      // Already in active mode — just reset the decay timer
+      clearTimeout(existingTimeout);
+    }
+
+    // Set decay timer to revert to idle polling after ACTIVE_DURATION_MS
+    const decayTimeout = setTimeout(() => {
+      this.activePolling.set(sessionId, null);
+
+      // Switch back to idle polling
+      const activeInterval = this.processPollers.get(sessionId);
+      if (activeInterval) clearInterval(activeInterval);
+
+      // Only restart if session still exists
+      if (this.sessions.has(sessionId)) {
+        const idleInterval = setInterval(() => {
+          this.emitProcessChange(sessionId, ptyProcess);
+        }, IDLE_POLL_INTERVAL_MS);
+        this.processPollers.set(sessionId, idleInterval);
+      }
+    }, ACTIVE_DURATION_MS);
+
+    this.activePolling.set(sessionId, decayTimeout);
   }
 
   private emitProcessChange(sessionId: string, ptyProcess: pty.IPty): void {
@@ -561,6 +612,11 @@ export class TerminalService extends EventEmitter {
       clearInterval(interval);
       this.processPollers.delete(sessionId);
     }
+    const activeTimeout = this.activePolling.get(sessionId);
+    if (activeTimeout) {
+      clearTimeout(activeTimeout);
+    }
+    this.activePolling.delete(sessionId);
     this.lastProcessNames.delete(sessionId);
     this.lastEmittedLabel.delete(sessionId);
     this.inspectGeneration.delete(sessionId);

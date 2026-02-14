@@ -14,7 +14,7 @@ export function registerPlanningIPCHandlers(): () => void {
     async (_, { projectPath }: { projectPath: string }) => {
       try {
         const validated = validatePath(projectPath);
-        const capabilities = planningService.getProjectCapabilities(validated);
+        const capabilities = await planningService.getProjectCapabilities(validated);
         return { success: true, data: capabilities };
       } catch (error) {
         return { success: false, error: String(error) };
@@ -27,7 +27,7 @@ export function registerPlanningIPCHandlers(): () => void {
     async (_, { projectPath }: { projectPath: string }) => {
       try {
         const validated = validatePath(projectPath);
-        const phases = planningService.getProjectPhases(validated);
+        const phases = await planningService.getProjectPhases(validated);
         return { success: true, data: phases };
       } catch (error) {
         return { success: false, error: String(error) };
@@ -43,7 +43,7 @@ export function registerPlanningIPCHandlers(): () => void {
     ) => {
       try {
         const validated = validatePath(projectPath);
-        const detail = planningService.getPhaseDetail(validated, phaseId);
+        const detail = await planningService.getPhaseDetail(validated, phaseId);
         return { success: true, data: detail };
       } catch (error) {
         return { success: false, error: String(error) };
@@ -59,7 +59,7 @@ export function registerPlanningIPCHandlers(): () => void {
     ) => {
       try {
         const validated = validatePath(projectPath);
-        const tasks = planningService.getBeadsTasks(validated, epicId);
+        const tasks = await planningService.getBeadsTasks(validated, epicId);
         return { success: true, data: tasks };
       } catch (error) {
         return { success: false, error: String(error) };

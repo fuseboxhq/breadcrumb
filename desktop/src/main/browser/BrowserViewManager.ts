@@ -63,16 +63,16 @@ export class BrowserViewManager {
       return { action: "deny" };
     });
 
-    // Mark as initialized after delay (setBounds race condition workaround)
+    // Mark as initialized once DOM is ready (deterministic vs arbitrary timeout).
     // Apply any bounds that arrived before or during creation.
     this.initialized = false;
-    setTimeout(() => {
+    this.view.webContents.once("dom-ready", () => {
       this.initialized = true;
       if (this.pendingBounds) {
         this.applyBounds(this.pendingBounds);
         this.pendingBounds = null;
       }
-    }, 50);
+    });
   }
 
   /**
