@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-05: Add /bc:view command for opening dashboard (not_started)
+No active phases. All work complete.
 
 ## Completed Phases
 
