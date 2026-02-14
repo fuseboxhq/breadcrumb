@@ -180,15 +180,17 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         return;
       }
 
-      // Cmd+W — close pane (only if multiple panes)
+      // Cmd+W — close pane (if multiple) or close entire tab (if single pane)
       if (meta && e.key === "w") {
+        e.preventDefault();
         const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
         const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
         if (currentPanes.length > 1 && currentActive) {
-          e.preventDefault();
           removePane(currentActive);
-          return;
+        } else {
+          useAppStore.getState().removeTab(tabId);
         }
+        return;
       }
 
       // Cmd+Option+Right/Left — navigate between panes
