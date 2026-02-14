@@ -49,15 +49,16 @@ export function TabBar() {
             <span className="truncate">{tab.title}</span>
 
             {tab.type !== "welcome" && (
-              <span
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   removeTab(tab.id);
                 }}
-                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/80 opacity-0 group-hover:opacity-100 transition-default"
+                aria-label={`Close ${tab.title}`}
+                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-default"
               >
                 <X className="w-3 h-3" />
-              </span>
+              </button>
             )}
           </button>
         );

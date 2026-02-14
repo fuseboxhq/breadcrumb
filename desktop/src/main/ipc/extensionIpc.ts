@@ -85,14 +85,15 @@ export function registerExtensionIPCHandlers(
       );
     }
   };
-  extensionManager.on("extensions-changed", () => {
+  const onExtensionsChanged = () => {
     if (!mainWindow.isDestroyed()) {
       mainWindow.webContents.send(
         IPC_CHANNELS.EXTENSIONS_STATUS_CHANGED,
         extensionManager.getExtensionsForRenderer()
       );
     }
-  });
+  };
+  extensionManager.on("extensions-changed", onExtensionsChanged);
   extensionManager.on("extension-status-changed", onStatusChanged);
 
   // Cleanup
@@ -102,7 +103,7 @@ export function registerExtensionIPCHandlers(
     ipcMain.removeHandler(IPC_CHANNELS.EXTENSIONS_DEACTIVATE);
     ipcMain.removeHandler(IPC_CHANNELS.EXTENSIONS_COMMANDS);
     ipcMain.removeHandler(IPC_CHANNELS.EXTENSIONS_EXECUTE_COMMAND);
-    extensionManager.removeListener("extensions-changed", () => {});
+    extensionManager.removeListener("extensions-changed", onExtensionsChanged);
     extensionManager.removeListener("extension-status-changed", onStatusChanged);
   };
 }

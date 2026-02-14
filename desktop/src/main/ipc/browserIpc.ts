@@ -6,6 +6,14 @@ import { validateExternalUrl } from "../utils/pathValidation";
 let handlersRegistered = false;
 let browserManager: BrowserViewManager | null = null;
 
+/** Get the browser manager or throw a descriptive error */
+function requireManager(): BrowserViewManager {
+  if (!browserManager) {
+    throw new Error("Browser manager not initialized");
+  }
+  return browserManager;
+}
+
 /**
  * Register browser IPC handlers for the embedded WebContentsView browser.
  * Returns a cleanup function to remove all listeners and destroy the view.
@@ -19,7 +27,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Create the browser WebContentsView
   ipcMain.handle(IPC_CHANNELS.BROWSER_CREATE, async () => {
     try {
-      await browserManager!.create();
+      await requireManager().create();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -29,7 +37,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Navigate to URL
   ipcMain.handle(IPC_CHANNELS.BROWSER_NAVIGATE, async (_, url: string) => {
     try {
-      await browserManager!.navigate(url);
+      await requireManager().navigate(url);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -39,7 +47,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Go back in navigation history
   ipcMain.handle(IPC_CHANNELS.BROWSER_GO_BACK, async () => {
     try {
-      browserManager!.goBack();
+      requireManager().goBack();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -49,7 +57,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Go forward in navigation history
   ipcMain.handle(IPC_CHANNELS.BROWSER_GO_FORWARD, async () => {
     try {
-      browserManager!.goForward();
+      requireManager().goForward();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -59,7 +67,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Reload current page
   ipcMain.handle(IPC_CHANNELS.BROWSER_RELOAD, async () => {
     try {
-      browserManager!.reload();
+      requireManager().reload();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -69,7 +77,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Set browser WebContentsView bounds (called from ResizeObserver in renderer)
   ipcMain.handle(IPC_CHANNELS.BROWSER_SET_BOUNDS, async (_, bounds: BrowserBounds) => {
     try {
-      browserManager!.setBounds(bounds);
+      requireManager().setBounds(bounds);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -79,7 +87,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Destroy the browser WebContentsView
   ipcMain.handle(IPC_CHANNELS.BROWSER_DESTROY, async () => {
     try {
-      browserManager!.destroy();
+      requireManager().destroy();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -89,7 +97,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Open DevTools for the browser WebContentsView
   ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS, async () => {
     try {
-      browserManager!.openDevTools();
+      requireManager().openDevTools();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -99,7 +107,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Close DevTools
   ipcMain.handle(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS, async () => {
     try {
-      browserManager!.closeDevTools();
+      requireManager().closeDevTools();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -120,7 +128,7 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   // Set DevTools WebContentsView bounds
   ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, bounds: BrowserBounds) => {
     try {
-      browserManager!.setDevToolsBounds(bounds);
+      requireManager().setDevToolsBounds(bounds);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
