@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import { CommandPalette } from "./components/command-palette/CommandPalette";
 import { useSettingsStore } from "./store/settingsStore";
-import { useAppStore } from "./store/appStore";
+import { useAppStore, flushWorkspacePersist } from "./store/appStore";
 import { useProjectsStore } from "./store/projectsStore";
 import { Toaster } from "sonner";
 
@@ -19,6 +19,15 @@ function App() {
     });
     return () => cleanup?.();
   }, [loadSettings, loadProjects]);
+
+  // Flush pending workspace writes before window closes (handles app quit / reload)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushWorkspacePersist();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // Listen for terminal process name changes from main process
   useEffect(() => {

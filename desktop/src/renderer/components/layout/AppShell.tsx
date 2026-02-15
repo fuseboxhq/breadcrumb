@@ -47,33 +47,40 @@ export function AppShell() {
     layoutRestoredRef.current = true;
 
     // Restore workspace state (tabs, panes, active project) BEFORE layout
-    const restoreWorkspace = useAppStore.getState().restoreWorkspace;
-    if (workspaceSettings.tabs && workspaceSettings.tabs.length > 0) {
-      restoreWorkspace({
-        tabs: workspaceSettings.tabs.map((t) => ({
-          id: t.id,
-          type: t.type as "terminal" | "browser" | "breadcrumb" | "welcome",
-          title: t.title,
-          url: t.url,
-          projectId: t.projectId,
-        })),
-        activeTabId: workspaceSettings.activeTabId ?? null,
-        terminalPanes: workspaceSettings.terminalPanes ?? {},
-        activeProjectId: workspaceSettings.activeProjectId ?? null,
-      });
+    // Wrapped in try/catch to handle corrupt or partial workspace JSON gracefully
+    try {
+      const restoreWorkspace = useAppStore.getState().restoreWorkspace;
+      if (workspaceSettings.tabs && Array.isArray(workspaceSettings.tabs) && workspaceSettings.tabs.length > 0) {
+        restoreWorkspace({
+          tabs: workspaceSettings.tabs.map((t) => ({
+            id: t.id,
+            type: t.type as "terminal" | "browser" | "breadcrumb" | "welcome",
+            title: t.title,
+            url: t.url,
+            projectId: t.projectId,
+          })),
+          activeTabId: workspaceSettings.activeTabId ?? null,
+          terminalPanes: workspaceSettings.terminalPanes ?? {},
+          activeProjectId: workspaceSettings.activeProjectId ?? null,
+        });
 
-      // Restore active project in projectsStore (resolve by path since IDs are regenerated)
-      if (workspaceSettings.activeProjectId && workspaceSettings.activeProjectId !== null) {
-        const projectsState = useProjectsStore.getState();
-        const savedPaths = (workspaceSettings as { projectPaths?: Record<string, string> }).projectPaths || {};
-        const activeProjectPath = savedPaths[workspaceSettings.activeProjectId];
-        if (activeProjectPath) {
-          const matchedProject = projectsState.projects.find((p) => p.path === activeProjectPath);
-          if (matchedProject) {
-            projectsState.setActiveProject(matchedProject.id);
+        // Restore active project in projectsStore (resolve by path since IDs are regenerated)
+        if (workspaceSettings.activeProjectId && workspaceSettings.activeProjectId !== null) {
+          const projectsState = useProjectsStore.getState();
+          const savedPaths = (workspaceSettings as { projectPaths?: Record<string, string> }).projectPaths || {};
+          const activeProjectPath = savedPaths[workspaceSettings.activeProjectId];
+          if (activeProjectPath) {
+            const matchedProject = projectsState.projects.find((p) => p.path === activeProjectPath);
+            if (matchedProject) {
+              projectsState.setActiveProject(matchedProject.id);
+            }
           }
         }
       }
+    } catch {
+      // Corrupt workspace state — fall back to default (welcome tab).
+      // initialState in appStore already provides the welcome tab.
+      console.warn("[Breadcrumb] Failed to restore workspace, using defaults");
     }
 
     const savedPanelSizes = layoutSettings.panelSizes;

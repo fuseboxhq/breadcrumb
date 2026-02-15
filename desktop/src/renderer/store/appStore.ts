@@ -615,7 +615,7 @@ export const useAppStore = create<AppStore>()(
     // Workspace restore — rebuild tabs/panes from a saved snapshot
     restoreWorkspace: (snapshot) =>
       set((state) => {
-        if (!snapshot.tabs || snapshot.tabs.length === 0) return;
+        if (!snapshot.tabs || !Array.isArray(snapshot.tabs) || snapshot.tabs.length === 0) return;
 
         // Build reverse map: old projectId → path, then path → current projectId
         // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -632,14 +632,27 @@ export const useAppStore = create<AppStore>()(
           }
         }
 
-        // Restore tabs with their saved metadata, remapping projectIds
-        state.tabs = snapshot.tabs.map((t) => ({
-          id: t.id,
-          type: t.type as TabType,
-          title: t.title,
-          url: t.url,
-          projectId: t.projectId ? (projectIdMap.get(t.projectId) || t.projectId) : undefined,
-        }));
+        const validTabTypes: TabType[] = ["terminal", "browser", "breadcrumb", "welcome"];
+
+        // Restore tabs, filtering out any with invalid types
+        state.tabs = snapshot.tabs
+          .filter((t) => t.id && validTabTypes.includes(t.type as TabType))
+          .map((t) => ({
+            id: t.id,
+            type: t.type as TabType,
+            title: t.title || t.type,
+            url: t.url,
+            projectId: t.projectId ? (projectIdMap.get(t.projectId) || t.projectId) : undefined,
+          }));
+
+        // If all tabs were filtered out, fall back to default welcome tab
+        if (state.tabs.length === 0) {
+          state.tabs = [{ id: "welcome", type: "welcome", title: "Welcome" }];
+          state.activeTabId = "welcome";
+          state.terminalPanes = {};
+          state.zoomedPane = null;
+          return;
+        }
 
         // Restore active tab (fall back to first tab if saved tab no longer exists)
         const savedActiveExists = state.tabs.some((t) => t.id === snapshot.activeTabId);
@@ -652,18 +665,22 @@ export const useAppStore = create<AppStore>()(
         for (const [tabId, savedPaneState] of Object.entries(snapshot.terminalPanes || {})) {
           // Only restore pane state if the tab still exists
           if (!state.tabs.some((t) => t.id === tabId)) continue;
+          // Skip if panes array is invalid
+          if (!savedPaneState?.panes || !Array.isArray(savedPaneState.panes) || savedPaneState.panes.length === 0) continue;
 
           state.terminalPanes[tabId] = {
-            panes: savedPaneState.panes.map((p, i) => ({
-              id: p.id,
-              // Generate fresh sessionId — old PTY sessions don't survive restart
-              sessionId: `${tabId}-${Date.now()}-${i}`,
-              cwd: p.cwd || "",
-              customLabel: p.customLabel,
-              lastActivity: Date.now(),
-            })),
-            activePane: savedPaneState.activePane,
-            splitDirection: savedPaneState.splitDirection,
+            panes: savedPaneState.panes
+              .filter((p) => p.id) // Skip panes without an ID
+              .map((p, i) => ({
+                id: p.id,
+                // Generate fresh sessionId — old PTY sessions don't survive restart
+                sessionId: `${tabId}-${Date.now()}-${i}`,
+                cwd: p.cwd || "",
+                customLabel: p.customLabel,
+                lastActivity: Date.now(),
+              })),
+            activePane: savedPaneState.activePane || savedPaneState.panes[0]?.id || "pane-1",
+            splitDirection: savedPaneState.splitDirection || "horizontal",
           };
         }
 
