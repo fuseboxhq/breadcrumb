@@ -27,7 +27,19 @@ const config: ForgeConfig = {
     },
     {
       name: "@electron-forge/maker-dmg",
-      config: {},
+      config: {
+        format: "ULFO",
+        icon: "./assets/icon.icns",
+        contents: [
+          { x: 130, y: 220, type: "file", path: "" },
+          { x: 410, y: 220, type: "link", path: "/Applications" },
+        ],
+        additionalDMGOptions: {
+          window: {
+            size: { width: 540, height: 380 },
+          },
+        },
+      },
     },
     {
       name: "@electron-forge/maker-deb",
