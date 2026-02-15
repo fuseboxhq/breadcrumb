@@ -1,6 +1,6 @@
 # Phase 19: App Bundling & Distribution
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-o00
 **Created:** 2026-02-14
 
@@ -80,11 +80,11 @@ Use the existing Electron Forge + Vite setup. The critical fix is **disabling th
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-o00.1 | Create placeholder app icon and generate platform variants | open | Low | - |
-| breadcrumb-o00.2 | Harden forge.config.ts: metadata, icon, fuses, ASAR unpack | open | Medium | o00.1 |
-| breadcrumb-o00.3 | Configure DMG maker for macOS installer | open | Low | o00.2 |
-| breadcrumb-o00.4 | Configure Squirrel maker for Windows installer | open | Low | o00.2 |
-| breadcrumb-o00.5 | Build, package, and verify macOS app end-to-end | open | High | o00.3, o00.4 |
+| breadcrumb-o00.1 | Create placeholder app icon and generate platform variants | done | Low | - |
+| breadcrumb-o00.2 | Harden forge.config.ts: metadata, icon, fuses, ASAR unpack | done | Medium | o00.1 |
+| breadcrumb-o00.3 | Configure DMG maker for macOS installer | done | Low | o00.2 |
+| breadcrumb-o00.4 | Configure Squirrel maker for Windows installer | done | Low | o00.2 |
+| breadcrumb-o00.5 | Build, package, and verify macOS app end-to-end | done | High | o00.3, o00.4 |
 
 ### Task Details
 
@@ -148,14 +148,14 @@ Run `electron-forge package` then `electron-forge make` on macOS. Verify:
 
 ## Completion Criteria
 
-- [ ] `electron-forge make` completes without errors on macOS
-- [ ] Produced .dmg installs correctly on macOS (drag to Applications, launches)
-- [ ] Packaged app creates terminals with working node-pty
-- [ ] Packaged app persists settings via electron-store
-- [ ] App has a custom placeholder icon (not default Electron icon)
-- [ ] App metadata (name, version, bundle ID) is correct in About dialog
-- [ ] Windows Squirrel maker configuration is correct (build-ready, even if not tested on Windows)
-- [ ] TypeScript strict mode passes with no errors
+- [x] `electron-forge make` completes without errors on macOS
+- [x] Produced .dmg installs correctly on macOS (drag to Applications, launches)
+- [x] Packaged app creates terminals with working node-pty
+- [x] Packaged app persists settings via electron-store
+- [x] App has a custom placeholder icon (not default Electron icon)
+- [x] App metadata (name, version, bundle ID) is correct in About dialog
+- [x] Windows Squirrel maker configuration is correct (build-ready, even if not tested on Windows)
+- [x] TypeScript strict mode passes with no errors
 
 ## Sources
 
