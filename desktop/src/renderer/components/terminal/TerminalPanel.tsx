@@ -52,7 +52,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
       const pane = currentPanes.find((p) => p.sessionId === event.sessionId);
       if (pane) {
-        updatePaneProcess(tabId, pane.id, event.processName, event.processName);
+        updatePaneProcess(tabId, pane.id, event.processName, event.processLabel);
       }
     });
     return () => cleanup?.();
