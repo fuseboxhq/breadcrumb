@@ -434,20 +434,24 @@ export const useAppStore = create<AppStore>()(
       persistWorkspace();
     },
 
-    setActivePane: (tabId, paneId) =>
+    setActivePane: (tabId, paneId) => {
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
         tabState.activePane = paneId;
-      }),
+      });
+      persistWorkspace();
+    },
 
-    toggleSplitDirection: (tabId) =>
+    toggleSplitDirection: (tabId) => {
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
         tabState.splitDirection =
           tabState.splitDirection === "horizontal" ? "vertical" : "horizontal";
-      }),
+      });
+      persistWorkspace();
+    },
 
     updatePaneCwd: (tabId, paneId, cwd) => {
       set((state) => {
