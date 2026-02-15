@@ -4,30 +4,16 @@ import {
   RefreshCw,
   Play,
   Square,
-  AlertCircle,
-  CheckCircle2,
-  Circle,
-  Loader2,
   Database,
   Shield,
   Terminal,
   FolderOpen,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
-
-interface ExtensionInfo {
-  id: string;
-  displayName: string;
-  version: string;
-  description: string;
-  status: string;
-  publisher: string;
-  capabilities: Record<string, unknown>;
-  commands: Array<{ command: string; title: string; category?: string }>;
-}
+import type { ExtensionInfoForRenderer } from "../../../main/extensions/types";
 
 export function ExtensionsPanel() {
-  const [extensions, setExtensions] = useState<ExtensionInfo[]>([]);
+  const [extensions, setExtensions] = useState<ExtensionInfoForRenderer[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedExt, setSelectedExt] = useState<string | null>(null);
 
@@ -53,7 +39,7 @@ export function ExtensionsPanel() {
     return () => cleanup?.();
   }, [loadExtensions]);
 
-  const handleToggle = async (ext: ExtensionInfo) => {
+  const handleToggle = async (ext: ExtensionInfoForRenderer) => {
     if (ext.status === "active") {
       await window.breadcrumbAPI?.deactivateExtension(ext.id);
     } else {
@@ -134,7 +120,7 @@ function ExtensionCard({
   onSelect,
   onToggle,
 }: {
-  ext: ExtensionInfo;
+  ext: ExtensionInfoForRenderer;
   isSelected: boolean;
   onSelect: () => void;
   onToggle: () => void;
@@ -276,7 +262,7 @@ function StatusDot({ status }: { status: string }) {
   );
 }
 
-function getExtIcon(ext: ExtensionInfo) {
+function getExtIcon(ext: ExtensionInfoForRenderer) {
   if (ext.id.includes("db") || ext.id.includes("database")) return Database;
   return Puzzle;
 }

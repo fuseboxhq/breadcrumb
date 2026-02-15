@@ -129,7 +129,8 @@ async function handleActivate(
       };
     };
 
-    // Inject API into global scope for the extension
+    // Inject API into global scope so extensions can access `breadcrumb.*`
+    // Cast required: TypeScript doesn't know about dynamically-added globals
     (globalThis as Record<string, unknown>).breadcrumb = breadcrumb;
 
     // Activate

@@ -7,6 +7,8 @@ import {
   BrowserTitleChangeEvent,
   BrowserErrorEvent,
 } from "../shared/types";
+import type { AppSettings } from "../main/settings/SettingsStore";
+import type { ExtensionInfoForRenderer } from "../main/extensions/types";
 
 // Terminal API types
 export interface TerminalDataEvent {
@@ -62,10 +64,10 @@ export interface BreadcrumbAPI {
   }>;
 
   // Settings operations
-  getSettings: () => Promise<Record<string, unknown>>;
+  getSettings: () => Promise<AppSettings>;
   setSetting: (key: string, value: unknown) => Promise<{ success: boolean; error?: string }>;
   resetSettings: () => Promise<{ success: boolean }>;
-  onSettingsChanged: (callback: (settings: Record<string, unknown>) => void) => () => void;
+  onSettingsChanged: (callback: (settings: AppSettings) => void) => () => void;
 
   // Planning operations
   getPlanningCapabilities: (projectPath: string) => Promise<{ success: boolean; data?: { hasPlanning: boolean; hasBeads: boolean }; error?: string }>;
@@ -101,16 +103,7 @@ export interface BreadcrumbAPI {
   };
 }
 
-export interface ExtensionInfoForRenderer {
-  id: string;
-  displayName: string;
-  version: string;
-  description: string;
-  status: string;
-  publisher: string;
-  capabilities: Record<string, unknown>;
-  commands: Array<{ command: string; title: string; category?: string }>;
-}
+// ExtensionInfoForRenderer imported from ../main/extensions/types
 
 const api: BreadcrumbAPI = {
   // System
@@ -177,7 +170,7 @@ const api: BreadcrumbAPI = {
   resetSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_RESET),
 
   onSettingsChanged: (callback) => {
-    const handler = (_: Electron.IpcRendererEvent, data: Record<string, unknown>) =>
+    const handler = (_: Electron.IpcRendererEvent, data: AppSettings) =>
       callback(data);
     ipcRenderer.on(IPC_CHANNELS.SETTINGS_CHANGED, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.SETTINGS_CHANGED, handler);
