@@ -20,7 +20,8 @@ import {
   useRightPanelOpen,
   useDevToolsDockOpen,
 } from "../../store/appStore";
-import { useSettingsLoaded, useLayoutSettings } from "../../store/settingsStore";
+import { useSettingsLoaded, useLayoutSettings, useWorkspaceSettings } from "../../store/settingsStore";
+import { useProjectsStore } from "../../store/projectsStore";
 
 export function AppShell() {
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed);
@@ -28,6 +29,7 @@ export function AppShell() {
   const devToolsDockOpen = useDevToolsDockOpen();
   const settingsLoaded = useSettingsLoaded();
   const layoutSettings = useLayoutSettings();
+  const workspaceSettings = useWorkspaceSettings();
   const sidebarRef = useRef<ImperativePanelHandle>(null);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
   const devToolsDockRef = useRef<ImperativePanelHandle>(null);
@@ -39,10 +41,40 @@ export function AppShell() {
   // Global hotkeys for right panel toggle and panel focus navigation
   useGlobalLayoutHotkeys();
 
-  // Restore layout from persisted settings on mount
+  // Restore layout and workspace from persisted settings on mount
   useEffect(() => {
     if (!settingsLoaded || layoutRestoredRef.current) return;
     layoutRestoredRef.current = true;
+
+    // Restore workspace state (tabs, panes, active project) BEFORE layout
+    const restoreWorkspace = useAppStore.getState().restoreWorkspace;
+    if (workspaceSettings.tabs && workspaceSettings.tabs.length > 0) {
+      restoreWorkspace({
+        tabs: workspaceSettings.tabs.map((t) => ({
+          id: t.id,
+          type: t.type as "terminal" | "browser" | "breadcrumb" | "welcome",
+          title: t.title,
+          url: t.url,
+          projectId: t.projectId,
+        })),
+        activeTabId: workspaceSettings.activeTabId ?? null,
+        terminalPanes: workspaceSettings.terminalPanes ?? {},
+        activeProjectId: workspaceSettings.activeProjectId ?? null,
+      });
+
+      // Restore active project in projectsStore (resolve by path since IDs are regenerated)
+      if (workspaceSettings.activeProjectId && workspaceSettings.activeProjectId !== null) {
+        const projectsState = useProjectsStore.getState();
+        const savedPaths = (workspaceSettings as { projectPaths?: Record<string, string> }).projectPaths || {};
+        const activeProjectPath = savedPaths[workspaceSettings.activeProjectId];
+        if (activeProjectPath) {
+          const matchedProject = projectsState.projects.find((p) => p.path === activeProjectPath);
+          if (matchedProject) {
+            projectsState.setActiveProject(matchedProject.id);
+          }
+        }
+      }
+    }
 
     const savedPanelSizes = layoutSettings.panelSizes;
     const savedPanes = layoutSettings.rightPanel.panes.map((p) => ({

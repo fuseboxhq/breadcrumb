@@ -122,6 +122,8 @@ export interface WorkspaceSnapshot {
   activeTabId: string | null;
   terminalPanes: Record<string, SerializedTabPaneState>;
   activeProjectId: string | null;
+  /** Maps projectId → projectPath for resolving tab associations on restore */
+  projectPaths?: Record<string, string>;
 }
 
 // --- App state ---
@@ -191,6 +193,9 @@ export interface AppActions {
 
   // Theme
   setTheme: (theme: AppState["theme"]) => void;
+
+  // Workspace restore
+  restoreWorkspace: (snapshot: WorkspaceSnapshot) => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -221,7 +226,13 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
   // Import projectsStore lazily to avoid circular dep at module init time
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useProjectsStore } = require("./projectsStore") as typeof import("./projectsStore");
-  const activeProjectId = useProjectsStore.getState().activeProjectId;
+  const projectsState = useProjectsStore.getState();
+
+  // Build a projectId → path map for resolving associations on restore
+  const projectPaths: Record<string, string> = {};
+  for (const p of projectsState.projects) {
+    projectPaths[p.id] = p.path;
+  }
 
   return {
     tabs: state.tabs.map((t) => ({
@@ -246,7 +257,8 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
         },
       ])
     ),
-    activeProjectId,
+    activeProjectId: projectsState.activeProjectId,
+    projectPaths,
   };
 }
 
@@ -598,6 +610,65 @@ export const useAppStore = create<AppStore>()(
     setTheme: (theme) =>
       set((state) => {
         state.theme = theme;
+      }),
+
+    // Workspace restore — rebuild tabs/panes from a saved snapshot
+    restoreWorkspace: (snapshot) =>
+      set((state) => {
+        if (!snapshot.tabs || snapshot.tabs.length === 0) return;
+
+        // Build reverse map: old projectId → path, then path → current projectId
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { useProjectsStore } = require("./projectsStore") as typeof import("./projectsStore");
+        const currentProjects = useProjectsStore.getState().projects;
+        const savedPaths = snapshot.projectPaths || {};
+
+        // Map: savedProjectId → currentProjectId (by matching paths)
+        const projectIdMap = new Map<string, string>();
+        for (const [savedId, savedPath] of Object.entries(savedPaths)) {
+          const currentProject = currentProjects.find((p) => p.path === savedPath);
+          if (currentProject) {
+            projectIdMap.set(savedId, currentProject.id);
+          }
+        }
+
+        // Restore tabs with their saved metadata, remapping projectIds
+        state.tabs = snapshot.tabs.map((t) => ({
+          id: t.id,
+          type: t.type as TabType,
+          title: t.title,
+          url: t.url,
+          projectId: t.projectId ? (projectIdMap.get(t.projectId) || t.projectId) : undefined,
+        }));
+
+        // Restore active tab (fall back to first tab if saved tab no longer exists)
+        const savedActiveExists = state.tabs.some((t) => t.id === snapshot.activeTabId);
+        state.activeTabId = savedActiveExists
+          ? snapshot.activeTabId
+          : state.tabs[0]?.id || null;
+
+        // Restore terminal pane structure with fresh sessionIds
+        state.terminalPanes = {};
+        for (const [tabId, savedPaneState] of Object.entries(snapshot.terminalPanes || {})) {
+          // Only restore pane state if the tab still exists
+          if (!state.tabs.some((t) => t.id === tabId)) continue;
+
+          state.terminalPanes[tabId] = {
+            panes: savedPaneState.panes.map((p, i) => ({
+              id: p.id,
+              // Generate fresh sessionId — old PTY sessions don't survive restart
+              sessionId: `${tabId}-${Date.now()}-${i}`,
+              cwd: p.cwd || "",
+              customLabel: p.customLabel,
+              lastActivity: Date.now(),
+            })),
+            activePane: savedPaneState.activePane,
+            splitDirection: savedPaneState.splitDirection,
+          };
+        }
+
+        // Reset transient state
+        state.zoomedPane = null;
       }),
   }))
 );

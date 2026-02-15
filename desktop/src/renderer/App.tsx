@@ -3,19 +3,22 @@ import { AppShell } from "./components/layout/AppShell";
 import { CommandPalette } from "./components/command-palette/CommandPalette";
 import { useSettingsStore } from "./store/settingsStore";
 import { useAppStore } from "./store/appStore";
+import { useProjectsStore } from "./store/projectsStore";
 import { Toaster } from "sonner";
 
 function App() {
   const loadSettings = useSettingsStore((s) => s.loadSettings);
+  const loadProjects = useProjectsStore((s) => s.loadProjects);
 
-  // Load settings from main process on startup + listen for changes
+  // Load settings and projects from main process on startup
   useEffect(() => {
     loadSettings();
+    loadProjects();
     const cleanup = window.breadcrumbAPI?.onSettingsChanged(() => {
       loadSettings();
     });
     return () => cleanup?.();
-  }, [loadSettings]);
+  }, [loadSettings, loadProjects]);
 
   // Listen for terminal process name changes from main process
   useEffect(() => {

@@ -50,6 +50,7 @@ export interface WorkspaceSettings {
     splitDirection: "horizontal" | "vertical";
   }>;
   activeProjectId?: string | null;
+  projectPaths?: Record<string, string>;
 }
 
 export interface AppSettings {
