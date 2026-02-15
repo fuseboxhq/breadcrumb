@@ -5,9 +5,15 @@ import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack: "**/node_modules/node-pty/build/Release/**",
+    },
     name: "Breadcrumb",
     executableName: "breadcrumb",
+    icon: "./assets/icon",
+    appBundleId: "com.breadcrumb.desktop",
+    appCategoryType: "public.app-category.developer-tools",
+    appCopyright: "Copyright 2026 Breadcrumb",
   },
   rebuildConfig: {},
   makers: [
@@ -18,6 +24,10 @@ const config: ForgeConfig = {
     {
       name: "@electron-forge/maker-zip",
       platforms: ["darwin"],
+    },
+    {
+      name: "@electron-forge/maker-dmg",
+      config: {},
     },
     {
       name: "@electron-forge/maker-deb",
@@ -62,8 +72,9 @@ const config: ForgeConfig = {
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: true,
-      resetAdHocDarwinSignature: true,
+      // Disabled: node-pty's spawn-helper executable must load from outside
+      // ASAR. auto-unpack-natives handles .node files but not executables.
+      [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
 };
