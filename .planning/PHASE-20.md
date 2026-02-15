@@ -1,6 +1,6 @@
 # Phase 20: Code Quality & Codebase Health Review
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-j2o
 **Created:** 2026-02-14
 
@@ -67,11 +67,11 @@ Full-codebase audit across main process (14 files), preload (1 file), renderer (
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-j2o.1 | Remove dead code, unused exports, and stale types | open | Medium | - |
-| breadcrumb-j2o.2 | Harden type safety: proper types, fix unsafe casts | open | Medium | j2o.1 |
-| breadcrumb-j2o.3 | Extract shared utilities: folderName, ResizeObserver hook, IPC wrapper | open | Medium | j2o.1 |
-| breadcrumb-j2o.4 | Simplify complex components: extract commands, break down renders | open | Medium | j2o.3 |
-| breadcrumb-j2o.5 | Standardize patterns, clean up comments, final verification | open | Low | j2o.4 |
+| breadcrumb-j2o.1 | Remove dead code, unused exports, and stale types | done | Medium | - |
+| breadcrumb-j2o.2 | Harden type safety: proper types, fix unsafe casts | done | Medium | j2o.1 |
+| breadcrumb-j2o.3 | Extract shared utilities: folderName, ResizeObserver hook, IPC wrapper | done | Medium | j2o.1 |
+| breadcrumb-j2o.4 | Simplify complex components: extract commands, break down renders | done | Medium | j2o.3 |
+| breadcrumb-j2o.5 | Standardize patterns, clean up comments, final verification | done | Low | j2o.4 |
 
 ### Task Details
 
@@ -132,12 +132,12 @@ Final consistency pass:
 
 ## Completion Criteria
 
-- [ ] No dead code (unused imports, functions, components, types) remains
-- [ ] `any` types reduced to only genuinely necessary cases (with comments explaining why)
-- [ ] Duplicated logic consolidated where it reduces complexity
-- [ ] Naming conventions consistent across the codebase
-- [ ] TODO/FIXME/HACK comments resolved or documented as intentional
-- [ ] TypeScript strict mode passes with no errors
+- [x] No dead code (unused imports, functions, components, types) remains
+- [x] `any` types reduced to only genuinely necessary cases (with comments explaining why)
+- [x] Duplicated logic consolidated where it reduces complexity
+- [x] Naming conventions consistent across the codebase
+- [x] TODO/FIXME/HACK comments resolved or documented as intentional
+- [x] TypeScript strict mode passes with no errors
 - [ ] App launches and all features work identically to before the cleanup
 
 ## Sources
