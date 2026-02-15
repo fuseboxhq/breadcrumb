@@ -95,6 +95,37 @@ export const DEFAULT_LAYOUT: LayoutState = {
   devToolsDockOpen: false,
 };
 
+// --- Workspace persistence types (serialization-safe, no functions/transient fields) ---
+
+export interface SerializedPane {
+  id: string;
+  cwd: string;
+  customLabel?: string;
+}
+
+export interface SerializedTabPaneState {
+  panes: SerializedPane[];
+  activePane: string;
+  splitDirection: "horizontal" | "vertical";
+}
+
+export interface SerializedTab {
+  id: string;
+  type: TabType;
+  title: string;
+  url?: string;
+  projectId?: string;
+}
+
+export interface WorkspaceSnapshot {
+  tabs: SerializedTab[];
+  activeTabId: string | null;
+  terminalPanes: Record<string, SerializedTabPaneState>;
+  activeProjectId: string | null;
+}
+
+// --- App state ---
+
 export interface AppState {
   // Sidebar
   sidebarView: SidebarView;

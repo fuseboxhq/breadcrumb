@@ -31,10 +31,32 @@ export interface BrowserSettings {
   lastUrl: string;
 }
 
+export interface WorkspaceSettings {
+  tabs?: Array<{
+    id: string;
+    type: string;
+    title: string;
+    url?: string;
+    projectId?: string;
+  }>;
+  activeTabId?: string | null;
+  terminalPanes?: Record<string, {
+    panes: Array<{
+      id: string;
+      cwd: string;
+      customLabel?: string;
+    }>;
+    activePane: string;
+    splitDirection: "horizontal" | "vertical";
+  }>;
+  activeProjectId?: string | null;
+}
+
 export interface AppSettings {
   terminal: TerminalSettings;
   layout: LayoutSettings;
   browser: BrowserSettings;
+  workspace: WorkspaceSettings;
 }
 
 const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
@@ -49,6 +71,8 @@ const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
 const DEFAULT_BROWSER_SETTINGS: BrowserSettings = {
   lastUrl: "http://localhost:3000",
 };
+
+const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {};
 
 interface SettingsState {
   settings: AppSettings;
@@ -74,6 +98,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     terminal: DEFAULT_TERMINAL_SETTINGS,
     layout: DEFAULT_LAYOUT_SETTINGS,
     browser: DEFAULT_BROWSER_SETTINGS,
+    workspace: DEFAULT_WORKSPACE_SETTINGS,
   },
   loaded: false,
 
@@ -93,6 +118,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           },
         },
         browser: { ...DEFAULT_BROWSER_SETTINGS, ...(all?.browser as Partial<BrowserSettings> || {}) },
+        workspace: { ...DEFAULT_WORKSPACE_SETTINGS, ...(all?.workspace || {}) },
       },
       loaded: true,
     });
@@ -122,6 +148,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         terminal: DEFAULT_TERMINAL_SETTINGS,
         layout: DEFAULT_LAYOUT_SETTINGS,
         browser: DEFAULT_BROWSER_SETTINGS,
+        workspace: DEFAULT_WORKSPACE_SETTINGS,
       },
     });
   },
@@ -131,4 +158,5 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
 export const useTerminalSettings = () => useSettingsStore((s) => s.settings.terminal);
 export const useLayoutSettings = () => useSettingsStore((s) => s.settings.layout);
 export const useBrowserSettings = () => useSettingsStore((s) => s.settings.browser);
+export const useWorkspaceSettings = () => useSettingsStore((s) => s.settings.workspace);
 export const useSettingsLoaded = () => useSettingsStore((s) => s.loaded);

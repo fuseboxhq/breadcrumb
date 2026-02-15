@@ -31,10 +31,32 @@ export interface BrowserSettings {
   lastUrl: string;
 }
 
+export interface WorkspaceSettings {
+  tabs?: Array<{
+    id: string;
+    type: string;
+    title: string;
+    url?: string;
+    projectId?: string;
+  }>;
+  activeTabId?: string | null;
+  terminalPanes?: Record<string, {
+    panes: Array<{
+      id: string;
+      cwd: string;
+      customLabel?: string;
+    }>;
+    activePane: string;
+    splitDirection: "horizontal" | "vertical";
+  }>;
+  activeProjectId?: string | null;
+}
+
 export interface AppSettings {
   terminal: TerminalSettings;
   layout: LayoutSettings;
   browser: BrowserSettings;
+  workspace: WorkspaceSettings;
 }
 
 const schema = {
@@ -95,6 +117,16 @@ const schema = {
     type: "object" as const,
     properties: {
       lastUrl: { type: "string" as const, default: "http://localhost:3000" },
+    },
+    default: {},
+  },
+  workspace: {
+    type: "object" as const,
+    properties: {
+      tabs: { type: "array" as const, default: [] },
+      activeTabId: { default: null },
+      terminalPanes: { type: "object" as const, default: {} },
+      activeProjectId: { default: null },
     },
     default: {},
   },
