@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-18: Workspace Persistence & Session Restore (not_started)
+PHASE-18: Workspace Persistence & Session Restore (in_progress) - 5 tasks
 
 ## Completed Phases
 

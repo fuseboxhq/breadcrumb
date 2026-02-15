@@ -1,6 +1,6 @@
 # Phase 18: Workspace Persistence & Session Restore
 
-**Status:** not_started
+**Status:** in_progress
 **Beads Epic:** breadcrumb-uhk
 **Created:** 2026-02-14
 
@@ -34,7 +34,7 @@ Save and restore the full workspace state across app restarts — open terminal 
 
 - Use electron-store for persistence (same as existing settings)
 - Follow existing IPC patterns (preload API → ipcMain handler → store)
-- Auto-save must be debounced (300ms+) to avoid thrashing disk
+- Auto-save must be debounced (300ms) to avoid thrashing disk
 - Restore must be non-blocking — show UI immediately, restore terminals progressively
 - Handle missing/stale data gracefully (project dir deleted, etc.)
 - No new dependencies needed
@@ -44,107 +44,114 @@ Save and restore the full workspace state across app restarts — open terminal 
 
 **Overall Confidence:** HIGH
 
-### Current Persistence State
+Use the existing `persistLayout` pattern (300ms debounced timeout → IPC → electron-store). electron-store handles atomic writes. Extend the schema by adding a `workspace` top-level key alongside `terminal`, `layout`, and `browser`. Restored terminals follow the existing lazy PTY creation flow (mount → resize → create PTY at saved CWD) with no changes to TerminalInstance needed.
 
-| Feature | Persisted? | Location |
-|---------|-----------|----------|
-| Terminal settings (font, cursor) | Yes | electron-store `terminal.*` |
-| Panel sizes (sidebar, center, right) | Yes | electron-store `layout.panelSizes` |
-| Right panel panes (browser/planning) | Yes | electron-store `layout.rightPanel` |
-| Browser last URL | Yes | electron-store `browser.lastUrl` |
-| Recent projects list | Yes | electron-store via projectIpc |
-| **Tab state (tabs[], activeTabId)** | **No** | appStore.ts (Zustand memory) |
-| **Terminal pane splits** | **No** | appStore.terminalPanes (memory) |
-| **Pane CWDs & labels** | **No** | TerminalPane fields (memory) |
-| **Active project** | **No** | projectsStore.activeProjectId (memory) |
+### Recommended Stack
 
-### Key Files
+| Library | Version | Purpose | Confidence |
+|---------|---------|---------|------------|
+| electron-store | (installed) | Persistent storage | HIGH |
+| zustand + immer | (installed) | Renderer state management | HIGH |
 
-- **appStore.ts** — Master Zustand store: `tabs: WorkspaceTab[]`, `activeTabId`, `terminalPanes: Record<string, TabPaneState>`
-- **projectsStore.ts** — `projects: Project[]`, `activeProjectId`
-- **settingsStore.ts** — Renderer-side settings with `loadSettings()` / `updateLayoutSetting()`
-- **SettingsStore.ts** (main) — electron-store wrapper with `get()`/`set()` methods
-- **settingsIpc.ts** — IPC handlers for `settings:get-all`, `settings:set`
-- **AppShell.tsx** — Layout restore on mount (lines 43-77), hook-in point for session restore
-- **TerminalService.ts** — `createSession()` creates PTY, `sessions` Map is in-memory only
-- **TerminalInstance.tsx** — Creates xterm + PTY lazily on first stable resize
+No new dependencies needed.
 
-### Architecture Approach
+### Key Patterns
 
-Extend the existing electron-store persistence pattern:
-1. Add a `workspace` key to the settings schema
-2. On workspace changes (tab add/remove, pane split, project switch), debounce-save the snapshot
-3. On startup, after settings load, restore tabs and progressively create terminal sessions
-4. Terminal sessions are re-created (new PTY at saved CWD) — scrollback is lost but position is preserved
+**Debounced save** — Copy the `persistLayout` pattern (appStore.ts:185-202): module-scoped timeout, helper function accepting a getter, 300ms debounce, `window.breadcrumbAPI.setSetting()` for IPC. Call from relevant Zustand actions (addTab, removeTab, addPane, etc.) — NOT from Zustand subscribe.
+
+**Progressive restore** — In AppShell.tsx settingsLoaded useEffect (line 43-77), call `restoreWorkspace()` BEFORE `requestAnimationFrame`. Tabs mount with correct state, TerminalInstance creates PTYs lazily at saved CWDs via existing ResizeObserver flow.
+
+**Fresh sessionIds** — Don't persist `sessionId` values. Restore tab IDs and CWDs, generate fresh `sessionId` per pane on restore (`${tabId}-${Date.now()}`). Stale sessionIds cause IPC collisions.
+
+### Don't Hand-Roll
+
+| Problem | Use Instead | Why |
+|---------|-------------|-----|
+| Zustand subscribe + debounce | Debounced function from actions | Simpler, no subscription leaks, existing pattern |
+| Custom JSON file writes | electron-store | Atomic writes, schema validation, OS-specific paths |
+| Eager PTY creation on restore | Lazy creation via ResizeObserver | Avoids dimension mismatches, existing flow handles it |
+
+### Pitfalls
+
+- **Schema defaults critical** — Forgetting `default: {}` on new schema keys causes `undefined.tabs.map()` crashes
+- **Don't persist sessionIds** — Old sessionIds reference dead PTYs, cause IPC handler collisions
+- **Before-quit flush** — 300ms debounce timeout may not fire if app quits; add `before-quit` handler to flush pending writes
+- **Tab ID collisions on restore** — Use saved `tabId` values (like `terminal-1234`); only regenerate `sessionId`
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| breadcrumb-uhk.1 | Define WorkspaceSnapshot type and extend electron-store schema | pending | Low |
-| breadcrumb-uhk.2 | Add workspace save/load IPC channels and preload API | pending | Low |
-| breadcrumb-uhk.3 | Implement auto-save: debounced workspace snapshot on state changes | pending | Medium |
-| breadcrumb-uhk.4 | Implement session restore: tabs, panes, and progressive terminal creation | pending | High |
-| breadcrumb-uhk.5 | Handle edge cases: stale paths, missing projects, corrupt state | pending | Medium |
-| breadcrumb-uhk.6 | Integration testing and polish | pending | Medium |
+| ID | Title | Status | Complexity | Dependencies |
+|----|-------|--------|------------|--------------|
+| breadcrumb-uhk.1 | Define WorkspaceSnapshot type and extend electron-store schema | open | Low | - |
+| breadcrumb-uhk.2 | Implement debounced workspace auto-save from Zustand actions | open | Medium | uhk.1 |
+| breadcrumb-uhk.3 | Implement workspace restore on app startup | open | High | uhk.1 |
+| breadcrumb-uhk.4 | Handle edge cases: stale paths, missing projects, before-quit flush | open | Medium | uhk.3 |
+| breadcrumb-uhk.5 | Integration testing and TypeScript verification | open | Medium | uhk.4 |
 
 ### Task Details
 
 **uhk.1 — Define WorkspaceSnapshot type and extend electron-store schema (Low)**
-- Create `WorkspaceSnapshot` interface capturing: tabs, activeTabId, terminalPanes, activeProjectId
-- Extend `AppSettings` type in settingsStore.ts with `workspace?: WorkspaceSnapshot`
-- Add `workspace` key to electron-store schema in main process SettingsStore.ts
-- Keep the type serialization-safe (no functions, no circular refs)
+Create serialization-safe `WorkspaceSnapshot` interface:
+- `tabs: SerializedTab[]` — tab ID, type, title, projectId (no functions)
+- `activeTabId: string | null`
+- `terminalPanes: Record<string, SerializedTabPaneState>` — panes with CWD, customLabel, splitDirection (no sessionId, no processName)
+- `activeProjectId: string | null`
 
-**uhk.2 — Add workspace save/load IPC channels and preload API (Low)**
-- Add `workspace:save` and `workspace:load` IPC channels to the channel constants
-- Register handlers in settingsIpc.ts (or new workspaceIpc.ts)
-- `workspace:save` writes to electron-store under `workspace` key
-- `workspace:load` reads from electron-store, returns `WorkspaceSnapshot | null`
-- Expose via preload API: `saveWorkspace(state)`, `loadWorkspace()`
+Files to modify:
+- `desktop/src/renderer/store/appStore.ts` — Add `WorkspaceSnapshot` and `SerializedTab`/`SerializedTabPaneState` types
+- `desktop/src/main/settings/SettingsStore.ts` — Add `workspace` key to schema with `default: {}`
+- `desktop/src/renderer/store/settingsStore.ts` — Extend `AppSettings` interface with `workspace?: WorkspaceSnapshot`
 
-**uhk.3 — Implement auto-save: debounced workspace snapshot on state changes (Medium)**
-- In appStore.ts, subscribe to relevant state changes (tabs, activeTabId, terminalPanes)
-- In projectsStore.ts, subscribe to activeProjectId changes
-- On any change, debounce (300ms) and call `window.breadcrumbAPI?.saveWorkspace(snapshot)`
-- Build snapshot from current Zustand state: tabs array, active tab, pane structure with CWDs/labels
-- Filter out transient state (zoomed pane, process detection results)
+**uhk.2 — Implement debounced workspace auto-save (Medium)**
+Copy the `persistLayout` pattern:
+- Add `persistWorkspace` function (module-scoped timeout, 300ms debounce)
+- Call from tab/pane mutation actions: `addTab`, `removeTab`, `setActiveTab`, `addPane`, `removePane`, `updatePaneCwd`, `setPaneCustomLabel`
+- Build snapshot from `get().tabs`, `get().terminalPanes`, `get().activeTabId`
+- Also persist `activeProjectId` from projectsStore (call `persistWorkspace` from `setActiveProject`)
+- Filter out transient fields: `processName`, `processLabel`, `lastActivity`, `claudeInstanceNumber`
+- Use `window.breadcrumbAPI?.setSetting("workspace", snapshot)` — reuse existing IPC, no new channels needed
 
-**uhk.4 — Implement session restore: tabs, panes, and progressive terminal creation (High)**
-- In AppShell.tsx, after settings load, call `loadWorkspace()`
-- Restore tabs array and activeTabId into appStore
-- Restore activeProjectId into projectsStore
-- For terminal tabs: restore pane structure, then let TerminalInstance mount normally — it will create PTY at the saved CWD
-- For browser tabs: restore with saved URL (extend beyond single `lastUrl`)
-- For breadcrumb/welcome tabs: restore as-is
-- Show tabs immediately, terminals populate progressively as PTYs connect
-- Restore right panel state (already works, just verify)
+**uhk.3 — Implement workspace restore on app startup (High)**
+In AppShell.tsx settingsLoaded useEffect:
+- Read workspace from `settingsStore` (loaded alongside all other settings)
+- Add `restoreWorkspace(snapshot)` action to appStore:
+  - Restore `tabs` array with saved tab metadata
+  - Restore `activeTabId`
+  - Restore `terminalPanes` with fresh `sessionId` per pane (`${tabId}-${Date.now()}`)
+  - Keep saved `cwd` and `customLabel` per pane
+- Restore `activeProjectId` in projectsStore
+- Terminal tabs: TerminalInstance mounts → ResizeObserver → lazy PTY creation at saved CWD
+- Browser tabs: pass saved URL as `initialUrl` prop (extend BrowserPanel if needed)
+- If no saved workspace, fall back to current default (welcome tab)
 
-**uhk.5 — Handle edge cases: stale paths, missing projects, corrupt state (Medium)**
-- Validate saved CWDs exist before restoring terminals (fall back to home dir)
-- Validate saved projectIds still exist in recent projects
-- Handle corrupt/partial workspace JSON gracefully (fall back to fresh state)
-- Handle app crash during save (atomic write or backup)
-- Clean up orphaned session IDs that don't match restored tabs
+**uhk.4 — Handle edge cases (Medium)**
+- Validate saved CWDs exist before restore (fall back to project root or home dir)
+- Validate saved `activeProjectId` still exists in recent projects
+- Handle corrupt/partial workspace JSON (fall back to fresh state)
+- Add `before-quit` handler in main process to synchronously flush pending workspace writes
+- Handle the case where all saved projects were removed (restore welcome tab)
 
-**uhk.6 — Integration testing and polish (Medium)**
-- Full save/restore cycle: open tabs, split panes, restart app, verify state
+**uhk.5 — Integration testing and TypeScript verification (Medium)**
+- Full save/restore cycle: tabs + splits + CWDs + restart
 - Test with multiple projects active
 - Test with browser + terminal + planning tabs mixed
-- Verify no duplicate terminal sessions on restore
-- Verify layout persistence still works correctly alongside workspace persistence
-- TypeScript strict mode pass
+- Verify no duplicate sessions on restore
+- Verify layout persistence still works alongside workspace persistence
+- `tsc --noEmit` passes clean
 
 ## Technical Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Storage backend | electron-store (same as settings) | Consistent with existing patterns, no new deps |
-| Save trigger | Zustand subscribe + debounce | Captures all state changes without manual save |
-| Restore timing | After settings load in AppShell | Existing hook-in point, settings already loaded |
-| Terminal restore | Re-create PTY at saved CWD | Can't serialize PTY state; fresh shell is sufficient |
+| Storage backend | electron-store `workspace` key | Consistent with existing patterns, no new deps |
+| Save trigger | Debounced function from Zustand actions | Existing `persistLayout` pattern, no subscription leaks |
+| IPC approach | Reuse existing `settings:set` channel | No new IPC channels needed; `setSetting("workspace", ...)` works |
+| Restore timing | AppShell settingsLoaded useEffect | Existing hook-in point, before component mount |
+| Terminal restore | Re-create PTY at saved CWD | Can't serialize PTY state; lazy creation handles it |
+| SessionId handling | Generate fresh on restore | Stale IDs cause IPC collisions; CWD is what matters |
 | Scrollback | Not included (future phase) | Requires @xterm/addon-serialize, significant complexity |
 | Workspace scope | Global (not per-project) | Simpler MVP; per-project isolation is a follow-up |
+| Quit safety | `before-quit` handler flushes writes | 300ms debounce may not fire before process exits |
 
 ## Completion Criteria
 
@@ -160,5 +167,10 @@ Extend the existing electron-store persistence pattern:
 
 ## Sources
 
-- Research: Explore agent analysis of appStore.ts, projectsStore.ts, settingsStore.ts, SettingsStore.ts, AppShell.tsx, TerminalService.ts, TerminalInstance.tsx
-- Previous persistence patterns from PHASE-08, PHASE-17
+**HIGH confidence:**
+- `.planning/research/phase-18-workspace-persistence.md` — full implementation research
+- Codebase: appStore.ts, settingsStore.ts, SettingsStore.ts, AppShell.tsx, TerminalInstance.tsx
+- [electron-store docs](https://github.com/sindresorhus/electron-store) — schema, atomic writes
+
+**MEDIUM confidence:**
+- Zustand docs — subscribe patterns (not used, in favor of existing debounce)
