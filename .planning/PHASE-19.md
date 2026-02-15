@@ -1,6 +1,6 @@
 # Phase 19: App Bundling & Distribution
 
-**Status:** not_started
+**Status:** in_progress
 **Beads Epic:** breadcrumb-o00
 **Created:** 2026-02-14
 
@@ -39,26 +39,99 @@ Get `electron-forge make` producing proper, installable application artifacts fo
 
 ## Research Summary
 
-Run `/bc:plan PHASE-19` to research this phase and populate this section.
+**Overall Confidence:** HIGH
 
-## Recommended Approach
+Use the existing Electron Forge + Vite setup. The critical fix is **disabling the `OnlyLoadAppFromAsar` fuse** — node-pty's `spawn-helper` executable must load from outside ASAR, and the auto-unpack-natives plugin only handles `.node` files, not standalone executables. Generate icons from a 1024x1024 PNG using `electron-icon-builder`. DMG and Squirrel makers need straightforward config additions. Forge auto-runs `@electron/rebuild` for native modules — no custom rebuild step needed.
 
-The existing Electron Forge + Vite setup is 80% there. Key work areas:
+### Recommended Stack
 
-1. **App icon** — Create a placeholder icon, generate .icns (macOS) and .ico (Windows) variants, wire into `packagerConfig`
-2. **Forge config hardening** — Add bundle ID, app category, copyright, architecture targeting
-3. **DMG maker** — Configure `@electron-forge/maker-dmg` with layout (already in devDeps)
-4. **Native module handling** — Verify `@electron-forge/plugin-auto-unpack-natives` correctly handles node-pty in ASAR; may need `asarUnpack` glob patterns
-5. **Build verification** — Run `electron-forge package` then `make` on macOS, verify the .app launches and terminals work
-6. **Windows build prep** — Configure Squirrel maker properly, document cross-compilation or Windows build requirements
+| Library | Version | Purpose | Confidence |
+|---------|---------|---------|------------|
+| @electron-forge/plugin-auto-unpack-natives | 7.6.0 (installed) | Unpack .node binaries from ASAR | HIGH |
+| electron-icon-builder | 2.0.1+ (new devDep) | Generate .icns/.ico from 1024px PNG | HIGH |
+| @electron/rebuild | 3.7.0 (installed) | Rebuild native modules (automatic) | HIGH |
+
+### Key Patterns
+
+**OnlyLoadAppFromAsar must be disabled** — node-pty has two binaries: `pty.node` (native module, auto-unpacked) and `spawn-helper` (standalone executable, NOT detected by auto-unpack-natives). With the fuse enabled, Electron refuses to execute `spawn-helper` from `app.asar.unpacked/`, breaking all terminal spawning. For a terminal IDE that already executes arbitrary user code, this fuse provides no meaningful security benefit.
+
+**Icon path omits extension** — Set `icon: "./assets/icon"` in packagerConfig. Forge auto-appends `.icns` (macOS) or `.ico` (Windows) per target platform.
+
+**Forge auto-rebuilds native modules** — `rebuildConfig: {}` is sufficient. No manual `@electron/rebuild` step needed. Architecture is determined by `packagerConfig.arch`.
+
+### Don't Hand-Roll
+
+| Problem | Use Instead | Why |
+|---------|-------------|-----|
+| Icon size variants | electron-icon-builder | Generates all required sizes from single 1024px PNG |
+| Manual .node unpacking | plugin-auto-unpack-natives | Automatically detects native modules |
+| Manual @electron/rebuild | Forge rebuildConfig | Built-in, auto-runs during packaging |
+| DMG window layout | maker-dmg contents config | Handles positioning, background, window size |
+
+### Pitfalls
+
+- **OnlyLoadAppFromAsar + node-pty = broken terminals**: spawn-helper can't load from outside ASAR. Must disable fuse.
+- **Icon path with extension**: Use `./assets/icon` not `./assets/icon.icns` — Forge picks extension per platform.
+- **Architecture mismatch on Apple Silicon**: Native modules built for x64 crash on arm64. Build for current arch first (arm64), universal builds can come later.
+- **Squirrel name field**: Required for NuGet package naming. Use CamelCase, no spaces.
+- **Unsigned macOS app**: Gatekeeper will warn users. Expected for MVP — signing is a follow-up phase. Users can right-click > Open to bypass.
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| - | No tasks yet | - | - |
+| ID | Title | Status | Complexity | Dependencies |
+|----|-------|--------|------------|--------------|
+| breadcrumb-o00.1 | Create placeholder app icon and generate platform variants | open | Low | - |
+| breadcrumb-o00.2 | Harden forge.config.ts: metadata, icon, fuses, ASAR unpack | open | Medium | o00.1 |
+| breadcrumb-o00.3 | Configure DMG maker for macOS installer | open | Low | o00.2 |
+| breadcrumb-o00.4 | Configure Squirrel maker for Windows installer | open | Low | o00.2 |
+| breadcrumb-o00.5 | Build, package, and verify macOS app end-to-end | open | High | o00.3, o00.4 |
 
-Run `/bc:plan PHASE-19` to break down this phase into tasks.
+### Task Details
+
+**o00.1 — Create placeholder app icon and generate platform variants (Low)**
+Create a simple but distinctive 1024x1024 PNG icon for Breadcrumb (can be refined later). Use `electron-icon-builder` to generate `.icns` (macOS) and `.ico` (Windows) variants.
+
+Files to create:
+- `desktop/assets/icon.png` (1024x1024 source)
+- `desktop/assets/icon.icns` (generated)
+- `desktop/assets/icon.ico` (generated)
+
+Install `electron-icon-builder` as devDependency.
+
+**o00.2 — Harden forge.config.ts: metadata, icon, fuses, ASAR unpack (Medium)**
+Update `forge.config.ts` with:
+- `icon: "./assets/icon"` in packagerConfig (no extension)
+- `appBundleId: "com.breadcrumb.desktop"` for macOS
+- `appCategoryType: "public.app-category.developer-tools"`
+- `appCopyright: "Copyright 2026 Breadcrumb"`
+- **Disable `OnlyLoadAppFromAsar` fuse** (critical for node-pty)
+- Add explicit `asar.unpack` for node-pty's `spawn-helper`: `"**/node_modules/node-pty/build/Release/**"`
+- Remove `resetAdHocDarwinSignature` (no signing yet)
+
+**o00.3 — Configure DMG maker for macOS installer (Low)**
+Replace or supplement the existing `maker-zip` (darwin) with `maker-dmg`:
+- Set `format: "ULFO"` (fast compression)
+- Configure `contents` array for drag-to-Applications layout (app icon + Applications symlink)
+- Set `icon` and `additionalDMGOptions.window.size`
+- Keep `maker-zip` as a secondary option
+
+**o00.4 — Configure Squirrel maker for Windows installer (Low)**
+Update `maker-squirrel` config with:
+- `name: "Breadcrumb"` (CamelCase, no spaces)
+- `setupIcon: "./assets/icon.ico"`
+- `authors` and `description` metadata
+- Note: Can't test on macOS, but config should be build-ready
+
+**o00.5 — Build, package, and verify macOS app end-to-end (High)**
+Run `electron-forge package` then `electron-forge make` on macOS. Verify:
+- Build completes without errors
+- .dmg is produced and mounts correctly
+- App installs to /Applications via drag
+- App launches with custom icon
+- Terminal creation works (node-pty + spawn-helper)
+- Settings persist via electron-store
+- About dialog shows correct metadata
+- Fix any issues found during verification
 
 ## Technical Decisions
 
@@ -67,8 +140,10 @@ Run `/bc:plan PHASE-19` to break down this phase into tasks.
 | Build tool | Electron Forge (existing) | Already configured, Vite plugin working |
 | macOS installer | DMG via maker-dmg | Standard macOS distribution format |
 | Windows installer | Squirrel via maker-squirrel | Already in devDeps, standard for Electron |
-| Native module handling | auto-unpack-natives plugin | Already configured, handles ASAR extraction |
-| Icon format | .icns (macOS) + .ico (Windows) | Platform requirements |
+| Native module handling | auto-unpack-natives + explicit unpack | Plugin handles .node; explicit glob for spawn-helper |
+| OnlyLoadAppFromAsar | **Disabled** | node-pty spawn-helper must load from outside ASAR |
+| Icon generation | electron-icon-builder from 1024px PNG | Single source, generates all platform variants |
+| Architecture | arm64 first (dev machine), universal later | Start simple, avoid universal build regressions |
 | Signing | Deferred to follow-up phase | No certificates available yet |
 
 ## Completion Criteria
@@ -84,5 +159,14 @@ Run `/bc:plan PHASE-19` to break down this phase into tasks.
 
 ## Sources
 
-- Electron Forge docs — packaging, makers, native modules
-- Existing `forge.config.ts`, `package.json` in `desktop/`
+**HIGH confidence:**
+- `.planning/research/phase-19-app-bundling.md` — full implementation research
+- [Auto Unpack Natives Plugin | Electron Forge](https://www.electronforge.io/config/plugins/auto-unpack-natives)
+- [DMG Maker | Electron Forge](https://www.electronforge.io/config/makers/dmg)
+- [Squirrel.Windows Maker | Electron Forge](https://www.electronforge.io/config/makers/squirrel.windows)
+- [Packager Options | @electron/packager](https://electron.github.io/packager/main/interfaces/Options.html)
+- [electron-icon-builder | GitHub](https://github.com/safu9/electron-icon-builder)
+
+**MEDIUM confidence:**
+- [Electron Forge + node pty | Medium](https://thomasdeegan.medium.com/electron-forge-node-pty-9dd18d948956)
+- [node-pty issue #372](https://github.com/microsoft/node-pty/issues/372) — spawn-helper ASAR issues
