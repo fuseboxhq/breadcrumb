@@ -4,16 +4,11 @@ import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel } from "../../store/appStore";
 import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2 } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
+import { folderName } from "../../utils/path";
 
 interface TerminalPanelProps {
   tabId: string;
   workingDirectory?: string;
-}
-
-/** Extract folder name from an absolute path */
-function folderName(cwd: string): string {
-  const parts = cwd.replace(/\/+$/, "").split("/");
-  return parts[parts.length - 1] || cwd;
 }
 
 export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {

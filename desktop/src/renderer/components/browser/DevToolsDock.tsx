@@ -1,6 +1,7 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { X, Terminal } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
+import { useBoundsSync } from "../../hooks/useBoundsSync";
 
 /**
  * Bottom dock panel for Chrome DevTools.
@@ -12,51 +13,20 @@ export function DevToolsDock() {
   const toggleDevToolsDock = useAppStore((s) => s.toggleDevToolsDock);
 
   // Bounds syncing for DevTools WebContentsView
+  const setDevToolsBounds = useCallback(
+    (bounds: Parameters<typeof window.breadcrumbAPI.browser.setDevToolsBounds>[0]) => {
+      window.breadcrumbAPI?.browser?.setDevToolsBounds(bounds);
+    },
+    []
+  );
+  useBoundsSync(contentRef, setDevToolsBounds);
+
+  // Open/close DevTools on mount/unmount
   useEffect(() => {
-    const el = contentRef.current;
     const api = window.breadcrumbAPI?.browser;
-    if (!el || !api) return;
-
-    let rafId: number | null = null;
-
-    const sendBounds = () => {
-      const rect = el.getBoundingClientRect();
-      const width = Math.round(rect.width);
-      const height = Math.round(rect.height);
-
-      if (width < 10 || height < 10) {
-        api.setDevToolsBounds({ x: -10000, y: -10000, width: 1, height: 1 });
-        return;
-      }
-
-      api.setDevToolsBounds({
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width,
-        height,
-      });
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (rafId !== null) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        sendBounds();
-      });
-    });
-
-    resizeObserver.observe(el);
-    sendBounds();
-
-    // Open DevTools when dock mounts
+    if (!api) return;
     api.openDevTools();
-
-    return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      resizeObserver.disconnect();
-      api.setDevToolsBounds({ x: -10000, y: -10000, width: 1, height: 1 });
-      api.closeDevTools();
-    };
+    return () => { api.closeDevTools(); };
   }, []);
 
   return (

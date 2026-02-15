@@ -300,12 +300,6 @@ function ExplorerView() {
   );
 }
 
-/** Extract folder name from path */
-function folderName(cwd: string): string {
-  const parts = cwd.replace(/\/+$/, "").split("/");
-  return parts[parts.length - 1] || cwd;
-}
-
 function TerminalsView() {
   const tabs = useAppStore((s) => s.tabs);
   const activeTabId = useAppStore((s) => s.activeTabId);

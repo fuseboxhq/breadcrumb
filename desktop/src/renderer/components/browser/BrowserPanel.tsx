@@ -10,6 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useBrowserSettings } from "../../store/settingsStore";
+import { useBoundsSync } from "../../hooks/useBoundsSync";
 
 interface BrowserPanelProps {
   initialUrl?: string;
@@ -87,53 +88,13 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Bounds syncing: ResizeObserver + rAF throttled IPC
-  useEffect(() => {
-    const el = contentRef.current;
-    const api = window.breadcrumbAPI?.browser;
-    if (!el || !api) return;
-
-    let rafId: number | null = null;
-
-    const sendBounds = () => {
-      const rect = el.getBoundingClientRect();
-      const width = Math.round(rect.width);
-      const height = Math.round(rect.height);
-
-      // Hide view when content area is too small (panel collapsed)
-      if (width < 10 || height < 10) {
-        api.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
-        return;
-      }
-
-      api.setBounds({
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width,
-        height,
-      });
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (rafId !== null) return;
-      rafId = requestAnimationFrame(() => {
-        rafId = null;
-        sendBounds();
-      });
-    });
-
-    resizeObserver.observe(el);
-
-    // Send initial bounds
-    sendBounds();
-
-    return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      resizeObserver.disconnect();
-
-      // Move view off-screen on unmount (before destroy fires)
-      api.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
-    };
-  }, []);
+  const setBrowserBounds = useCallback(
+    (bounds: Parameters<typeof window.breadcrumbAPI.browser.setBounds>[0]) => {
+      window.breadcrumbAPI?.browser?.setBounds(bounds);
+    },
+    []
+  );
+  useBoundsSync(contentRef, setBrowserBounds);
 
   // Subscribe to navigation events from main process
   useEffect(() => {
