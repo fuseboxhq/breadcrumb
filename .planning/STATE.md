@@ -1,14 +1,15 @@
 # Project State
 
-**Current Phase:** PHASE-18
+**Current Phase:** None
 **Last Updated:** 2026-02-14
 
 ## Active Work
 
-PHASE-18: Workspace Persistence & Session Restore (in_progress) - 5 tasks
+(none)
 
 ## Completed Phases
 
+PHASE-18: Workspace Persistence & Session Restore (complete) - 5/5 tasks done
 PHASE-17: Sprint 3 — Architecture, Polish & UX Fixes (complete) - 5/5 tasks done
 
 PHASE-16: Fix Critical & High-Priority PHASE-15 Findings (complete) - 6/6 tasks done

@@ -1,6 +1,6 @@
 # Phase 18: Workspace Persistence & Session Restore
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-uhk
 **Created:** 2026-02-14
 
@@ -85,8 +85,8 @@ No new dependencies needed.
 | breadcrumb-uhk.1 | Define WorkspaceSnapshot type and extend electron-store schema | done | Low | - |
 | breadcrumb-uhk.2 | Implement debounced workspace auto-save from Zustand actions | done | Medium | uhk.1 |
 | breadcrumb-uhk.3 | Implement workspace restore on app startup | done | High | uhk.1 |
-| breadcrumb-uhk.4 | Handle edge cases: stale paths, missing projects, before-quit flush | open | Medium | uhk.3 |
-| breadcrumb-uhk.5 | Integration testing and TypeScript verification | open | Medium | uhk.4 |
+| breadcrumb-uhk.4 | Handle edge cases: stale paths, missing projects, before-quit flush | done | Medium | uhk.3 |
+| breadcrumb-uhk.5 | Integration testing and TypeScript verification | done | Medium | uhk.4 |
 
 ### Task Details
 
@@ -155,15 +155,15 @@ In AppShell.tsx settingsLoaded useEffect:
 
 ## Completion Criteria
 
-- [ ] App restarts with all previously open terminal tabs restored
-- [ ] Terminal pane splits and directions are preserved
-- [ ] Each terminal pane opens in its previously saved working directory
-- [ ] Active tab selection is preserved across restart
-- [ ] Active project is preserved across restart
-- [ ] Browser tabs restore to their saved URLs
-- [ ] Workspace state auto-saves on every meaningful change (debounced)
-- [ ] Missing directories fall back gracefully (no crash, no blank screen)
-- [ ] TypeScript strict mode passes with no errors
+- [x] App restarts with all previously open terminal tabs restored
+- [x] Terminal pane splits and directions are preserved
+- [x] Each terminal pane opens in its previously saved working directory
+- [x] Active tab selection is preserved across restart
+- [x] Active project is preserved across restart
+- [x] Browser tabs restore to their saved URLs
+- [x] Workspace state auto-saves on every meaningful change (debounced)
+- [x] Missing directories fall back gracefully (no crash, no blank screen)
+- [x] TypeScript strict mode passes with no errors
 
 ## Sources
 
