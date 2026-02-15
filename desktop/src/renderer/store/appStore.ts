@@ -5,15 +5,12 @@ import { immer } from "zustand/middleware/immer";
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
 
 // Workspace tab types
-export type TabType = "terminal" | "browser" | "breadcrumb" | "welcome";
+export type TabType = "terminal" | "welcome";
 
 export interface WorkspaceTab {
   id: string;
   type: TabType;
   title: string;
-  icon?: string;
-  // Browser-specific
-  url?: string;
   // Terminal-specific
   terminalSessionId?: string;
   // Project-scoped
@@ -239,7 +236,6 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
       id: t.id,
       type: t.type,
       title: t.title,
-      url: t.url,
       projectId: t.projectId,
     })),
     activeTabId: state.activeTabId,
@@ -636,7 +632,7 @@ export const useAppStore = create<AppStore>()(
           }
         }
 
-        const validTabTypes: TabType[] = ["terminal", "browser", "breadcrumb", "welcome"];
+        const validTabTypes: TabType[] = ["terminal", "welcome"];
 
         // Restore tabs, filtering out any with invalid types
         state.tabs = snapshot.tabs

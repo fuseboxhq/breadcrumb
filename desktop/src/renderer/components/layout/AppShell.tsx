@@ -52,13 +52,14 @@ export function AppShell() {
       const restoreWorkspace = useAppStore.getState().restoreWorkspace;
       if (workspaceSettings.tabs && Array.isArray(workspaceSettings.tabs) && workspaceSettings.tabs.length > 0) {
         restoreWorkspace({
-          tabs: workspaceSettings.tabs.map((t) => ({
-            id: t.id,
-            type: t.type as "terminal" | "browser" | "breadcrumb" | "welcome",
-            title: t.title,
-            url: t.url,
-            projectId: t.projectId,
-          })),
+          tabs: workspaceSettings.tabs
+            .filter((t) => t.type === "terminal" || t.type === "welcome")
+            .map((t) => ({
+              id: t.id,
+              type: t.type as "terminal" | "welcome",
+              title: t.title,
+              projectId: t.projectId,
+            })),
           activeTabId: workspaceSettings.activeTabId ?? null,
           terminalPanes: workspaceSettings.terminalPanes ?? {},
           activeProjectId: workspaceSettings.activeProjectId ?? null,

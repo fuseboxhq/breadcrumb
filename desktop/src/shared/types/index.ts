@@ -1,6 +1,4 @@
-// ─── Wired IPC Channels ──────────────────────────────────────────────────────
-// These channels have registered handlers in main process and preload API.
-// For planned (not yet wired) channels, see ./planned.ts
+// ─── IPC Channels ───────────────────────────────────────────────────────────
 
 export const IPC_CHANNELS = {
   // Settings channels
@@ -68,18 +66,7 @@ export const IPC_CHANNELS = {
   BROWSER_ERROR: "browser:error",
 } as const;
 
-// ─── Wired Types ─────────────────────────────────────────────────────────────
-
-// Git repository information
-export type GitProvider = "github" | "gitlab" | "azure" | "other";
-
-export interface GitInfo {
-  isGitRepo: boolean;
-  branch: string;
-  remote: string;
-  repoName: string;
-  provider: GitProvider | null;
-}
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 // Recent project information
 export interface RecentProject {

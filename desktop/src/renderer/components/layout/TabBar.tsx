@@ -4,8 +4,6 @@ import { useProjectsStore } from "../../store/projectsStore";
 
 const TAB_ICONS: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
-  browser: Terminal, // browser tabs no longer used in center
-  breadcrumb: Terminal, // breadcrumb tabs no longer used in center
   welcome: Sparkles,
 };
 
