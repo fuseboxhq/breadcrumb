@@ -19,7 +19,12 @@ const config: ForgeConfig = {
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
-      config: {},
+      config: {
+        name: "Breadcrumb",
+        setupIcon: "./assets/icon.ico",
+        authors: "Breadcrumb",
+        description: "Breadcrumb Desktop IDE",
+      },
     },
     {
       name: "@electron-forge/maker-zip",
