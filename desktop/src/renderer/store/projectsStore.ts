@@ -1,4 +1,12 @@
 import { create } from "zustand";
+import type { persistWorkspace as PersistWorkspaceFn } from "./appStore";
+
+// Lazy import to avoid circular dependency (appStore also reads projectsStore)
+function triggerWorkspacePersist(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { persistWorkspace } = require("./appStore") as { persistWorkspace: typeof PersistWorkspaceFn };
+  persistWorkspace();
+}
 
 export interface Project {
   id: string;
@@ -104,6 +112,7 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
     } else {
       set({ activeProjectId: null });
     }
+    triggerWorkspacePersist();
   },
 
   addTerminalSession: (projectId, sessionId) => {

@@ -213,6 +213,62 @@ const initialState: AppState = {
   theme: "dark",
 };
 
+// Debounced workspace persistence — writes to electron-store via IPC
+let persistWorkspaceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function buildWorkspaceSnapshot(): WorkspaceSnapshot {
+  const state = useAppStore.getState();
+  // Import projectsStore lazily to avoid circular dep at module init time
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useProjectsStore } = require("./projectsStore") as typeof import("./projectsStore");
+  const activeProjectId = useProjectsStore.getState().activeProjectId;
+
+  return {
+    tabs: state.tabs.map((t) => ({
+      id: t.id,
+      type: t.type,
+      title: t.title,
+      url: t.url,
+      projectId: t.projectId,
+    })),
+    activeTabId: state.activeTabId,
+    terminalPanes: Object.fromEntries(
+      Object.entries(state.terminalPanes).map(([tabId, tabState]) => [
+        tabId,
+        {
+          panes: tabState.panes.map((p) => ({
+            id: p.id,
+            cwd: p.cwd,
+            customLabel: p.customLabel,
+          })),
+          activePane: tabState.activePane,
+          splitDirection: tabState.splitDirection,
+        },
+      ])
+    ),
+    activeProjectId,
+  };
+}
+
+export function persistWorkspace(): void {
+  if (persistWorkspaceTimeout) clearTimeout(persistWorkspaceTimeout);
+  persistWorkspaceTimeout = setTimeout(() => {
+    const snapshot = buildWorkspaceSnapshot();
+    window.breadcrumbAPI?.setSetting("workspace", snapshot);
+    persistWorkspaceTimeout = null;
+  }, 300);
+}
+
+/** Flush any pending workspace write immediately (call before quit). */
+export function flushWorkspacePersist(): void {
+  if (persistWorkspaceTimeout) {
+    clearTimeout(persistWorkspaceTimeout);
+    persistWorkspaceTimeout = null;
+    const snapshot = buildWorkspaceSnapshot();
+    window.breadcrumbAPI?.setSetting("workspace", snapshot);
+  }
+}
+
 // Debounced layout persistence — writes to electron-store via IPC
 let persistLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -253,13 +309,15 @@ export const useAppStore = create<AppStore>()(
       }),
 
     // Tabs
-    addTab: (tab) =>
+    addTab: (tab) => {
       set((state) => {
         state.tabs.push(tab);
         state.activeTabId = tab.id;
-      }),
+      });
+      persistWorkspace();
+    },
 
-    removeTab: (id) =>
+    removeTab: (id) => {
       set((state) => {
         const newTabs = state.tabs.filter((t) => t.id !== id);
         const newActiveId =
@@ -274,23 +332,29 @@ export const useAppStore = create<AppStore>()(
         if (state.zoomedPane?.tabId === id) {
           state.zoomedPane = null;
         }
-      }),
+      });
+      persistWorkspace();
+    },
 
-    setActiveTab: (id) =>
+    setActiveTab: (id) => {
       set((state) => {
         state.activeTabId = id;
-      }),
+      });
+      persistWorkspace();
+    },
 
-    updateTab: (id, updates) =>
+    updateTab: (id, updates) => {
       set((state) => {
         const tab = state.tabs.find((t) => t.id === id);
         if (tab) {
           Object.assign(tab, updates);
         }
-      }),
+      });
+      persistWorkspace();
+    },
 
     // Terminal pane management
-    initializeTabPanes: (tabId, workingDirectory) =>
+    initializeTabPanes: (tabId, workingDirectory) => {
       set((state) => {
         if (!state.terminalPanes[tabId]) {
           state.terminalPanes[tabId] = {
@@ -306,9 +370,11 @@ export const useAppStore = create<AppStore>()(
             splitDirection: "horizontal",
           };
         }
-      }),
+      });
+      persistWorkspace();
+    },
 
-    addPane: (tabId, direction) =>
+    addPane: (tabId, direction) => {
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
@@ -332,9 +398,11 @@ export const useAppStore = create<AppStore>()(
           lastActivity: Date.now(),
         });
         tabState.activePane = id;
-      }),
+      });
+      persistWorkspace();
+    },
 
-    removePane: (tabId, paneId) =>
+    removePane: (tabId, paneId) => {
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
@@ -350,7 +418,9 @@ export const useAppStore = create<AppStore>()(
         if (state.zoomedPane?.tabId === tabId && state.zoomedPane?.paneId === paneId) {
           state.zoomedPane = null;
         }
-      }),
+      });
+      persistWorkspace();
+    },
 
     setActivePane: (tabId, paneId) =>
       set((state) => {
@@ -367,7 +437,7 @@ export const useAppStore = create<AppStore>()(
           tabState.splitDirection === "horizontal" ? "vertical" : "horizontal";
       }),
 
-    updatePaneCwd: (tabId, paneId, cwd) =>
+    updatePaneCwd: (tabId, paneId, cwd) => {
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
@@ -377,7 +447,9 @@ export const useAppStore = create<AppStore>()(
           pane.cwd = cwd;
           pane.lastActivity = Date.now();
         }
-      }),
+      });
+      persistWorkspace();
+    },
 
     updatePaneProcess: (tabId, paneId, processName, processLabel) =>
       set((state) => {
@@ -417,13 +489,15 @@ export const useAppStore = create<AppStore>()(
         }
       }),
 
-    setPaneCustomLabel: (tabId, paneId, label) =>
+    setPaneCustomLabel: (tabId, paneId, label) => {
       set((state) => {
         const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
         if (pane) {
           pane.customLabel = label || undefined;
         }
-      }),
+      });
+      persistWorkspace();
+    },
 
     clearTabPanes: (tabId) =>
       set((state) => {

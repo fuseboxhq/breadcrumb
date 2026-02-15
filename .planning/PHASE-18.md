@@ -83,7 +83,7 @@ No new dependencies needed.
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
 | breadcrumb-uhk.1 | Define WorkspaceSnapshot type and extend electron-store schema | done | Low | - |
-| breadcrumb-uhk.2 | Implement debounced workspace auto-save from Zustand actions | open | Medium | uhk.1 |
+| breadcrumb-uhk.2 | Implement debounced workspace auto-save from Zustand actions | done | Medium | uhk.1 |
 | breadcrumb-uhk.3 | Implement workspace restore on app startup | open | High | uhk.1 |
 | breadcrumb-uhk.4 | Handle edge cases: stale paths, missing projects, before-quit flush | open | Medium | uhk.3 |
 | breadcrumb-uhk.5 | Integration testing and TypeScript verification | open | Medium | uhk.4 |
