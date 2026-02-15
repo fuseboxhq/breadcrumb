@@ -1,11 +1,11 @@
 # Project State
 
-**Current Phase:** None
+**Current Phase:** PHASE-18
 **Last Updated:** 2026-02-14
 
 ## Active Work
 
-(none)
+PHASE-18: Workspace Persistence & Session Restore (not_started)
 
 ## Completed Phases
 
