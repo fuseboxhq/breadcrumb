@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-24: Git Integration & Diff Viewer (not_started)
+PHASE-24: Git Integration & Diff Viewer (in_progress) - 6 tasks
 
 ## Completed Phases
 
