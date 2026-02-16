@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-23: Breadcrumb Panel Redesign (not_started)
+PHASE-23: Breadcrumb Panel Redesign (in_progress) - 6 tasks
 
 ## Completed Phases
 
