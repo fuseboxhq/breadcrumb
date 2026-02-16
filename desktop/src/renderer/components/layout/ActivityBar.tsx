@@ -43,6 +43,9 @@ export function ActivityBar() {
         );
       })}
 
+      {/* Separator between sidebar and right-panel groups */}
+      <div className="w-6 h-px bg-border my-1" />
+
       {/* Right panel launchers */}
       {RIGHT_PANEL_ITEMS.map(({ type, icon: Icon, label }) => {
         const isActive = rightPanelPanes.some((p) => p.type === type);

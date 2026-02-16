@@ -53,7 +53,7 @@ export function SidebarPanel() {
       {/* Header */}
       <div className="h-9 px-4 flex items-center gap-2 border-b border-border shrink-0">
         <Icon className="w-3.5 h-3.5 text-foreground-muted" />
-        <span className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted">
+        <span className="text-2xs font-medium uppercase tracking-wider text-foreground-muted">
           {label}
         </span>
       </div>

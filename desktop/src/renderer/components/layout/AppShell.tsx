@@ -207,10 +207,10 @@ export function AppShell() {
                 <SidebarPanel />
               </Panel>
               <PanelResizeHandle
-                className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+                className="w-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50 transition-default group relative"
                 aria-label="Resize sidebar"
               >
-                <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-primary/40 transition-default" />
+                <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-accent-secondary/40 transition-default" />
               </PanelResizeHandle>
 
               {/* Center — Terminal Workspace */}
@@ -223,10 +223,10 @@ export function AppShell() {
 
               {/* Right Panel — Browser + Planning (collapsible) */}
               <PanelResizeHandle
-                className="w-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+                className="w-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50 transition-default group relative"
                 aria-label="Resize right panel"
               >
-                <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-primary/40 transition-default" />
+                <div className="absolute inset-y-0 left-[1px] w-px bg-border group-hover:bg-accent-secondary/40 transition-default" />
               </PanelResizeHandle>
               <Panel
                 id="right-panel"
@@ -257,10 +257,10 @@ export function AppShell() {
 
         {/* DevTools dock resize handle */}
         <PanelResizeHandle
-          className="h-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+          className="h-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50 transition-default group relative"
           aria-label="Resize DevTools dock"
         >
-          <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-primary/40 transition-default" />
+          <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent-secondary/40 transition-default" />
         </PanelResizeHandle>
 
         {/* Bottom panel: DevTools dock (collapsible, starts collapsed) */}

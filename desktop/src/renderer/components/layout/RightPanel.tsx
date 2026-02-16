@@ -84,10 +84,10 @@ function RightPanelPaneSlot({
     <>
       {index > 0 && (
         <PanelResizeHandle
-          className="h-[3px] bg-transparent hover:bg-primary/30 active:bg-primary/50 transition-default group relative"
+          className="h-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50 transition-default group relative"
           aria-label="Resize right panel panes"
         >
-          <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-primary/40 transition-default" />
+          <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent-secondary/40 transition-default" />
         </PanelResizeHandle>
       )}
       <Panel
