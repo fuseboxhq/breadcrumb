@@ -1,6 +1,7 @@
 import { useAppStore } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
+import { DiffViewer } from "../breadcrumb/DiffViewer";
 import {
   Terminal,
   Zap,
@@ -29,6 +30,16 @@ export function WorkspaceContent() {
       return <WelcomeView />;
     case "terminal":
       return <TerminalPanel tabId={activeTab.id} workingDirectory={projectDir} />;
+    case "diff":
+      return activeTab.diffHash && activeTab.diffProjectPath ? (
+        <DiffViewer
+          projectPath={activeTab.diffProjectPath}
+          hash={activeTab.diffHash}
+          onBack={() => useAppStore.getState().removeTab(activeTab.id)}
+        />
+      ) : (
+        <EmptyWorkspace />
+      );
     default:
       return <EmptyWorkspace />;
   }

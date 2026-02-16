@@ -1,16 +1,22 @@
-import { X, Plus, Terminal, Zap } from "lucide-react";
+import { X, Plus, Terminal, Zap, GitCompareArrows, Pin } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
+import {
+  ContextMenu,
+  MenuItem,
+  MenuSeparator,
+} from "../shared/ContextMenu";
 
 const TAB_ICONS: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
   welcome: Zap,
+  diff: GitCompareArrows,
 };
 
 export function TabBar() {
   const tabs = useAppStore((s) => s.tabs);
   const activeTabId = useAppStore((s) => s.activeTabId);
-  const { setActiveTab, removeTab, addTab } = useAppStore();
+  const { setActiveTab, removeTab, addTab, pinDiffTab } = useAppStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
@@ -30,7 +36,10 @@ export function TabBar() {
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab.type];
         const isActive = tab.id === activeTabId;
-        return (
+        const isDiff = tab.type === "diff";
+        const isUnpinned = isDiff && !tab.pinned;
+
+        const tabButton = (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -49,7 +58,9 @@ export function TabBar() {
             )}
 
             <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-accent-secondary" : ""}`} />
-            <span className="truncate">{tab.title}</span>
+            <span className={`truncate ${isUnpinned ? "italic text-foreground-muted" : ""}`}>
+              {tab.title}
+            </span>
 
             {tab.type !== "welcome" && (
               <button
@@ -65,6 +76,44 @@ export function TabBar() {
             )}
           </button>
         );
+
+        // Wrap diff tabs with context menu
+        if (isDiff) {
+          return (
+            <ContextMenu
+              key={tab.id}
+              content={
+                <>
+                  {!tab.pinned && (
+                    <MenuItem
+                      icon={<Pin className="w-3.5 h-3.5" />}
+                      label="Pin Diff"
+                      onSelect={() => pinDiffTab(tab.id)}
+                    />
+                  )}
+                  {tab.pinned && (
+                    <MenuItem
+                      icon={<Pin className="w-3.5 h-3.5" />}
+                      label="Pinned"
+                      disabled
+                    />
+                  )}
+                  <MenuSeparator />
+                  <MenuItem
+                    icon={<X className="w-3.5 h-3.5" />}
+                    label="Close Diff"
+                    destructive
+                    onSelect={() => removeTab(tab.id)}
+                  />
+                </>
+              }
+            >
+              {tabButton}
+            </ContextMenu>
+          );
+        }
+
+        return tabButton;
       })}
 
       <button

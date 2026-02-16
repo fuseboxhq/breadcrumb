@@ -31,7 +31,7 @@ import {
   usePhaseCommits,
   type CommitInfo,
 } from "../../store/gitStore";
-import { DiffViewer } from "./DiffViewer";
+import { useAppStore } from "../../store/appStore";
 
 // Stable empty references to avoid Zustand snapshot infinite-loop
 const EMPTY_PHASES: PhaseSummary[] = [];
@@ -288,7 +288,20 @@ function DashboardBody({
     (s) => s.projects[projectPath]?.capabilities ?? null
   );
   const refreshProject = usePlanningStore((s) => s.refreshProject);
-  const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
+  const openDiffTab = useAppStore((s) => s.openDiffTab);
+
+  // Look up commit subject for tab title
+  const gitCommits = useGitStore(
+    (s) => s.projects[projectPath]?.commits ?? []
+  ) as CommitInfo[];
+
+  const handleSelectCommit = useCallback(
+    (hash: string) => {
+      const commit = gitCommits.find((c) => c.hash === hash);
+      openDiffTab(projectPath, hash, commit?.subject);
+    },
+    [projectPath, openDiffTab, gitCommits]
+  );
 
   // Progress summary
   const completedPhases = phases.filter((p) => p.status === "complete").length;
@@ -326,17 +339,6 @@ function DashboardBody({
         icon={ClipboardList}
         title="No phases yet"
         description="Run /bc:new-phase or /bc:roadmap to create your first phase"
-      />
-    );
-  }
-
-  // If a commit is selected, show the diff viewer
-  if (selectedCommit) {
-    return (
-      <DiffViewer
-        projectPath={projectPath}
-        hash={selectedCommit}
-        onBack={() => setSelectedCommit(null)}
       />
     );
   }
@@ -385,7 +387,7 @@ function DashboardBody({
       <PhasePipeline
         phases={phases}
         projectPath={projectPath}
-        onSelectCommit={setSelectedCommit}
+        onSelectCommit={handleSelectCommit}
       />
 
       {/* Active Task List */}

@@ -5,7 +5,7 @@ import { immer } from "zustand/middleware/immer";
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
 
 // Workspace tab types
-export type TabType = "terminal" | "welcome";
+export type TabType = "terminal" | "welcome" | "diff";
 
 export interface WorkspaceTab {
   id: string;
@@ -15,6 +15,11 @@ export interface WorkspaceTab {
   terminalSessionId?: string;
   // Project-scoped
   projectId?: string;
+  // Diff-specific
+  diffHash?: string;
+  diffProjectPath?: string;
+  /** Unpinned diff tabs get replaced when opening a new diff */
+  pinned?: boolean;
 }
 
 // Terminal pane state (shared between TerminalPanel and sidebar)
@@ -112,6 +117,9 @@ export interface SerializedTab {
   title: string;
   url?: string;
   projectId?: string;
+  diffHash?: string;
+  diffProjectPath?: string;
+  pinned?: boolean;
 }
 
 export interface WorkspaceSnapshot {
@@ -160,6 +168,10 @@ export interface AppActions {
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   updateTab: (id: string, updates: Partial<WorkspaceTab>) => void;
+
+  // Diff tabs — preview behavior
+  openDiffTab: (projectPath: string, hash: string, commitSubject?: string) => void;
+  pinDiffTab: (tabId: string) => void;
 
   // Terminal pane management
   initializeTabPanes: (tabId: string, workingDirectory?: string) => void;
@@ -232,12 +244,14 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
   }
 
   return {
-    tabs: state.tabs.map((t) => ({
-      id: t.id,
-      type: t.type,
-      title: t.title,
-      projectId: t.projectId,
-    })),
+    tabs: state.tabs
+      .filter((t) => t.type !== "diff") // Don't persist diff tabs across restarts
+      .map((t) => ({
+        id: t.id,
+        type: t.type,
+        title: t.title,
+        projectId: t.projectId,
+      })),
     activeTabId: state.activeTabId,
     terminalPanes: Object.fromEntries(
       Object.entries(state.terminalPanes).map(([tabId, tabState]) => [
@@ -356,6 +370,51 @@ export const useAppStore = create<AppStore>()(
         const tab = state.tabs.find((t) => t.id === id);
         if (tab) {
           Object.assign(tab, updates);
+        }
+      });
+      persistWorkspace();
+    },
+
+    // Diff tabs — preview behavior: reuse unpinned diff tab, or create new
+    openDiffTab: (projectPath, hash, commitSubject) => {
+      set((state) => {
+        // Find an existing unpinned diff tab
+        const unpinned = state.tabs.find(
+          (t) => t.type === "diff" && !t.pinned
+        );
+
+        if (unpinned) {
+          // Reuse it — update with new diff data
+          unpinned.diffHash = hash;
+          unpinned.diffProjectPath = projectPath;
+          unpinned.title = commitSubject
+            ? `${hash.slice(0, 7)} ${commitSubject}`
+            : `Diff ${hash.slice(0, 7)}`;
+          state.activeTabId = unpinned.id;
+        } else {
+          // No unpinned diff tab — create a new one
+          const tab: WorkspaceTab = {
+            id: `diff-${Date.now()}`,
+            type: "diff",
+            title: commitSubject
+              ? `${hash.slice(0, 7)} ${commitSubject}`
+              : `Diff ${hash.slice(0, 7)}`,
+            diffHash: hash,
+            diffProjectPath: projectPath,
+            pinned: false,
+          };
+          state.tabs.push(tab);
+          state.activeTabId = tab.id;
+        }
+      });
+      persistWorkspace();
+    },
+
+    pinDiffTab: (tabId) => {
+      set((state) => {
+        const tab = state.tabs.find((t) => t.id === tabId);
+        if (tab && tab.type === "diff") {
+          tab.pinned = true;
         }
       });
       persistWorkspace();
@@ -632,7 +691,7 @@ export const useAppStore = create<AppStore>()(
           }
         }
 
-        const validTabTypes: TabType[] = ["terminal", "welcome"];
+        const validTabTypes: TabType[] = ["terminal", "welcome", "diff"];
 
         // Restore tabs, filtering out any with invalid types
         state.tabs = snapshot.tabs
