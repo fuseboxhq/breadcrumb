@@ -487,7 +487,8 @@ function PhasePipeline({
   );
 }
 
-// Placeholder for rjx.3 — inline task expansion
+// ── Inline Task Expansion ────────────────────────────────────────────────────
+
 function PhaseTasksExpanded({
   projectPath,
   phaseId,
@@ -496,9 +497,11 @@ function PhaseTasksExpanded({
   phaseId: string;
 }) {
   const fetchPhaseDetail = usePlanningStore((s) => s.fetchPhaseDetail);
+  const fetchBeadsTasks = usePlanningStore((s) => s.fetchBeadsTasks);
   const detail = usePlanningStore(
     (s) => s.projects[projectPath]?.phaseDetails[phaseId] ?? null
   );
+  const [showDone, setShowDone] = useState(false);
 
   useEffect(() => {
     if (!detail) {
@@ -506,9 +509,16 @@ function PhaseTasksExpanded({
     }
   }, [projectPath, phaseId, detail, fetchPhaseDetail]);
 
+  // Fetch beads tasks for dependency info when detail loads
+  useEffect(() => {
+    if (detail?.beadsEpic) {
+      fetchBeadsTasks(projectPath, detail.beadsEpic);
+    }
+  }, [projectPath, detail?.beadsEpic, fetchBeadsTasks]);
+
   if (!detail) {
     return (
-      <div className="ml-6 pl-3 border-l border-border py-2">
+      <div className="ml-6 pl-3 border-l border-border py-2 animate-fade-in">
         <div className="space-y-1.5">
           {[1, 2, 3].map((i) => (
             <div
@@ -524,7 +534,7 @@ function PhaseTasksExpanded({
 
   if (detail.tasks.length === 0) {
     return (
-      <div className="ml-6 pl-3 border-l border-border py-2">
+      <div className="ml-6 pl-3 border-l border-border py-2 animate-fade-in">
         <p className="text-2xs text-foreground-muted">
           No tasks — run /bc:plan {phaseId}
         </p>
@@ -532,27 +542,130 @@ function PhaseTasksExpanded({
     );
   }
 
+  // Group tasks by status
+  const readyTasks = detail.tasks.filter(
+    (t) => t.status !== "done" && t.status !== "in_progress" && t.status !== "blocked"
+  );
+  const inProgressTasks = detail.tasks.filter(
+    (t) => t.status === "in_progress"
+  );
+  const blockedTasks = detail.tasks.filter((t) => t.status === "blocked");
+  const doneTasks = detail.tasks.filter((t) => t.status === "done");
+
   return (
-    <div className="ml-6 pl-3 border-l border-border py-1">
-      {detail.tasks.map((task) => (
-        <div
-          key={task.id}
-          className="flex items-center gap-2 py-1"
-        >
-          <TaskStatusDot status={task.status} />
-          <span
-            className={`text-2xs truncate flex-1 ${
-              task.status === "done"
-                ? "text-foreground-muted line-through"
-                : task.status === "in_progress"
-                  ? "text-foreground"
-                  : "text-foreground-secondary"
-            }`}
+    <div className="ml-6 pl-3 border-l border-border py-1.5 animate-fade-in">
+      {/* In Progress */}
+      {inProgressTasks.length > 0 && (
+        <TaskGroup
+          label="In Progress"
+          count={inProgressTasks.length}
+          variant="warning"
+          tasks={inProgressTasks}
+        />
+      )}
+
+      {/* Ready */}
+      {readyTasks.length > 0 && (
+        <TaskGroup
+          label="Ready"
+          count={readyTasks.length}
+          variant="teal"
+          tasks={readyTasks}
+        />
+      )}
+
+      {/* Blocked */}
+      {blockedTasks.length > 0 && (
+        <TaskGroup
+          label="Blocked"
+          count={blockedTasks.length}
+          variant="destructive"
+          tasks={blockedTasks}
+        />
+      )}
+
+      {/* Done — collapsed by default */}
+      {doneTasks.length > 0 && (
+        <div className="mt-1">
+          <button
+            onClick={() => setShowDone(!showDone)}
+            className="flex items-center gap-1 text-2xs text-foreground-muted hover:text-foreground-secondary transition-default py-0.5"
           >
-            {task.title}
-          </span>
+            <ChevronRight
+              className={`w-3 h-3 transition-transform duration-150 ${
+                showDone ? "rotate-90" : ""
+              }`}
+            />
+            Done ({doneTasks.length})
+          </button>
+          {showDone && (
+            <div className="mt-0.5 animate-fade-in">
+              {doneTasks.map((task) => (
+                <TaskRow key={task.id} task={task} />
+              ))}
+            </div>
+          )}
         </div>
+      )}
+    </div>
+  );
+}
+
+function TaskGroup({
+  label,
+  count,
+  variant,
+  tasks,
+}: {
+  label: string;
+  count: number;
+  variant: "teal" | "warning" | "destructive";
+  tasks: PhaseTask[];
+}) {
+  const badgeClasses = {
+    teal: "bg-accent-secondary/10 text-accent-secondary",
+    warning: "bg-warning/10 text-warning",
+    destructive: "bg-destructive/10 text-destructive",
+  };
+
+  return (
+    <div className="mb-1.5">
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <span
+          className={`text-2xs px-1 py-px rounded ${badgeClasses[variant]}`}
+        >
+          {label} ({count})
+        </span>
+      </div>
+      {tasks.map((task) => (
+        <TaskRow key={task.id} task={task} />
       ))}
+    </div>
+  );
+}
+
+function TaskRow({ task }: { task: PhaseTask }) {
+  return (
+    <div className="flex items-center gap-2 py-0.5 group">
+      <TaskStatusDot status={task.status} />
+      <span
+        className={`text-2xs truncate flex-1 ${
+          task.status === "done"
+            ? "text-foreground-muted line-through"
+            : task.status === "in_progress"
+              ? "text-foreground"
+              : task.status === "blocked"
+                ? "text-foreground-secondary"
+                : "text-foreground-secondary"
+        }`}
+      >
+        {task.title}
+      </span>
+      {task.complexity && task.status !== "done" && (
+        <span className="text-2xs text-foreground-muted/60 font-mono shrink-0 opacity-0 group-hover:opacity-100 transition-default">
+          {task.complexity}
+        </span>
+      )}
     </div>
   );
 }
