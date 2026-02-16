@@ -1,8 +1,9 @@
 # Phase 23: Breadcrumb Panel Redesign
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-rjx
 **Created:** 2026-02-14
+**Completed:** 2026-02-14
 
 ## Objective
 
@@ -171,15 +172,15 @@ Final polish pass:
 
 ## Completion Criteria
 
-- [ ] Portfolio header shows all workspace projects with progress at a glance
-- [ ] Selecting a project in the header shows its phase pipeline and tasks below
-- [ ] Phase pipeline displays all phases with vertical stepper, status icons, and progress
-- [ ] Clicking a phase expands its tasks inline with status grouping (ready/in-flight/blocked/done)
-- [ ] Active task list shows what needs attention now (ready, in-progress, blocked)
-- [ ] Panel updates automatically when active project changes
-- [ ] Multi-project switching works smoothly (data loads, no stale state)
-- [ ] Design is cohesive with PHASE-21 polish (teal accents, Inter, consistent spacing)
-- [ ] Empty states feel designed, not placeholder
+- [x] Portfolio header shows all workspace projects with progress at a glance
+- [x] Selecting a project in the header shows its phase pipeline and tasks below
+- [x] Phase pipeline displays all phases with vertical stepper, status icons, and progress
+- [x] Clicking a phase expands its tasks inline with status grouping (ready/in-flight/blocked/done)
+- [x] Active task list shows what needs attention now (ready, in-progress, blocked)
+- [x] Panel updates automatically when active project changes
+- [x] Multi-project switching works smoothly (data loads, no stale state)
+- [x] Design is cohesive with PHASE-21 polish (teal accents, Inter, consistent spacing)
+- [x] Empty states feel designed, not placeholder
 
 ## Sources
 
