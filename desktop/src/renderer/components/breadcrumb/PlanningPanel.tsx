@@ -370,8 +370,8 @@ function ProjectPhases({
   if (phases.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
-        <div className="w-12 h-12 rounded-2xl bg-dracula-purple/10 flex items-center justify-center mb-4">
-          <LayoutGrid className="w-6 h-6 text-dracula-purple" />
+        <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center mb-4">
+          <LayoutGrid className="w-6 h-6 text-foreground-muted" />
         </div>
         <p className="text-sm text-foreground-secondary mb-1">
           No phases found
@@ -895,18 +895,18 @@ function ErrorAlert({
 function EmptyDashboard({ onAddProject }: { onAddProject: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
-      <div className="w-14 h-14 rounded-2xl bg-dracula-purple/10 flex items-center justify-center mb-5">
-        <LayoutGrid className="w-7 h-7 text-dracula-purple" />
+      <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center mb-4">
+        <LayoutGrid className="w-6 h-6 text-foreground-muted" />
       </div>
       <p className="text-sm font-medium text-foreground-secondary mb-1">
         No projects in workspace
       </p>
       <p className="text-2xs text-foreground-muted mb-4 max-w-xs">
-        Add a project folder to see its phases, tasks, and progress right here.
+        Add a project folder to see its phases, tasks, and progress.
       </p>
       <button
         onClick={onAddProject}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-default"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-secondary/10 text-accent-secondary text-sm font-medium hover:bg-accent-secondary/15 transition-default"
       >
         <FolderOpen className="w-4 h-4" />
         Add Project

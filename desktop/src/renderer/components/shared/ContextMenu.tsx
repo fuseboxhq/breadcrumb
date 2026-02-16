@@ -54,7 +54,7 @@ export function MenuItem({
         transition-default select-none
         ${destructive
           ? "text-foreground-secondary data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive"
-          : "text-foreground-secondary data-[highlighted]:bg-primary/10 data-[highlighted]:text-foreground"
+          : "text-foreground-secondary data-[highlighted]:bg-accent-secondary/10 data-[highlighted]:text-foreground"
         }
         data-[disabled]:text-foreground-muted data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none
       `}

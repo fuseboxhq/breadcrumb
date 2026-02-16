@@ -86,8 +86,8 @@ export function ExtensionsPanel() {
           <SkeletonList rows={3} />
         ) : extensions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
-            <div className="w-10 h-10 rounded-xl bg-dracula-purple/10 flex items-center justify-center mb-3">
-              <Puzzle className="w-5 h-5 text-dracula-purple" />
+            <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center mb-3">
+              <Puzzle className="w-5 h-5 text-foreground-muted" />
             </div>
             <p className="text-sm text-foreground-secondary mb-1">No extensions</p>
             <p className="text-2xs text-foreground-muted">
@@ -131,7 +131,7 @@ function ExtensionCard({
     <div
       className={`rounded-lg border transition-default ${
         isSelected
-          ? "border-primary/20 bg-primary/5"
+          ? "border-accent-secondary/20 bg-accent-secondary/5"
           : "border-transparent hover:bg-background-raised"
       }`}
     >

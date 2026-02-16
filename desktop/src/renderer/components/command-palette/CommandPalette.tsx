@@ -144,7 +144,7 @@ export function CommandPalette() {
                   key={cmd.id}
                   value={cmd.id}
                   onSelect={cmd.action}
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm cursor-pointer transition-default data-[selected=true]:bg-primary/10 data-[selected=true]:text-foreground text-foreground-secondary"
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm cursor-pointer transition-default data-[selected=true]:bg-accent-secondary/10 data-[selected=true]:text-foreground text-foreground-secondary"
                 >
                   <cmd.icon className="w-4 h-4 text-foreground-muted shrink-0" />
                   <div className="flex-1 min-w-0">

@@ -301,8 +301,8 @@ function BrowserError({
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
       <div className="text-center animate-fade-in max-w-sm px-8">
-        <div className="w-14 h-14 rounded-2xl bg-dracula-red/10 flex items-center justify-center mx-auto mb-5">
-          <AlertTriangle className="w-7 h-7 text-dracula-red" />
+        <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-6 h-6 text-destructive" />
         </div>
         <p className="text-sm font-medium text-foreground mb-1.5">{title}</p>
         <p className="text-2xs text-foreground-muted mb-1 font-mono bg-background-raised px-3 py-1.5 rounded-lg inline-block break-all">
