@@ -51,6 +51,8 @@ const config: Config = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          secondary: "hsl(var(--accent-secondary))",
+          "secondary-foreground": "hsl(var(--accent-secondary-foreground))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -83,6 +85,8 @@ const config: Config = {
         lg: "var(--shadow-lg)",
         glow: "var(--shadow-glow)",
         "glow-strong": "var(--shadow-glow-strong)",
+        "glow-teal": "var(--shadow-glow-teal)",
+        "glow-teal-strong": "var(--shadow-glow-teal-strong)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

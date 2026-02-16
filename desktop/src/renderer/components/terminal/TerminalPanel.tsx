@@ -243,7 +243,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                 className={`
                   group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5 max-w-32
                   ${activePane === pane.id
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-accent-secondary/10 text-accent-secondary"
                     : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
                   }
                 `}
@@ -282,7 +282,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
               onClick={() => togglePaneZoom(tabId, activePane)}
               className={`p-1 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none ${
                 isZoomed
-                  ? "text-primary hover:text-primary/80 hover:bg-primary/10"
+                  ? "text-accent-secondary hover:text-accent-secondary/80 hover:bg-accent-secondary/10"
                   : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
               }`}
               title={isZoomed ? "Restore panes (⇧⌘↵)" : "Maximize pane (⇧⌘↵)"}
@@ -366,7 +366,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                   <div
                     className={`h-full transition-default ${
                       activePane === pane.id
-                        ? "ring-1 ring-primary/20 rounded-sm"
+                        ? "ring-1 ring-accent-secondary/20 rounded-sm"
                         : panes.length > 1 ? "opacity-90 hover:opacity-100" : ""
                     }`}
                     onClick={() => setActivePane(pane.id)}

@@ -95,7 +95,7 @@ function ActivityButton({
         className={`
           relative w-10 h-10 flex items-center justify-center rounded-lg transition-default
           ${isActive
-            ? "text-primary bg-primary/10 shadow-glow"
+            ? "text-accent-secondary bg-accent-secondary/10 shadow-glow-teal"
             : "text-foreground-muted hover:text-foreground-secondary hover:bg-background-raised"
           }
         `}
@@ -104,7 +104,7 @@ function ActivityButton({
         <Icon className="w-[18px] h-[18px]" />
         {/* Active indicator bar */}
         {isActive && (
-          <div className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full bg-primary" />
+          <div className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full bg-accent-secondary" />
         )}
       </button>
 

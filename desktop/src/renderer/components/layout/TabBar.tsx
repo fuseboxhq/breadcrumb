@@ -45,10 +45,10 @@ export function TabBar() {
           >
             {/* Active tab indicator — accent underline at top */}
             {isActive && (
-              <div className="absolute top-0 left-1 right-1 h-[2px] rounded-b-full bg-primary" />
+              <div className="absolute top-0 left-1 right-1 h-[2px] rounded-b-full bg-accent-secondary" />
             )}
 
-            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-primary" : ""}`} />
+            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-accent-secondary" : ""}`} />
             <span className="truncate">{tab.title}</span>
 
             {tab.type !== "welcome" && (

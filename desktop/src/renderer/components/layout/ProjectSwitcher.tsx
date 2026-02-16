@@ -91,7 +91,7 @@ export function ProjectSwitcher() {
                     key={project.id}
                     className={`group w-full flex items-center gap-2 px-3 py-2 mx-1 rounded-lg cursor-pointer transition-default text-left ${
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-accent-secondary/10 text-accent-secondary"
                         : "text-foreground hover:bg-muted/50"
                     }`}
                     onClick={() => {
@@ -99,7 +99,7 @@ export function ProjectSwitcher() {
                       setIsOpen(false);
                     }}
                   >
-                    <FolderOpen className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : "text-foreground-muted"}`} />
+                    <FolderOpen className={`w-4 h-4 shrink-0 ${isActive ? "text-accent-secondary" : "text-foreground-muted"}`} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{project.name}</div>
                       <div className="text-2xs text-foreground-muted truncate font-mono">
@@ -108,7 +108,7 @@ export function ProjectSwitcher() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {isActive && (
-                        <Check className="w-3.5 h-3.5 text-primary" />
+                        <Check className="w-3.5 h-3.5 text-accent-secondary" />
                       )}
                       {confirmingRemove === project.id ? (
                         <div className="flex items-center gap-1 animate-fade-in">

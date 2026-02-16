@@ -217,7 +217,7 @@ function ExplorerView() {
                   }}
                   className={`group w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-default ${
                     isActive
-                      ? "bg-primary/10 border border-primary/20"
+                      ? "bg-accent-secondary/10 border border-accent-secondary/20"
                       : "text-foreground-secondary hover:bg-muted/50 border border-transparent"
                   }`}
                 >
@@ -228,11 +228,11 @@ function ExplorerView() {
                   />
                   <FolderOpen
                     className={`w-4 h-4 shrink-0 ${
-                      isActive ? "text-primary" : "text-foreground-muted"
+                      isActive ? "text-accent-secondary" : "text-foreground-muted"
                     }`}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>
+                    <div className={`text-sm font-medium truncate ${isActive ? "text-accent-secondary" : ""}`}>
                       {project.name}
                     </div>
                     <div className="text-2xs text-foreground-muted truncate">
@@ -398,7 +398,7 @@ function TerminalsView() {
                 icon: <ProcessIcon processName={pane.processName} className="w-3 h-3" />,
                 isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
                 badge: isPaneZoomed ? (
-                  <Maximize2 className="w-2.5 h-2.5 text-primary" />
+                  <Maximize2 className="w-2.5 h-2.5 text-accent-secondary" />
                 ) : undefined,
               };
             })
@@ -709,7 +709,7 @@ function SettingsView() {
                   onClick={() => updateTerminalSetting("cursorStyle", style)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-default capitalize ${
                     terminal.cursorStyle === style
-                      ? "bg-primary/20 text-primary border border-primary/30"
+                      ? "bg-accent-secondary/20 text-accent-secondary border border-accent-secondary/30"
                       : "bg-background border border-border text-foreground-secondary hover:bg-muted/50"
                   }`}
                 >

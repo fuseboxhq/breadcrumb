@@ -80,7 +80,7 @@ export function StatusBar() {
         <StatusItem
           icon={PanelRight}
           label={rightPanelOpen ? `${rightPanelPanes.length} pane${rightPanelPanes.length !== 1 ? "s" : ""}` : "Panel"}
-          color={rightPanelOpen ? "text-primary" : undefined}
+          color={rightPanelOpen ? "text-accent-secondary" : undefined}
           onClick={toggleRightPanel}
         />
 

@@ -39,9 +39,13 @@
     --secondary: 228 6% 15%;           /* #252528 */
     --secondary-foreground: 0 0% 90%;
 
-    /* Accent — vibrant for active states (distinct from secondary!) */
+    /* Accent — purple for brand actions */
     --accent: 265 89% 78%;             /* #bd93f9 — matches primary */
     --accent-foreground: 228 10% 7%;
+
+    /* Secondary accent — teal for active/highlight states */
+    --accent-secondary: 191 80% 70%;   /* #5ec4d8 — refined Dracula cyan */
+    --accent-secondary-foreground: 228 10% 7%;
 
     /* Muted — subdued backgrounds */
     --muted: 228 5% 18%;               /* #2a2a30 */
@@ -83,6 +87,8 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
     --shadow-glow: 0 0 12px -2px hsl(265 89% 78% / 0.3);
     --shadow-glow-strong: 0 0 20px -4px hsl(265 89% 78% / 0.4);
+    --shadow-glow-teal: 0 0 12px -2px hsl(191 80% 70% / 0.3);
+    --shadow-glow-teal-strong: 0 0 20px -4px hsl(191 80% 70% / 0.4);
 
     /* Typography */
     --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
@@ -219,6 +225,14 @@
 
   .glow-strong {
     box-shadow: var(--shadow-glow-strong);
+  }
+
+  .glow-teal {
+    box-shadow: var(--shadow-glow-teal);
+  }
+
+  .glow-teal-strong {
+    box-shadow: var(--shadow-glow-teal-strong);
   }
 
   .glass {

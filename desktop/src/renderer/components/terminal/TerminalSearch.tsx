@@ -98,7 +98,7 @@ export function TerminalSearch({ searchAddon, isVisible, onClose }: TerminalSear
         onClick={() => setUseRegex(!useRegex)}
         className={`p-1 rounded transition-default ${
           useRegex
-            ? "bg-primary/20 text-primary"
+            ? "bg-accent-secondary/20 text-accent-secondary"
             : "text-foreground-muted hover:text-foreground-secondary"
         }`}
         title="Use regex"
