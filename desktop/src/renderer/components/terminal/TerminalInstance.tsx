@@ -30,13 +30,13 @@ interface TerminalInstanceProps {
 
 // Fallback Dracula theme — used if CSS custom properties aren't available
 const FALLBACK_THEME = {
-  background: "#0a0a0f",
+  background: "#101014",
   foreground: "#f2f2f2",
   cursor: "#f2f2f2",
-  cursorAccent: "#0a0a0f",
+  cursorAccent: "#101014",
   selectionBackground: "#44475a80",
   selectionForeground: "#f2f2f2",
-  black: "#18181b",
+  black: "#1e1e22",
   red: "#ff5555",
   green: "#50fa7b",
   yellow: "#f1fa8c",

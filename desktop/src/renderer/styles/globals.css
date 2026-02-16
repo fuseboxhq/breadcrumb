@@ -5,9 +5,9 @@
 /*
  * Breadcrumb IDE Design Token System
  *
- * Aesthetic: Warp-like dark minimal + Dracula palette
- * Backgrounds: deep blacks (#0a0a0f → #111113 → #1a1a1f)
- * Accents: vibrant purple, pink, green, cyan from Dracula
+ * Aesthetic: Warp / Linear — dark, sleek, premium developer tool
+ * Backgrounds: softened darks (#101014 → #171719 → #1e1e22)
+ * Accents: Dracula purple (primary) + teal/cyan (secondary)
  * Radii: 8-12px on cards/panels (rounded, not boxy)
  * Motion: ease-out, 150-300ms
  */
@@ -16,46 +16,46 @@
   /* ─── Dark mode only (default & only theme) ─── */
   :root {
     /* Background depth layers (darkest → lightest) */
-    --background: 240 12% 4%;          /* #0a0a0f — deepest, app background */
-    --background-raised: 240 8% 7%;    /* #111113 — raised surfaces */
-    --background-overlay: 240 6% 10%;  /* #18181b — overlays, dropdowns */
+    --background: 228 10% 7%;          /* #101014 — deepest, app background */
+    --background-raised: 228 8% 10%;   /* #171719 — raised surfaces */
+    --background-overlay: 228 6% 13%;  /* #1e1e22 — overlays, dropdowns */
 
     /* Foreground hierarchy */
     --foreground: 0 0% 95%;            /* #f2f2f2 — primary text */
-    --foreground-secondary: 240 5% 65%;/* #9ca3af — secondary text */
-    --foreground-muted: 240 4% 46%;    /* #6b7280 — muted/disabled text */
+    --foreground-secondary: 228 5% 65%;/* #9da3af — secondary text */
+    --foreground-muted: 228 4% 46%;    /* #6b7080 — muted/disabled text */
 
     /* Card & surface */
-    --card: 240 8% 7%;                 /* #111113 — same as raised */
+    --card: 228 8% 10%;                /* #171719 — same as raised */
     --card-foreground: 0 0% 95%;
-    --popover: 240 6% 10%;             /* #18181b */
+    --popover: 228 6% 13%;             /* #1e1e22 */
     --popover-foreground: 0 0% 95%;
 
     /* Primary accent — Dracula purple */
     --primary: 265 89% 78%;            /* #bd93f9 */
-    --primary-foreground: 240 12% 4%;  /* dark text on purple */
+    --primary-foreground: 228 10% 7%;  /* dark text on purple */
 
     /* Secondary — subtle surface */
-    --secondary: 240 6% 12%;           /* #1e1e24 */
+    --secondary: 228 6% 15%;           /* #252528 */
     --secondary-foreground: 0 0% 90%;
 
     /* Accent — vibrant for active states (distinct from secondary!) */
     --accent: 265 89% 78%;             /* #bd93f9 — matches primary */
-    --accent-foreground: 240 12% 4%;
+    --accent-foreground: 228 10% 7%;
 
     /* Muted — subdued backgrounds */
-    --muted: 240 5% 14%;               /* #222228 */
-    --muted-foreground: 240 4% 46%;    /* #6b7280 */
+    --muted: 228 5% 18%;               /* #2a2a30 */
+    --muted-foreground: 228 4% 46%;    /* #6b7080 */
 
     /* Semantic colors */
     --destructive: 0 72% 51%;          /* #ef4444 */
     --destructive-foreground: 0 0% 98%;
     --success: 135 76% 57%;            /* #50fa7b — Dracula green */
-    --success-foreground: 240 12% 4%;
+    --success-foreground: 228 10% 7%;
     --warning: 35 92% 63%;             /* #f1fa8c — Dracula yellow */
-    --warning-foreground: 240 12% 4%;
+    --warning-foreground: 228 10% 7%;
     --info: 191 97% 77%;               /* #8be9fd — Dracula cyan */
-    --info-foreground: 240 12% 4%;
+    --info-foreground: 228 10% 7%;
 
     /* Dracula accent palette (for direct use) */
     --dracula-purple: 265 89% 78%;     /* #bd93f9 */
@@ -67,9 +67,9 @@
     --dracula-yellow: 65 92% 76%;      /* #f1fa8c */
 
     /* Borders & inputs */
-    --border: 240 5% 14%;              /* #222228 — subtle */
-    --border-strong: 240 5% 20%;       /* #303038 — emphasized */
-    --input: 240 5% 14%;
+    --border: 228 5% 18%;              /* #2a2a30 — subtle */
+    --border-strong: 228 5% 24%;       /* #393940 — emphasized */
+    --input: 228 5% 18%;
     --ring: 265 89% 78%;               /* purple focus ring */
 
     /* Radius */
@@ -78,9 +78,9 @@
     --radius-xl: 1rem;                 /* 16px */
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
     --shadow-glow: 0 0 12px -2px hsl(265 89% 78% / 0.3);
     --shadow-glow-strong: 0 0 20px -4px hsl(265 89% 78% / 0.4);
 
@@ -104,7 +104,7 @@
   }
 
   html {
-    background-color: #0a0a0f;
+    background-color: #101014;
     color-scheme: dark;
   }
 
