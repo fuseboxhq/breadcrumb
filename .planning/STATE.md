@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-25: Git Integration Audit & Fix (not_started)
+PHASE-25: Git Integration Audit & Fix (in_progress) - 5 tasks
 
 
 ## Completed Phases

@@ -1,6 +1,6 @@
 # Phase 25: Git Integration Audit & Fix
 
-**Status:** not_started
+**Status:** in_progress
 **Beads Epic:** breadcrumb-6sn
 **Created:** 2026-02-14
 
@@ -8,51 +8,94 @@
 
 The git commit integration in the Breadcrumb planning panel is fundamentally broken. Phase commit sections only show planning-related commits (e.g. "Create PHASE-24", "Close PHASE-24") because commit linking relies on matching literal `PHASE-XX` in commit messages. But actual implementation commits use Beads task IDs (e.g. `breadcrumb-c9v.5: Diff viewer`) which never mention the phase. This phase fixes the linking pipeline, enriches future commit messages, and adds a full commit history view.
 
-## Scope
-
-**In scope:**
-- Audit and fix `GitService.extractPhaseLinks()` to resolve Beads task IDs → parent phase
-- Update `gitStore.indexCommits()` to use the improved linking
-- Enrich the `/bc:execute` commit workflow to include `PHASE-XX` in commit messages going forward
-- Add an "All Commits" view in the planning panel for browsing full project history
-- Verify the fix works against the existing commit history (retroactive linking)
-
-**Out of scope:**
-- Rewriting or amending old commit messages
-- Changes to the DiffViewer component (already fixed separately)
-- Git branch management or merge/PR features
-- CI/CD integration
-
-## Constraints
-
-- Must work with existing Beads CLI (`bd show <task-id>` to resolve parent epic)
-- Must not break the existing `phaseLinks`/`taskLinks` fields on CommitInfo
-- The task-to-phase resolution must be cached to avoid repeated `bd` calls
-- Follow existing patterns in GitService (execFile-based, async)
-
 ## Research Summary
 
-Run `/bc:plan PHASE-25` to research this phase and populate this section.
+**Overall Confidence:** HIGH
 
-## Recommended Approach
+The root cause is well-understood and the fix is straightforward. Phase files already contain the Beads epic ID mapping (e.g. `PHASE-24 → breadcrumb-c9v`). Commits contain task IDs like `breadcrumb-c9v.5`. The fix: parse planning files to build a prefix→phase map, then when processing commits, extract the task prefix and look up the phase. No `bd` CLI calls needed at runtime.
 
-1. **Fix task→phase mapping**: When `extractTaskLinks` finds task IDs like `breadcrumb-c9v.5`, resolve them to their parent epic using `bd show` or Beads data, then map epic title → phase ID
-2. **Cache the mapping**: Build a task-prefix→phase lookup table (e.g. `breadcrumb-c9v` → `PHASE-24`) so only one resolution per epic is needed
-3. **Enrich commit messages**: Update the Breadcrumb execute skill to include `[PHASE-XX]` in commit messages
-4. **All Commits view**: Add a section/tab in PlanningPanel that shows full `git log` regardless of phase linking
+### Key Patterns
+
+**Current flow (broken):**
+1. `GitService.getCommitLog()` fetches commits
+2. `extractPhaseLinks()` matches `/PHASE-\d+/g` in commit message — only finds planning commits
+3. `extractTaskLinks()` matches task IDs — but never maps them to phases
+4. `gitStore.indexCommits()` uses `commit.phaseLinks` to populate `byPhase` — empty for implementation commits
+
+**Fixed flow:**
+1. On startup or when fetching commits, read `.planning/PHASE-*.md` to build `epicPrefix → PHASE-XX` map
+2. `GitService.getCommitLog()` accepts the mapping as a parameter
+3. After extracting task links, also derive phase links from the task prefix
+4. Implementation commits now appear in `byPhase["PHASE-24"]`
+
+**Data available:**
+- `.planning/PHASE-24.md` contains `**Beads Epic:** breadcrumb-c9v`
+- Commit message `breadcrumb-c9v.5: Build diff viewer` → prefix `breadcrumb-c9v` → `PHASE-24`
+- No runtime `bd` calls needed — static file parsing is sufficient
+
+### Don't Hand-Roll
+
+| Problem | Use Instead | Why |
+|---------|-------------|-----|
+| Calling `bd show` per commit | Parse `.planning/PHASE-*.md` files | Static files, no process spawning, instant |
+
+### Pitfalls
+
+- **Phase file naming inconsistency**: Some files are `PHASE-13-right-panel-layout-overhaul.md` not `PHASE-13.md`. Regex must handle both.
+- **Multiple task IDs per commit**: A commit can reference tasks from different epics. Each should add its own phase link.
+- **Epic prefix collision**: Won't happen — Beads generates unique prefixes per project.
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| - | No tasks yet | - | - |
+| ID | Title | Status | Complexity | Dependencies |
+|----|-------|--------|------------|--------------|
+| breadcrumb-6sn.1 | Build task-prefix→phase mapping from planning files | open | Medium | - |
+| breadcrumb-6sn.2 | Fix GitService to resolve task IDs to phase links | open | Medium | breadcrumb-6sn.1 |
+| breadcrumb-6sn.3 | Update gitStore indexing with task→phase resolution | open | Low | breadcrumb-6sn.2 |
+| breadcrumb-6sn.4 | Enrich bc:execute commit messages with PHASE-XX | open | Low | - |
+| breadcrumb-6sn.5 | Add All Commits view to planning panel | open | Medium | - |
 
-Run `/bc:plan PHASE-25` to break down this phase into tasks.
+### Task Details
+
+**breadcrumb-6sn.1: Build task-prefix→phase mapping from planning files**
+- Add a method to GitService (or a new helper) that reads `.planning/PHASE-*.md` files
+- Parse each for `**Beads Epic:** <id>` to extract the epic prefix
+- Return `Map<string, string>` mapping prefix → phase ID (e.g. `breadcrumb-c9v → PHASE-24`)
+- Cache the result per project path
+- Handle file naming variants (`PHASE-13.md` vs `PHASE-13-right-panel-layout-overhaul.md`)
+
+**breadcrumb-6sn.2: Fix GitService to resolve task IDs to phase links**
+- Modify `getCommitLog()` to accept or lazily build the prefix→phase map
+- After `extractTaskLinks()`, for each task ID, extract the prefix (everything before the last `.N`)
+- Look up the prefix in the map, and add the resolved phase to `phaseLinks`
+- Keep existing `extractPhaseLinks()` for backward compat (explicit PHASE-XX mentions still work)
+
+**breadcrumb-6sn.3: Update gitStore indexing with task→phase resolution**
+- The mapping needs to be passed from renderer → main process, or built in the main process
+- Since GitService runs in main and `.planning/` is a local directory, GitService can read the files directly
+- Verify `indexCommits()` correctly indexes the now-populated `phaseLinks`
+- No gitStore changes needed if GitService returns correct `phaseLinks` — just verify
+
+**breadcrumb-6sn.4: Enrich bc:execute commit messages with PHASE-XX**
+- Update the `bc:execute` skill to include `[PHASE-XX]` in commit messages
+- Format: `breadcrumb-c9v.5: Build diff viewer [PHASE-24]`
+- This ensures future commits are findable by both regex patterns
+- Does NOT require any desktop app code changes — skill-only change
+
+**breadcrumb-6sn.5: Add All Commits view to planning panel** (frontend-design skill active)
+- Add a new section/toggle in PlanningPanel for "All Commits"
+- Shows full `git log` chronologically, not filtered by phase
+- Clicking a commit opens the diff tab (reuse existing `openDiffTab`)
+- Pagination support (reuse `fetchMoreCommits`)
 
 ## Technical Decisions
 
-- Task ID resolution will use Beads CLI (`bd show`) rather than parsing `.beads/` files directly, to stay compatible with Beads format changes
-- Commit messages will be enriched with `[PHASE-XX]` prefix, not body tags, for visibility and easier regex matching
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Mapping source | Parse `.planning/PHASE-*.md` | Static files, no process spawning, instant, already have epic IDs |
+| Where to resolve | GitService (main process) | Has filesystem access, runs before renderer sees data |
+| Commit message format | `task-id: description [PHASE-XX]` | Bracket suffix is grep-friendly and unobtrusive |
+| All Commits UI | Section in PlanningPanel | Reuses existing commit rendering, avoids new tab type |
 
 ## Completion Criteria
 
@@ -61,3 +104,10 @@ Run `/bc:plan PHASE-25` to break down this phase into tasks.
 - [ ] An "All Commits" view exists showing full project git history
 - [ ] Existing commit history is retroactively linked (no re-commit needed)
 - [ ] Phase commit counts in the pipeline view reflect actual implementation commits
+
+## Sources
+
+**HIGH confidence:**
+- Direct codebase audit: `GitService.ts`, `gitStore.ts`, `PlanningPanel.tsx`
+- Beads CLI output: `bd show`, `bd list` verified task→epic relationships
+- Planning file audit: confirmed all PHASE-*.md files contain Beads Epic IDs
