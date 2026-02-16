@@ -1,8 +1,9 @@
 # Phase 24: Git Integration & Diff Viewer
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-c9v
 **Created:** 2026-02-14
+**Completed:** 2026-02-14
 
 ## Objective
 
@@ -92,9 +93,9 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-c9v.1 | Build GitService commit log & diff methods | done | High | - |
 | breadcrumb-c9v.2 | Add IPC channels & preload bridge for git data | done | Medium | c9v.1 |
 | breadcrumb-c9v.3 | Create gitStore with commit caching & phase/task linking | done | High | c9v.2 |
-| breadcrumb-c9v.4 | Build commit history UI in phase pipeline | open | High | c9v.3 |
-| breadcrumb-c9v.5 | Build diff viewer component with @git-diff-view/react | open | High | c9v.4 |
-| breadcrumb-c9v.6 | Polish: loading states, empty states, large diff handling | open | Medium | c9v.5 |
+| breadcrumb-c9v.4 | Build commit history UI in phase pipeline | done | High | c9v.3 |
+| breadcrumb-c9v.5 | Build diff viewer component with @git-diff-view/react | done | High | c9v.4 |
+| breadcrumb-c9v.6 | Polish: loading states, empty states, large diff handling | done | Medium | c9v.5 |
 
 ### Task Details
 
