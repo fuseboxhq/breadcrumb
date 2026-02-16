@@ -26,6 +26,9 @@ export const IPC_CHANNELS = {
 
   // Git channels
   GIT_INFO: "git:info",
+  GIT_LOG: "git:log",
+  GIT_DIFF: "git:diff",
+  GIT_COMMIT_STATS: "git:commit-stats",
 
   // Project channels
   PROJECT_GET_RECENT: "project:get-recent",

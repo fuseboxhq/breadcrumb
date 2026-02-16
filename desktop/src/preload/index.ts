@@ -62,6 +62,18 @@ export interface BreadcrumbAPI {
     gitInfo?: { isGitRepo: boolean; branch: string; remote: string; repoName: string };
     error?: string;
   }>;
+  getGitLog: (
+    projectPath: string,
+    options?: { maxCount?: number; skip?: number; grep?: string }
+  ) => Promise<{ success: boolean; data?: { commits: Array<Record<string, unknown>>; hasMore: boolean }; error?: string }>;
+  getGitDiff: (
+    projectPath: string,
+    hash: string
+  ) => Promise<{ success: boolean; data?: Record<string, unknown> | null; error?: string }>;
+  getGitCommitStats: (
+    projectPath: string,
+    hash: string
+  ) => Promise<{ success: boolean; data?: Record<string, unknown> | null; error?: string }>;
 
   // Settings operations
   getSettings: () => Promise<AppSettings>;
@@ -160,6 +172,15 @@ const api: BreadcrumbAPI = {
   // Git operations
   getGitInfo: (workingDirectory) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_INFO, { workingDirectory }),
+
+  getGitLog: (projectPath, options) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_LOG, { projectPath, options }),
+
+  getGitDiff: (projectPath, hash) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_DIFF, { projectPath, hash }),
+
+  getGitCommitStats: (projectPath, hash) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_COMMIT_STATS, { projectPath, hash }),
 
   // Settings operations
   getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET_ALL),

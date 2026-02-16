@@ -90,7 +90,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
 | breadcrumb-c9v.1 | Build GitService commit log & diff methods | done | High | - |
-| breadcrumb-c9v.2 | Add IPC channels & preload bridge for git data | open | Medium | c9v.1 |
+| breadcrumb-c9v.2 | Add IPC channels & preload bridge for git data | done | Medium | c9v.1 |
 | breadcrumb-c9v.3 | Create gitStore with commit caching & phase/task linking | open | High | c9v.2 |
 | breadcrumb-c9v.4 | Build commit history UI in phase pipeline | open | High | c9v.3 |
 | breadcrumb-c9v.5 | Build diff viewer component with @git-diff-view/react | open | High | c9v.4 |
