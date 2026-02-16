@@ -38,6 +38,8 @@ export interface TerminalPane {
   customLabel?: string;
   /** Instance number for Claude Code sessions (Claude #1, #2, etc.) */
   claudeInstanceNumber?: number;
+  /** Command to run once after the shell starts (e.g. "claude\n") */
+  initialCommand?: string;
 }
 
 /** Extract folder name from an absolute path */
@@ -177,7 +179,7 @@ export interface AppActions {
 
   // Terminal pane management
   initializeTabPanes: (tabId: string, workingDirectory?: string) => void;
-  addPane: (tabId: string, direction?: "horizontal" | "vertical") => void;
+  addPane: (tabId: string, direction?: "horizontal" | "vertical", initialCommand?: string) => void;
   removePane: (tabId: string, paneId: string) => void;
   setActivePane: (tabId: string, paneId: string) => void;
   toggleSplitDirection: (tabId: string) => void;
@@ -443,7 +445,7 @@ export const useAppStore = create<AppStore>()(
       persistWorkspace();
     },
 
-    addPane: (tabId, direction) => {
+    addPane: (tabId, direction, initialCommand) => {
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
@@ -465,6 +467,7 @@ export const useAppStore = create<AppStore>()(
           sessionId,
           cwd: inheritCwd,
           lastActivity: Date.now(),
+          initialCommand,
         });
         tabState.activePane = id;
       });
@@ -537,11 +540,20 @@ export const useAppStore = create<AppStore>()(
         if (isClaude) {
           // Assign a Claude instance number if this pane doesn't already have one
           if (!pane.claudeInstanceNumber) {
-            // Collect all existing Claude instance numbers across all tabs
+            // Scope numbering per-project: only count Claude instances within
+            // tabs that share the same projectId as this tab
+            const thisTab = state.tabs.find((t) => t.id === tabId);
+            const thisProjectId = thisTab?.projectId;
+
             const usedNumbers = new Set<number>();
-            for (const tabState of Object.values(state.terminalPanes)) {
+            for (const [tid, tabState] of Object.entries(state.terminalPanes)) {
+              // Only consider tabs with the same project scope
+              const tab = state.tabs.find((t) => t.id === tid);
+              if (tab?.projectId !== thisProjectId) continue;
+
               for (const p of tabState.panes) {
-                if (p.claudeInstanceNumber && p.id !== pane.id) {
+                // Use object identity — pane IDs are NOT globally unique
+                if (p.claudeInstanceNumber && p !== pane) {
                   usedNumbers.add(p.claudeInstanceNumber);
                 }
               }
