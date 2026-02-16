@@ -20,6 +20,10 @@ interface TerminalInstanceProps {
   isActive: boolean;
   workingDirectory?: string;
   onCwdChange?: (cwd: string) => void;
+  /** Command to run once after the shell starts (e.g. "claude\n") */
+  initialCommand?: string;
+  /** Called after the initial command has been sent */
+  onInitialCommandSent?: () => void;
   // Context menu actions passed from TerminalPanel
   onSplitHorizontal?: () => void;
   onSplitVertical?: () => void;
@@ -111,6 +115,8 @@ export function TerminalInstance({
   isActive,
   workingDirectory,
   onCwdChange,
+  initialCommand,
+  onInitialCommandSent,
   onSplitHorizontal,
   onSplitVertical,
   onToggleZoom,
@@ -125,6 +131,12 @@ export function TerminalInstance({
   const [searchVisible, setSearchVisible] = useState(false);
   const [ptyExited, setPtyExited] = useState(false);
   const terminalSettings = useTerminalSettings();
+
+  // Refs for initial command — consumed once after PTY creation
+  const initialCommandRef = useRef(initialCommand);
+  initialCommandRef.current = initialCommand;
+  const onInitialCommandSentRef = useRef(onInitialCommandSent);
+  onInitialCommandSentRef.current = onInitialCommandSent;
 
   // Stable ref for settings — used during terminal creation without
   // being a dependency (so changing settings doesn't recreate the terminal)
@@ -320,6 +332,18 @@ export function TerminalInstance({
             workingDirectory: resolvedCwd,
             cols: dims.cols,
             rows: dims.rows,
+          }).then(() => {
+            // Send initial command (e.g. "claude\n") after shell starts
+            const cmd = initialCommandRef.current;
+            if (cmd && !destroyed) {
+              setTimeout(() => {
+                if (!destroyed) {
+                  window.breadcrumbAPI?.writeTerminal(sessionId, cmd);
+                  initialCommandRef.current = undefined;
+                  onInitialCommandSentRef.current?.();
+                }
+              }, 300);
+            }
           });
         }
       } catch { /* ignore — will retry on next resize */ }

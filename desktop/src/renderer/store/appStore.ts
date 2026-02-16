@@ -20,6 +20,8 @@ export interface WorkspaceTab {
   diffProjectPath?: string;
   /** Unpinned diff tabs get replaced when opening a new diff */
   pinned?: boolean;
+  /** Command to run once after the terminal shell starts (e.g. "claude\n") */
+  initialCommand?: string;
 }
 
 // Terminal pane state (shared between TerminalPanel and sidebar)

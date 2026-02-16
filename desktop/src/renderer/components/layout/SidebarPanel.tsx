@@ -27,6 +27,7 @@ import {
   Pencil,
   Maximize2,
   Minimize2,
+  Sparkles,
 } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 
@@ -189,6 +190,19 @@ function ExplorerView() {
                       }
                     />
                     <MenuItem
+                      icon={<Sparkles className="w-3.5 h-3.5" />}
+                      label="Launch Claude Code"
+                      onSelect={() =>
+                        addTab({
+                          id: `terminal-${Date.now()}`,
+                          type: "terminal",
+                          title: `Claude — ${project.name}`,
+                          projectId: project.id,
+                          initialCommand: "claude\n",
+                        })
+                      }
+                    />
+                    <MenuItem
                       icon={<Copy className="w-3.5 h-3.5" />}
                       label="Copy Path"
                       onSelect={() => handleCopyPath(project.path)}
@@ -264,6 +278,21 @@ function ExplorerView() {
                   >
                     <Plus className="w-3 h-3" />
                     <span>New Terminal</span>
+                  </button>
+                  <button
+                    onClick={() =>
+                      addTab({
+                        id: `terminal-${Date.now()}`,
+                        type: "terminal",
+                        title: `Claude — ${project.name}`,
+                        projectId: project.id,
+                        initialCommand: "claude\n",
+                      })
+                    }
+                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-[#D97757] hover:bg-[#D97757]/10 transition-default"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Claude Code</span>
                   </button>
                   <button
                     onClick={() => handleCopyPath(project.path)}
@@ -574,18 +603,33 @@ function TerminalsView() {
               return (
                 <ContextMenu
                   content={
-                    <MenuItem
-                      icon={<Plus className="w-3.5 h-3.5" />}
-                      label="New Terminal"
-                      onSelect={() =>
-                        addTab({
-                          id: `terminal-${Date.now()}`,
-                          type: "terminal",
-                          title: project?.name || "Terminal",
-                          projectId: project?.id,
-                        })
-                      }
-                    />
+                    <>
+                      <MenuItem
+                        icon={<Plus className="w-3.5 h-3.5" />}
+                        label="New Terminal"
+                        onSelect={() =>
+                          addTab({
+                            id: `terminal-${Date.now()}`,
+                            type: "terminal",
+                            title: project?.name || "Terminal",
+                            projectId: project?.id,
+                          })
+                        }
+                      />
+                      <MenuItem
+                        icon={<Sparkles className="w-3.5 h-3.5" />}
+                        label="Launch Claude Code"
+                        onSelect={() =>
+                          addTab({
+                            id: `terminal-${Date.now()}`,
+                            type: "terminal",
+                            title: project ? `Claude — ${project.name}` : "Claude Code",
+                            projectId: project?.id,
+                            initialCommand: "claude\n",
+                          })
+                        }
+                      />
+                    </>
                   }
                 >
                   {children}

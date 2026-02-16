@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2 } from "lucide-react";
+import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 import { folderName } from "../../utils/path";
+import { useProjectsStore } from "../../store/projectsStore";
 
 interface TerminalPanelProps {
   tabId: string;
@@ -18,6 +19,14 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const activePane = tabPaneState?.activePane || "pane-1";
   const splitDirection = tabPaneState?.splitDirection || "horizontal";
 
+  // Read initial command from tab (e.g. "claude\n")
+  const initialCommand = useAppStore(
+    (s) => s.tabs.find((t) => t.id === tabId)?.initialCommand
+  );
+  const tabProjectId = useAppStore(
+    (s) => s.tabs.find((t) => t.id === tabId)?.projectId
+  );
+
   // Inline rename state
   const [renamingPaneId, setRenamingPaneId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -25,6 +34,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
 
   // Store actions
   const initializeTabPanes = useAppStore((s) => s.initializeTabPanes);
+  const addTab = useAppStore((s) => s.addTab);
   const storeAddPane = useAppStore((s) => s.addPane);
   const storeRemovePane = useAppStore((s) => s.removePane);
   const storeSetActivePane = useAppStore((s) => s.setActivePane);
@@ -34,6 +44,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
   const updateTab = useAppStore((s) => s.updateTab);
   const updatePaneProcess = useAppStore((s) => s.updatePaneProcess);
+  const projects = useProjectsStore((s) => s.projects);
 
   // Zoom state
   const zoomedPane = useZoomedPane();
@@ -136,6 +147,25 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const cancelRename = useCallback(() => {
     setRenamingPaneId(null);
   }, []);
+
+  // Clear initial command after it's been sent to the PTY
+  const clearInitialCommand = useCallback(() => {
+    updateTab(tabId, { initialCommand: undefined });
+  }, [tabId, updateTab]);
+
+  // Launch Claude Code in a new terminal tab
+  const handleLaunchClaude = useCallback(() => {
+    const project = tabProjectId
+      ? projects.find((p) => p.id === tabProjectId)
+      : null;
+    addTab({
+      id: `terminal-${Date.now()}`,
+      type: "terminal",
+      title: project ? `Claude — ${project.name}` : "Claude Code",
+      projectId: tabProjectId,
+      initialCommand: "claude\n",
+    });
+  }, [tabProjectId, projects, addTab]);
 
   // Focus rename input when it appears
   useEffect(() => {
@@ -277,6 +307,14 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         </div>
 
         <div className="flex items-center gap-0.5">
+          <button
+            onClick={handleLaunchClaude}
+            className="p-1 text-foreground-muted hover:text-[#D97757] hover:bg-[#D97757]/10 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+            title="Launch Claude Code"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+          </button>
+          <div className="w-px h-3.5 bg-border/50 mx-0.5" />
           {panes.length > 1 && (
             <button
               onClick={() => togglePaneZoom(tabId, activePane)}
@@ -336,6 +374,8 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
             isActive={true}
             workingDirectory={workingDirectory}
             onCwdChange={(cwd) => handleCwdChange(panes[0].id, cwd)}
+            initialCommand={initialCommand}
+            onInitialCommandSent={clearInitialCommand}
             onSplitHorizontal={() => addPane("horizontal")}
             onSplitVertical={() => addPane("vertical")}
           />
