@@ -150,6 +150,7 @@ export function DiffViewer({
   const [showAllFiles, setShowAllFiles] = useState(false);
   const fileRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const fileListRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchDiff(projectPath, hash);
@@ -181,10 +182,18 @@ export function DiffViewer({
   }, [stats?.files]);
 
   const handleFileClick = useCallback((fileName: string) => {
-    setExpandedFile((prev) => (prev === fileName ? null : fileName));
-    setTimeout(() => {
-      fileRefs.current[fileName]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }, 50);
+    setExpandedFile((prev) => {
+      if (prev === fileName) {
+        // Collapsing — scroll back to top of file list
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+        return null;
+      }
+      // Expanding — scroll to top so the file header is visible
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      }, 50);
+      return fileName;
+    });
   }, []);
 
   // Keyboard navigation for file list
@@ -208,9 +217,16 @@ export function DiffViewer({
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 shrink-0 bg-background-raised">
         <button
-          onClick={onBack}
+          onClick={() => {
+            if (expandedFile) {
+              setExpandedFile(null);
+              scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+              onBack();
+            }
+          }}
           className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
-          aria-label="Back to pipeline"
+          aria-label={expandedFile ? "Back to file list" : "Close diff"}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -225,7 +241,7 @@ export function DiffViewer({
               </span>
             )}
           </div>
-          {commit && (
+          {commit && !expandedFile && (
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-2xs text-foreground-muted">
                 {commit.author}
@@ -235,17 +251,24 @@ export function DiffViewer({
               </span>
             </div>
           )}
+          {expandedFile && (
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-2xs font-mono text-foreground-muted truncate">
+                {expandedFile}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-thin">
         {isLoading ? (
           <DiffSkeleton />
         ) : (
           <>
-            {/* Stats summary bar */}
-            {stats && (
+            {/* Stats summary bar — hidden when viewing a single file diff */}
+            {stats && !expandedFile && (
               <div className="px-4 py-2.5 border-b border-border bg-muted/5">
                 <div className="flex items-center gap-3 text-2xs">
                   <span className="text-foreground-muted">
@@ -263,11 +286,14 @@ export function DiffViewer({
 
             {/* File list with inline diffs */}
             <div className="divide-y divide-border/50" ref={fileListRef}>
-              {visibleFiles.map((file) => {
+              {visibleFiles.map((file, fileIndex) => {
                 const fileName = file.isDeleted ? file.oldName : file.newName;
                 const isExpanded = expandedFile === fileName;
                 const fileStat = fileStatsMap.get(fileName);
                 const isTooLarge = file.lineCount > MAX_HUNK_LINES;
+
+                // When a file is expanded, hide all other files
+                if (expandedFile && !isExpanded) return null;
 
                 return (
                   <div
@@ -280,7 +306,9 @@ export function DiffViewer({
                       className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:ring-inset focus-visible:outline-none ${
                         file.isBinary
                           ? "opacity-50 cursor-default"
-                          : "hover:bg-muted/10 cursor-pointer"
+                          : isExpanded
+                            ? "bg-muted/10 sticky top-0 z-10 border-b border-border/30"
+                            : "hover:bg-muted/10 cursor-pointer"
                       }`}
                       disabled={file.isBinary}
                       tabIndex={0}
@@ -320,6 +348,12 @@ export function DiffViewer({
                         </div>
                       )}
 
+                      {isExpanded && (
+                        <span className="text-2xs text-foreground-muted/50 shrink-0">
+                          {fileIndex + 1}/{fileDiffs.length}
+                        </span>
+                      )}
+
                       {!file.isBinary && (
                         <ChevronRight
                           className={`w-3.5 h-3.5 text-foreground-muted/50 shrink-0 transition-transform duration-150 ${
@@ -329,30 +363,23 @@ export function DiffViewer({
                       )}
                     </button>
 
-                    {/* Expanded diff view with animation */}
-                    <div
-                      className="grid transition-[grid-template-rows] duration-200 ease-out"
-                      style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
-                    >
-                      <div className="overflow-hidden">
-                        {isExpanded && file.hunks && (
-                          <div className="border-t border-border/30">
-                            <FileDiffView
-                              fileName={fileName}
-                              hunks={file.hunks}
-                              isTooLarge={isTooLarge}
-                            />
-                          </div>
-                        )}
+                    {/* Expanded diff view */}
+                    {isExpanded && file.hunks && (
+                      <div className="animate-fade-in">
+                        <FileDiffView
+                          fileName={fileName}
+                          hunks={file.hunks}
+                          isTooLarge={isTooLarge}
+                        />
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            {/* "N more files" button */}
-            {hiddenFileCount > 0 && (
+            {/* "N more files" button — only show when no file is expanded */}
+            {hiddenFileCount > 0 && !expandedFile && (
               <div className="px-4 py-3 border-t border-border/50">
                 <button
                   onClick={() => setShowAllFiles(true)}
