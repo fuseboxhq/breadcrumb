@@ -337,8 +337,8 @@ function DashboardBody({
       {/* Phase Pipeline */}
       <PhasePipeline phases={phases} projectPath={projectPath} />
 
-      {/* Active Task List — will be built in rjx.4 */}
-      <ActiveTaskListStub phases={phases} />
+      {/* Active Task List */}
+      <ActiveTaskList phases={phases} projectPath={projectPath} />
     </div>
   );
 }
@@ -683,24 +683,123 @@ function TaskStatusDot({ status }: { status: PhaseTask["status"] }) {
   }
 }
 
-function ActiveTaskListStub({ phases }: { phases: PhaseSummary[] }) {
-  const activePhasesExist = phases.some(
-    (p) => p.status === "in_progress" || p.isActive
+function ActiveTaskList({
+  phases,
+  projectPath,
+}: {
+  phases: PhaseSummary[];
+  projectPath: string;
+}) {
+  const fetchPhaseDetail = usePlanningStore((s) => s.fetchPhaseDetail);
+  const projectData = usePlanningStore((s) => s.projects[projectPath]);
+
+  // Get active phases (in_progress or isActive)
+  const activePhases = useMemo(
+    () => phases.filter((p) => p.status === "in_progress" || p.isActive),
+    [phases]
   );
 
-  if (!activePhasesExist) return null;
+  // Auto-fetch details for active phases that haven't been loaded yet
+  useEffect(() => {
+    for (const phase of activePhases) {
+      if (!projectData?.phaseDetails[phase.id]) {
+        fetchPhaseDetail(projectPath, phase.id);
+      }
+    }
+  }, [activePhases, projectPath, projectData?.phaseDetails, fetchPhaseDetail]);
+
+  // Collect tasks from active phases, tagged with their phase
+  const activeTasks = useMemo(() => {
+    const tasks: Array<{ task: PhaseTask; phaseId: string; phaseTitle: string }> = [];
+    for (const phase of activePhases) {
+      const detail = projectData?.phaseDetails[phase.id];
+      if (detail?.tasks) {
+        for (const task of detail.tasks) {
+          if (task.status !== "done") {
+            tasks.push({
+              task,
+              phaseId: phase.id,
+              phaseTitle: phase.title,
+            });
+          }
+        }
+      }
+    }
+    // Sort: in_progress first, then ready, then blocked
+    const statusOrder: Record<string, number> = {
+      in_progress: 0,
+      not_started: 1,
+      blocked: 2,
+    };
+    tasks.sort(
+      (a, b) =>
+        (statusOrder[a.task.status] ?? 1) - (statusOrder[b.task.status] ?? 1)
+    );
+    return tasks;
+  }, [activePhases, projectData?.phaseDetails]);
+
+  if (activePhases.length === 0) return null;
+
+  // Still loading details
+  const loadingDetails = activePhases.some(
+    (p) => !projectData?.phaseDetails[p.id]
+  );
 
   return (
     <div className="px-4 py-3">
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-2.5">
         <ListChecks className="w-3.5 h-3.5 text-foreground-muted" />
         <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted">
           Active Work
+          {activeTasks.length > 0 && (
+            <span className="ml-1 text-foreground-secondary">
+              ({activeTasks.length})
+            </span>
+          )}
         </p>
       </div>
-      <p className="text-2xs text-foreground-muted">
-        Expand a phase above to see its tasks
-      </p>
+
+      {loadingDetails && activeTasks.length === 0 ? (
+        <div className="space-y-1.5">
+          {[1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-5 bg-muted/20 rounded animate-pulse"
+              style={{ width: `${80 - i * 15}%` }}
+            />
+          ))}
+        </div>
+      ) : activeTasks.length === 0 ? (
+        <p className="text-2xs text-foreground-muted">
+          No active tasks — all work is done or phases need planning
+        </p>
+      ) : (
+        <div className="space-y-0.5">
+          {activeTasks.map(({ task, phaseId }) => (
+            <div
+              key={`${phaseId}-${task.id}`}
+              className="flex items-center gap-2 py-1 group"
+            >
+              <TaskStatusDot status={task.status} />
+              <span className="text-2xs font-mono text-foreground-muted/60 shrink-0">
+                {phaseId.replace("PHASE-", "P")}
+              </span>
+              <span
+                className={`text-2xs truncate flex-1 ${
+                  task.status === "in_progress"
+                    ? "text-foreground"
+                    : task.status === "blocked"
+                      ? "text-destructive/80"
+                      : "text-foreground-secondary"
+                }`}
+              >
+                {task.title}
+              </span>
+              <TaskStatusBadge status={task.status} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
