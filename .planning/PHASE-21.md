@@ -1,8 +1,9 @@
 # Phase 21: UI/UX Design Polish
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-pq9
 **Created:** 2026-02-14
+**Completed:** 2026-02-14
 
 ## Objective
 
@@ -67,13 +68,13 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-pq9.1 | Soften theme & refine color tokens | open | Medium | - |
-| breadcrumb-pq9.2 | Add teal accent & dual-accent system | open | Medium | pq9.1 |
-| breadcrumb-pq9.3 | Typography & spacing system overhaul | open | Medium | pq9.1 |
-| breadcrumb-pq9.4 | Redesign Welcome screen | open | High | pq9.3 |
-| breadcrumb-pq9.5 | Polish sidebar, activity bar & navigation chrome | open | Medium | pq9.3 |
-| breadcrumb-pq9.6 | Polish tab bar, status bar & title bar | open | Medium | pq9.5 |
-| breadcrumb-pq9.7 | Detail pass — empty states, icons, micro-interactions | open | Medium | pq9.6 |
+| breadcrumb-pq9.1 | Soften theme & refine color tokens | done | Medium | - |
+| breadcrumb-pq9.2 | Add teal accent & dual-accent system | done | Medium | pq9.1 |
+| breadcrumb-pq9.3 | Typography & spacing system overhaul | done | Medium | pq9.1 |
+| breadcrumb-pq9.4 | Redesign Welcome screen | done | High | pq9.3 |
+| breadcrumb-pq9.5 | Polish sidebar, activity bar & navigation chrome | done | Medium | pq9.3 |
+| breadcrumb-pq9.6 | Polish tab bar, status bar & title bar | done | Medium | pq9.5 |
+| breadcrumb-pq9.7 | Detail pass — empty states, icons, micro-interactions | done | Medium | pq9.6 |
 
 ### Task Details
 
@@ -161,14 +162,14 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 ## Completion Criteria
 
-- [ ] Theme is noticeably softer — backgrounds lifted to 7-10% lightness range
-- [ ] Teal accent is present and used intentionally alongside purple
-- [ ] Welcome screen looks premium and distinctive (not AI-generated)
-- [ ] Typography uses Inter with consistent weights (400/500/600)
-- [ ] All spacing values are divisible by 4px
-- [ ] Color usage is intentional — accent colors serve hierarchy, not decoration
-- [ ] All chrome (title bar, tab bar, status bar, sidebar) feels cohesive and polished
-- [ ] Empty states and loading screens look designed
+- [x] Theme is noticeably softer — backgrounds lifted to 7-10% lightness range
+- [x] Teal accent is present and used intentionally alongside purple
+- [x] Welcome screen looks premium and distinctive (not AI-generated)
+- [x] Typography uses Inter with consistent weights (400/500/600)
+- [x] All spacing values are divisible by 4px
+- [x] Color usage is intentional — accent colors serve hierarchy, not decoration
+- [x] All chrome (title bar, tab bar, status bar, sidebar) feels cohesive and polished
+- [x] Empty states and loading screens look designed
 - [ ] A developer seeing the app for the first time would not think "AI made this"
 
 ## Sources
