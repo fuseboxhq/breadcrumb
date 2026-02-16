@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   LayoutGrid,
   CheckCircle2,
@@ -7,39 +7,53 @@ import {
   RefreshCw,
   ChevronRight,
   AlertCircle,
-  Database,
-  FileText,
   FolderOpen,
-  ArrowLeft,
-  RotateCcw,
   AlertTriangle,
+  RotateCcw,
+  ListChecks,
 } from "lucide-react";
-import { SkeletonCard, SkeletonList } from "../ui/Skeleton";
-import { useProjects, useProjectsStore } from "../../store/projectsStore";
+import { SkeletonList } from "../ui/Skeleton";
+import {
+  useProjects,
+  useActiveProjectId,
+  useProjectsStore,
+} from "../../store/projectsStore";
 import {
   usePlanningStore,
-  usePlanningNavigation,
-  useSetPlanningNavigation,
-  type DashboardView,
   type PhaseSummary,
-  type PhaseDetail,
   type PhaseTask,
+  type PhaseDetail,
 } from "../../store/planningStore";
 
 // Stable empty references to avoid Zustand snapshot infinite-loop
-const EMPTY_TASKS: PhaseTask[] = [];
-const EMPTY_BEADS: never[] = [];
 const EMPTY_PHASES: PhaseSummary[] = [];
 
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 
 export function PlanningPanel() {
-  const view = usePlanningNavigation();
-  const setView = useSetPlanningNavigation();
   const projects = useProjects();
+  const activeProjectId = useActiveProjectId();
+  const projectsStore = useProjectsStore.getState;
   const refreshProject = usePlanningStore((s) => s.refreshProject);
   const planningProjects = usePlanningStore((s) => s.projects);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Selected project path — defaults to active project
+  const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(
+    null
+  );
+
+  // Sync selection with active project
+  useEffect(() => {
+    if (activeProjectId) {
+      const project = projectsStore().projects.find(
+        (p) => p.id === activeProjectId
+      );
+      if (project) {
+        setSelectedProjectPath(project.path);
+      }
+    }
+  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-fetch all projects on mount
   useEffect(() => {
@@ -58,49 +72,20 @@ export function PlanningPanel() {
     setRefreshing(false);
   }, [projects, refreshProject]);
 
-  const navigateToProject = useCallback(
-    (projectPath: string, projectName: string) => {
-      setView({ kind: "project", projectPath, projectName });
-    },
-    []
+  const selectedProject = useMemo(
+    () => projects.find((p) => p.path === selectedProjectPath) ?? null,
+    [projects, selectedProjectPath]
   );
-
-  const navigateToPhase = useCallback(
-    (projectPath: string, projectName: string, phaseId: string) => {
-      setView({ kind: "phase", projectPath, projectName, phaseId });
-    },
-    []
-  );
-
-  const navigateBack = useCallback(() => {
-    if (view.kind === "phase") {
-      setView({
-        kind: "project",
-        projectPath: view.projectPath,
-        projectName: view.projectName,
-      });
-    } else {
-      setView({ kind: "overview" });
-    }
-  }, [view]);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0 bg-background-raised">
         <div className="flex items-center gap-2 min-w-0">
-          {view.kind !== "overview" && (
-            <button
-              onClick={navigateBack}
-              className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default shrink-0"
-              title="Back"
-              aria-label="Navigate back"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <LayoutGrid className="w-4 h-4 text-dracula-purple shrink-0" />
-          <Breadcrumbs view={view} onNavigate={setView} />
+          <LayoutGrid className="w-4 h-4 text-accent-secondary shrink-0" />
+          <span className="text-sm font-medium text-foreground truncate">
+            Dashboard
+          </span>
         </div>
         <button
           onClick={handleRefresh}
@@ -117,210 +102,126 @@ export function PlanningPanel() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
-        {view.kind === "overview" && (
-          <ProjectOverview
-            onSelectProject={navigateToProject}
-          />
-        )}
-        {view.kind === "project" && (
-          <ProjectPhases
-            projectPath={view.projectPath}
-            projectName={view.projectName}
-            onSelectPhase={(phaseId) =>
-              navigateToPhase(view.projectPath, view.projectName, phaseId)
-            }
-          />
-        )}
-        {view.kind === "phase" && (
-          <PhaseDetailView
-            projectPath={view.projectPath}
-            phaseId={view.phaseId}
-          />
+        {projects.length === 0 ? (
+          <EmptyDashboard />
+        ) : (
+          <div className="flex flex-col">
+            {/* Portfolio Header */}
+            <PortfolioHeader
+              selectedProjectPath={selectedProjectPath}
+              onSelectProject={setSelectedProjectPath}
+            />
+
+            {/* Dashboard Body */}
+            {selectedProject && (
+              <DashboardBody
+                projectPath={selectedProject.path}
+                projectName={selectedProject.name}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// ── Breadcrumbs ──────────────────────────────────────────────────────────────
+// ── Portfolio Header ─────────────────────────────────────────────────────────
 
-function Breadcrumbs({
-  view,
-  onNavigate,
-}: {
-  view: DashboardView;
-  onNavigate: (view: DashboardView) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1 text-sm min-w-0">
-      <button
-        onClick={() => onNavigate({ kind: "overview" })}
-        className={`font-semibold truncate transition-default ${
-          view.kind === "overview"
-            ? "text-foreground"
-            : "text-foreground-muted hover:text-foreground-secondary"
-        }`}
-      >
-        Dashboard
-      </button>
-      {(view.kind === "project" || view.kind === "phase") && (
-        <>
-          <ChevronRight className="w-3 h-3 text-foreground-muted shrink-0" />
-          <button
-            onClick={() =>
-              onNavigate({
-                kind: "project",
-                projectPath: view.projectPath,
-                projectName: view.projectName,
-              })
-            }
-            className={`truncate transition-default ${
-              view.kind === "project"
-                ? "text-foreground font-medium"
-                : "text-foreground-muted hover:text-foreground-secondary"
-            }`}
-          >
-            {view.projectName}
-          </button>
-        </>
-      )}
-      {view.kind === "phase" && (
-        <>
-          <ChevronRight className="w-3 h-3 text-foreground-muted shrink-0" />
-          <span className="text-foreground font-medium truncate">
-            {view.phaseId}
-          </span>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ── Project Overview (All Projects Grid) ─────────────────────────────────────
-
-function ProjectOverview({
+function PortfolioHeader({
+  selectedProjectPath,
   onSelectProject,
 }: {
-  onSelectProject: (path: string, name: string) => void;
+  selectedProjectPath: string | null;
+  onSelectProject: (path: string) => void;
 }) {
   const projects = useProjects();
   const planningData = usePlanningStore((s) => s.projects);
-  const addProject = useProjectsStore((s) => s.addProject);
-
-  if (projects.length === 0) {
-    return <EmptyDashboard onAddProject={async () => {
-      const dir = await window.breadcrumbAPI?.selectDirectory();
-      if (dir) addProject(dir);
-    }} />;
-  }
-
-  const refreshProject = usePlanningStore((s) => s.refreshProject);
 
   return (
-    <div className="p-4 space-y-3">
-      <p className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted px-1">
-        Projects ({projects.length})
-      </p>
-      <div className="grid gap-3">
+    <div className="border-b border-border">
+      <div className="px-4 pt-3 pb-1">
+        <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted">
+          Projects ({projects.length})
+        </p>
+      </div>
+      <div className="px-2 pb-2">
         {projects.map((project) => {
           const data = planningData[project.path];
-          const loading = data?.loading ?? true;
-          const error = data?.error;
-          const capabilities = data?.capabilities;
           const phases = data?.phases ?? [];
-          const activePhase = phases.find((p) => p.isActive);
           const completedPhases = phases.filter(
             (p) => p.status === "complete"
           ).length;
-
-          if (loading && !data?.lastFetched) {
-            return <SkeletonCard key={project.id} />;
-          }
-
-          if (error && !data?.lastFetched) {
-            return (
-              <div key={project.id} className="p-4 rounded-xl border border-border space-y-2">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-dracula-purple shrink-0" />
-                  <span className="text-sm font-semibold text-foreground truncate">
-                    {project.name}
-                  </span>
-                </div>
-                <ErrorAlert
-                  message={`Failed to load project data: ${error}`}
-                  onRetry={() => refreshProject(project.path)}
-                />
-              </div>
-            );
-          }
+          const totalPhases = phases.length;
+          const isSelected = project.path === selectedProjectPath;
+          const loading = data?.loading && !data?.lastFetched;
+          const activePhase = phases.find((p) => p.isActive);
 
           return (
             <button
               key={project.id}
-              onClick={() => onSelectProject(project.path, project.name)}
-              aria-label={`Open ${project.name} project`}
-              className="group w-full text-left p-4 rounded-xl border border-border hover:border-border-strong hover:bg-background-raised transition-default"
+              onClick={() => onSelectProject(project.path)}
+              className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-default ${
+                isSelected
+                  ? "bg-accent-secondary/8 text-foreground"
+                  : "text-foreground-secondary hover:bg-muted/30 hover:text-foreground"
+              }`}
+              aria-label={`Select ${project.name}`}
+              aria-pressed={isSelected}
             >
-              <div className="flex items-center gap-2 mb-2.5">
-                <FolderOpen className="w-4 h-4 text-dracula-purple shrink-0" />
-                <span className="text-sm font-semibold text-foreground truncate">
-                  {project.name}
-                </span>
-                <div className="ml-auto flex items-center gap-1 shrink-0">
-                  {capabilities?.hasPlanning && (
-                    <span title=".planning/ detected" aria-label="Has planning data">
-                      <FileText className="w-3 h-3 text-dracula-green" />
+              {/* Selection indicator */}
+              <div
+                className={`w-0.5 h-6 rounded-full shrink-0 transition-default ${
+                  isSelected ? "bg-accent-secondary" : "bg-transparent"
+                }`}
+              />
+
+              {/* Project info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm truncate ${
+                      isSelected ? "font-medium" : ""
+                    }`}
+                  >
+                    {project.name}
+                  </span>
+                  {activePhase && (
+                    <span className="text-2xs text-foreground-muted font-mono truncate">
+                      {activePhase.id}
                     </span>
                   )}
-                  {capabilities?.hasBeads && (
-                    <span title=".beads/ detected" aria-label="Has Beads database">
-                      <Database className="w-3 h-3 text-dracula-cyan" />
-                    </span>
-                  )}
-                  <ChevronRight className="w-3.5 h-3.5 text-foreground-muted opacity-0 group-hover:opacity-100 transition-default" aria-hidden="true" />
                 </div>
               </div>
 
-              {capabilities?.hasPlanning && phases.length > 0 ? (
-                <>
-                  {activePhase && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <StatusBadge status={activePhase.status} />
-                      <span className="text-2xs text-foreground-secondary truncate">
-                        {activePhase.title}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
+              {/* Progress */}
+              {!loading && totalPhases > 0 && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <div
+                    className="w-12 h-1 bg-muted/50 rounded-full overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={completedPhases}
+                    aria-valuemax={totalPhases}
+                  >
                     <div
-                      className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden"
-                      role="progressbar"
-                      aria-valuenow={completedPhases}
-                      aria-valuemax={phases.length}
-                      aria-label={`${completedPhases} of ${phases.length} phases complete`}
-                    >
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${phases.length > 0 ? (completedPhases / phases.length) * 100 : 0}%`,
-                          background:
-                            completedPhases === phases.length
-                              ? "var(--success)"
-                              : "linear-gradient(90deg, var(--primary), var(--dracula-pink))",
-                        }}
-                      />
-                    </div>
-                    <span className="text-2xs text-foreground-muted tabular-nums">
-                      {completedPhases}/{phases.length}
-                    </span>
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${totalPhases > 0 ? (completedPhases / totalPhases) * 100 : 0}%`,
+                        backgroundColor:
+                          completedPhases === totalPhases
+                            ? "hsl(var(--success))"
+                            : "hsl(var(--accent-secondary))",
+                      }}
+                    />
                   </div>
-                </>
-              ) : (
-                <p className="text-2xs text-foreground-muted">
-                  {capabilities?.hasPlanning
-                    ? "No phases found"
-                    : "No planning data — initialize with /bc:init"}
-                </p>
+                  <span className="text-2xs text-foreground-muted tabular-nums w-7 text-right">
+                    {completedPhases}/{totalPhases}
+                  </span>
+                </div>
+              )}
+
+              {loading && (
+                <div className="w-12 h-1 bg-muted/30 rounded-full animate-pulse shrink-0" />
               )}
             </button>
           );
@@ -330,16 +231,14 @@ function ProjectOverview({
   );
 }
 
-// ── Project Phases ───────────────────────────────────────────────────────────
+// ── Dashboard Body ───────────────────────────────────────────────────────────
 
-function ProjectPhases({
+function DashboardBody({
   projectPath,
   projectName,
-  onSelectPhase,
 }: {
   projectPath: string;
   projectName: string;
-  onSelectPhase: (phaseId: string) => void;
 }) {
   const phases = usePlanningStore(
     (s) => s.projects[projectPath]?.phases ?? EMPTY_PHASES
@@ -350,7 +249,15 @@ function ProjectPhases({
   const error = usePlanningStore(
     (s) => s.projects[projectPath]?.error ?? null
   );
+  const capabilities = usePlanningStore(
+    (s) => s.projects[projectPath]?.capabilities ?? null
+  );
   const refreshProject = usePlanningStore((s) => s.refreshProject);
+
+  // Progress summary
+  const completedPhases = phases.filter((p) => p.status === "complete").length;
+  const totalTasks = phases.reduce((sum, p) => sum + p.taskCount, 0);
+  const completedTasks = phases.reduce((sum, p) => sum + p.completedCount, 0);
 
   if (loading && phases.length === 0) {
     return <SkeletonList rows={4} />;
@@ -360,406 +267,206 @@ function ProjectPhases({
     return (
       <div className="p-4">
         <ErrorAlert
-          message={`Failed to load phases: ${error}`}
+          message={`Failed to load: ${error}`}
           onRetry={() => refreshProject(projectPath)}
         />
       </div>
     );
   }
 
-  if (phases.length === 0) {
+  if (!capabilities?.hasPlanning) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
-        <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center mb-4">
-          <LayoutGrid className="w-6 h-6 text-foreground-muted" />
-        </div>
-        <p className="text-sm text-foreground-secondary mb-1">
-          No phases found
-        </p>
-        <p className="text-2xs text-foreground-muted">
-          {projectName} doesn't have any .planning/ phases yet
-        </p>
-      </div>
+      <EmptySection
+        icon={FolderOpen}
+        title="No planning data"
+        description={`Initialize with /bc:init in ${projectName}`}
+      />
     );
   }
 
-  // Group by status
-  const active = phases.filter((p) => p.status === "in_progress" || p.isActive);
-  const planned = phases.filter(
-    (p) => p.status === "not_started" && !p.isActive
-  );
-  const completed = phases.filter((p) => p.status === "complete");
+  if (phases.length === 0) {
+    return (
+      <EmptySection
+        icon={LayoutGrid}
+        title="No phases yet"
+        description="Create one with /bc:new-phase or /bc:roadmap"
+      />
+    );
+  }
 
   return (
-    <div className="p-4 space-y-4">
-      {active.length > 0 && (
-        <PhaseGroup
-          label="Active"
-          phases={active}
-          onSelect={onSelectPhase}
-        />
-      )}
-      {planned.length > 0 && (
-        <PhaseGroup
-          label="Planned"
-          phases={planned}
-          onSelect={onSelectPhase}
-        />
-      )}
-      {completed.length > 0 && (
-        <PhaseGroup
-          label="Completed"
-          phases={completed}
-          onSelect={onSelectPhase}
-          collapsed
-        />
-      )}
-    </div>
-  );
-}
-
-function PhaseGroup({
-  label,
-  phases,
-  onSelect,
-  collapsed: initialCollapsed = false,
-}: {
-  label: string;
-  phases: PhaseSummary[];
-  onSelect: (phaseId: string) => void;
-  collapsed?: boolean;
-}) {
-  const [collapsed, setCollapsed] = useState(initialCollapsed);
-
-  return (
-    <div>
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-1.5 px-1 mb-2 text-2xs font-semibold uppercase tracking-widest text-foreground-muted hover:text-foreground-secondary transition-default"
-      >
-        <ChevronRight
-          className={`w-3 h-3 transition-default ${
-            collapsed ? "" : "rotate-90"
-          }`}
-        />
-        {label} ({phases.length})
-      </button>
-      {!collapsed && (
-        <div className="space-y-2">
-          {phases.map((phase) => (
-            <PhaseCard key={phase.id} phase={phase} onSelect={onSelect} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PhaseCard({
-  phase,
-  onSelect,
-}: {
-  phase: PhaseSummary;
-  onSelect: (phaseId: string) => void;
-}) {
-  const progress =
-    phase.taskCount > 0 ? (phase.completedCount / phase.taskCount) * 100 : 0;
-
-  return (
-    <button
-      onClick={() => onSelect(phase.id)}
-      aria-label={`${phase.id}: ${phase.title} — ${phase.completedCount} of ${phase.taskCount} tasks done`}
-      className="group w-full text-left p-3.5 rounded-xl border border-border hover:border-border-strong hover:bg-background-raised transition-default"
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <StatusBadge status={phase.status} />
-        <span className="text-2xs font-mono text-foreground-muted">
-          {phase.id}
-        </span>
-        <ChevronRight className="w-3 h-3 text-foreground-muted ml-auto opacity-0 group-hover:opacity-100 transition-default" />
-      </div>
-      <div className="text-sm font-medium text-foreground mb-2.5">
-        {phase.title}
-      </div>
-      {phase.taskCount > 0 && (
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col">
+      {/* Progress Summary */}
+      <div className="px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="text-2xs text-foreground-muted">Phases</span>
+            <span className="text-sm font-medium text-foreground tabular-nums">
+              {completedPhases}/{phases.length}
+            </span>
+          </div>
+          {totalTasks > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xs text-foreground-muted">Tasks</span>
+              <span className="text-sm font-medium text-foreground tabular-nums">
+                {completedTasks}/{totalTasks}
+              </span>
+            </div>
+          )}
+          <div className="flex-1" />
           <div
-            className="flex-1 h-1.5 bg-muted/50 rounded-full overflow-hidden"
+            className="w-24 h-1 bg-muted/50 rounded-full overflow-hidden"
             role="progressbar"
-            aria-valuenow={phase.completedCount}
-            aria-valuemax={phase.taskCount}
+            aria-valuenow={completedTasks}
+            aria-valuemax={totalTasks}
           >
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${progress}%`,
-                background:
-                  progress === 100
-                    ? "var(--success)"
-                    : "linear-gradient(90deg, var(--primary), var(--dracula-pink))",
+                width: `${totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}%`,
+                backgroundColor:
+                  completedTasks === totalTasks && totalTasks > 0
+                    ? "hsl(var(--success))"
+                    : "hsl(var(--accent-secondary))",
               }}
             />
           </div>
-          <span className="text-2xs text-foreground-muted tabular-nums">
-            {phase.completedCount}/{phase.taskCount}
-          </span>
         </div>
-      )}
-    </button>
+      </div>
+
+      {/* Phase Pipeline — will be built in rjx.2 */}
+      <PhasePipelineStub phases={phases} />
+
+      {/* Active Task List — will be built in rjx.4 */}
+      <ActiveTaskListStub phases={phases} />
+    </div>
   );
 }
 
-// ── Phase Detail View ────────────────────────────────────────────────────────
+// ── Stub Components (replaced in later tasks) ───────────────────────────────
 
-function PhaseDetailView({
-  projectPath,
-  phaseId,
-}: {
-  projectPath: string;
-  phaseId: string;
-}) {
-  const fetchPhaseDetail = usePlanningStore((s) => s.fetchPhaseDetail);
-  const fetchBeadsTasks = usePlanningStore((s) => s.fetchBeadsTasks);
-  const detail = usePlanningStore(
-    (s) => s.projects[projectPath]?.phaseDetails[phaseId] ?? null
-  );
-  const error = usePlanningStore(
-    (s) => s.projects[projectPath]?.error ?? null
-  );
-  const beadsTasks = usePlanningStore((s) => {
-    const d = s.projects[projectPath]?.phaseDetails[phaseId];
-    if (!d?.beadsEpic) return EMPTY_BEADS;
-    return s.projects[projectPath]?.beadsTasks[d.beadsEpic] ?? EMPTY_BEADS;
-  });
-
-  useEffect(() => {
-    fetchPhaseDetail(projectPath, phaseId);
-  }, [projectPath, phaseId, fetchPhaseDetail]);
-
-  // Fetch beads tasks when detail loads with an epic
-  useEffect(() => {
-    if (detail?.beadsEpic) {
-      fetchBeadsTasks(projectPath, detail.beadsEpic);
-    }
-  }, [projectPath, detail?.beadsEpic, fetchBeadsTasks]);
-
-  if (!detail && error) {
-    return (
-      <div className="p-4">
-        <ErrorAlert
-          message={`Failed to load phase detail: ${error}`}
-          onRetry={() => fetchPhaseDetail(projectPath, phaseId)}
-        />
-      </div>
-    );
-  }
-
-  if (!detail) {
-    return (
-      <div className="p-4 space-y-2">
-        <SkeletonCard />
-        <SkeletonCard />
-      </div>
-    );
-  }
-
-  const doneTasks = detail.tasks.filter((t) => t.status === "done").length;
-  const checkedCriteria = detail.completionCriteria.filter(
-    (c) => c.checked
-  ).length;
+function PhasePipelineStub({ phases }: { phases: PhaseSummary[] }) {
+  const activePhases = phases.filter((p) => p.status === "in_progress" || p.isActive);
+  const plannedPhases = phases.filter((p) => p.status === "not_started" && !p.isActive);
+  const completedPhases = phases.filter((p) => p.status === "complete");
 
   return (
-    <div className="p-4 space-y-5">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <StatusBadge status={detail.status as PhaseSummary["status"]} />
-          <span className="text-2xs font-mono text-foreground-muted">
-            {detail.id}
-          </span>
-          {detail.beadsEpic && (
-            <span className="text-2xs font-mono text-dracula-cyan">
-              {detail.beadsEpic}
-            </span>
-          )}
-        </div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">
-          {detail.title}
-        </h2>
-        {detail.created && (
-          <p className="text-2xs text-foreground-muted">
-            Created {detail.created}
-          </p>
+    <div className="px-4 py-3 border-b border-border">
+      <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted mb-3">
+        Phase Pipeline
+      </p>
+      <div className="space-y-1">
+        {[...activePhases, ...plannedPhases, ...completedPhases].map(
+          (phase) => (
+            <div
+              key={phase.id}
+              className="flex items-center gap-2 py-1.5"
+            >
+              <PhaseStatusIcon status={phase.status} isActive={phase.isActive} />
+              <span
+                className={`text-sm truncate flex-1 ${
+                  phase.status === "in_progress" || phase.isActive
+                    ? "text-foreground font-medium"
+                    : phase.status === "complete"
+                      ? "text-foreground-muted"
+                      : "text-foreground-secondary"
+                }`}
+              >
+                {phase.title}
+              </span>
+              {phase.taskCount > 0 && (
+                <span className="text-2xs text-foreground-muted tabular-nums shrink-0">
+                  {phase.completedCount}/{phase.taskCount}
+                </span>
+              )}
+            </div>
+          )
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Objective */}
-      {detail.objective && (
-        <Section title="Objective">
-          <p className="text-sm text-foreground-secondary leading-relaxed">
-            {detail.objective}
-          </p>
-        </Section>
-      )}
+function ActiveTaskListStub({ phases }: { phases: PhaseSummary[] }) {
+  const activePhasesExist = phases.some(
+    (p) => p.status === "in_progress" || p.isActive
+  );
 
-      {/* Tasks */}
-      {detail.tasks.length > 0 && (
-        <Section
-          title={`Tasks (${doneTasks}/${detail.tasks.length})`}
-        >
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-background-raised border-b border-border">
-                  <th className="text-left px-3 py-2 text-2xs font-semibold text-foreground-muted uppercase tracking-wider">
-                    ID
-                  </th>
-                  <th className="text-left px-3 py-2 text-2xs font-semibold text-foreground-muted uppercase tracking-wider">
-                    Title
-                  </th>
-                  <th className="text-left px-3 py-2 text-2xs font-semibold text-foreground-muted uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="text-left px-3 py-2 text-2xs font-semibold text-foreground-muted uppercase tracking-wider">
-                    Size
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.tasks.map((task) => (
-                  <TaskRow key={task.id} task={task} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      )}
+  if (!activePhasesExist) return null;
 
-      {/* Completion Criteria */}
-      {detail.completionCriteria.length > 0 && (
-        <Section
-          title={`Completion Criteria (${checkedCriteria}/${detail.completionCriteria.length})`}
-        >
-          <div className="space-y-1.5">
-            {detail.completionCriteria.map((criterion, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm">
-                {criterion.checked ? (
-                  <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                ) : (
-                  <Circle className="w-4 h-4 text-foreground-muted shrink-0 mt-0.5" />
-                )}
-                <span
-                  className={
-                    criterion.checked
-                      ? "text-foreground-muted line-through"
-                      : "text-foreground-secondary"
-                  }
-                >
-                  {criterion.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Scope */}
-      {(detail.scope.inScope.length > 0 ||
-        detail.scope.outOfScope.length > 0) && (
-        <CollapsibleSection title="Scope">
-          {detail.scope.inScope.length > 0 && (
-            <div className="mb-3">
-              <p className="text-2xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
-                In Scope
-              </p>
-              <ul className="space-y-1">
-                {detail.scope.inScope.map((item, i) => (
-                  <li
-                    key={i}
-                    className="text-sm text-foreground-secondary flex items-start gap-2"
-                  >
-                    <span className="text-dracula-green mt-1.5 shrink-0">
-                      &bull;
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {detail.scope.outOfScope.length > 0 && (
-            <div>
-              <p className="text-2xs font-semibold text-foreground-muted uppercase tracking-wider mb-1.5">
-                Out of Scope
-              </p>
-              <ul className="space-y-1">
-                {detail.scope.outOfScope.map((item, i) => (
-                  <li
-                    key={i}
-                    className="text-sm text-foreground-muted flex items-start gap-2"
-                  >
-                    <span className="text-foreground-muted/50 mt-1.5 shrink-0">
-                      &bull;
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </CollapsibleSection>
-      )}
-
-      {/* Technical Decisions */}
-      {detail.decisions.length > 0 && (
-        <CollapsibleSection title="Technical Decisions">
-          <div className="space-y-3">
-            {detail.decisions.map((d, i) => (
-              <div
-                key={i}
-                className="p-3 rounded-lg border border-border bg-background-raised"
-              >
-                <p className="text-sm font-medium text-foreground mb-1">
-                  {d.decision}
-                </p>
-                <p className="text-2xs text-dracula-cyan mb-1">{d.choice}</p>
-                <p className="text-2xs text-foreground-muted">{d.rationale}</p>
-              </div>
-            ))}
-          </div>
-        </CollapsibleSection>
-      )}
+  return (
+    <div className="px-4 py-3">
+      <div className="flex items-center gap-2 mb-3">
+        <ListChecks className="w-3.5 h-3.5 text-foreground-muted" />
+        <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted">
+          Active Work
+        </p>
+      </div>
+      <p className="text-2xs text-foreground-muted">
+        Expand a phase above to see its tasks
+      </p>
     </div>
   );
 }
 
 // ── Shared Components ────────────────────────────────────────────────────────
 
-function TaskRow({ task }: { task: PhaseTask }) {
+function PhaseStatusIcon({
+  status,
+  isActive,
+}: {
+  status: PhaseSummary["status"];
+  isActive: boolean;
+}) {
+  if (status === "complete") {
+    return <CheckCircle2 className="w-4 h-4 text-success shrink-0" />;
+  }
+  if (status === "in_progress" || isActive) {
+    return (
+      <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+        <div className="w-2.5 h-2.5 rounded-full bg-accent-secondary shadow-glow-teal" />
+      </div>
+    );
+  }
   return (
-    <tr className="border-b border-border last:border-0 hover:bg-muted/20 transition-default">
-      <td className="px-3 py-2 text-2xs font-mono text-foreground-muted whitespace-nowrap">
-        {task.id}
-      </td>
-      <td className="px-3 py-2 text-sm text-foreground">
-        {task.title}
-        {task.dependsOn.length > 0 && (
-          <span className="ml-1.5 text-2xs text-foreground-muted">
-            (needs {task.dependsOn.join(", ")})
-          </span>
-        )}
-      </td>
-      <td className="px-3 py-2">
-        <TaskStatusBadge status={task.status} />
-      </td>
-      <td className="px-3 py-2 text-2xs text-foreground-muted font-mono">
-        {task.complexity}
-      </td>
-    </tr>
+    <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+      <div className="w-2 h-2 rounded-full border border-foreground-muted/40" />
+    </div>
   );
 }
 
-function TaskStatusBadge({ status }: { status: PhaseTask["status"] }) {
+export function StatusBadge({
+  status,
+}: {
+  status: "complete" | "in_progress" | "not_started" | string;
+}) {
+  switch (status) {
+    case "complete":
+    case "done":
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success/10 text-success text-2xs">
+          <CheckCircle2 className="w-3 h-3" />
+          Done
+        </span>
+      );
+    case "in_progress":
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-secondary/10 text-accent-secondary text-2xs">
+          <Clock className="w-3 h-3" />
+          Active
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50 text-foreground-muted text-2xs">
+          <Circle className="w-3 h-3" />
+          Planned
+        </span>
+      );
+  }
+}
+
+export function TaskStatusBadge({ status }: { status: PhaseTask["status"] }) {
   switch (status) {
     case "done":
       return (
@@ -784,88 +491,65 @@ function TaskStatusBadge({ status }: { status: PhaseTask["status"] }) {
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50 text-foreground-muted text-2xs">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-secondary/10 text-accent-secondary text-2xs">
           <Circle className="w-3 h-3" />
-          Planned
+          Ready
         </span>
       );
   }
 }
 
-function StatusBadge({
-  status,
-}: {
-  status: "complete" | "in_progress" | "not_started" | string;
-}) {
-  switch (status) {
-    case "complete":
-    case "done":
-      return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success/10 text-success text-2xs">
-          <CheckCircle2 className="w-3 h-3" />
-          Done
-        </span>
-      );
-    case "in_progress":
-      return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-warning/10 text-warning text-2xs">
-          <Clock className="w-3 h-3" />
-          Active
-        </span>
-      );
-    default:
-      return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50 text-foreground-muted text-2xs">
-          <Circle className="w-3 h-3" />
-          Planned
-        </span>
-      );
-  }
-}
+function EmptyDashboard() {
+  const addProject = useProjectsStore((s) => s.addProject);
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <h3 className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted mb-2.5">
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function CollapsibleSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
+  const handleAdd = async () => {
+    const dir = await window.breadcrumbAPI?.selectDirectory();
+    if (dir) addProject(dir);
+  };
 
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
+      <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center mb-4">
+        <LayoutGrid className="w-6 h-6 text-foreground-muted" />
+      </div>
+      <p className="text-sm font-medium text-foreground-secondary mb-1">
+        No projects in workspace
+      </p>
+      <p className="text-2xs text-foreground-muted mb-4 max-w-xs">
+        Add a project folder to see its phases, tasks, and progress.
+      </p>
       <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-widest text-foreground-muted hover:text-foreground-secondary transition-default mb-2"
+        onClick={handleAdd}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-secondary/10 text-accent-secondary text-sm font-medium hover:bg-accent-secondary/15 transition-default"
       >
-        <ChevronRight
-          className={`w-3 h-3 transition-default ${open ? "rotate-90" : ""}`}
-        />
-        {title}
+        <FolderOpen className="w-4 h-4" />
+        Add Project
       </button>
-      {open && <div className="animate-fade-in">{children}</div>}
     </div>
   );
 }
 
-function ErrorAlert({
+function EmptySection({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center animate-fade-in">
+      <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center mb-3">
+        <Icon className="w-5 h-5 text-foreground-muted" />
+      </div>
+      <p className="text-sm text-foreground-secondary mb-0.5">{title}</p>
+      <p className="text-2xs text-foreground-muted">{description}</p>
+    </div>
+  );
+}
+
+export function ErrorAlert({
   message,
   onRetry,
 }: {
@@ -888,29 +572,6 @@ function ErrorAlert({
           Retry
         </button>
       )}
-    </div>
-  );
-}
-
-function EmptyDashboard({ onAddProject }: { onAddProject: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
-      <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center mb-4">
-        <LayoutGrid className="w-6 h-6 text-foreground-muted" />
-      </div>
-      <p className="text-sm font-medium text-foreground-secondary mb-1">
-        No projects in workspace
-      </p>
-      <p className="text-2xs text-foreground-muted mb-4 max-w-xs">
-        Add a project folder to see its phases, tasks, and progress.
-      </p>
-      <button
-        onClick={onAddProject}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-secondary/10 text-accent-secondary text-sm font-medium hover:bg-accent-secondary/15 transition-default"
-      >
-        <FolderOpen className="w-4 h-4" />
-        Add Project
-      </button>
     </div>
   );
 }
