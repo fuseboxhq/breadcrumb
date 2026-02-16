@@ -1,8 +1,9 @@
 # Phase 22: Roadmap Command
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-zrg
 **Created:** 2026-02-14
+**Completed:** 2026-02-14
 
 ## Objective
 
@@ -130,12 +131,12 @@ Dry-run the complete flow:
 
 ## Completion Criteria
 
-- [ ] `/bc:roadmap` skill exists and can be invoked
-- [ ] Guided conversation captures project vision and suggests phase breakdown
-- [ ] All phases created with PHASE-XX.md files, Beads epics, and STATE.md entries
-- [ ] Phase dependencies auto-detected and reflected in phase files
-- [ ] ROADMAP.md generated with pipeline view of all phases
-- [ ] Existing `/bc:plan` and `/bc:new-phase` workflows unaffected
+- [x] `/bc:roadmap` skill exists and can be invoked
+- [x] Guided conversation captures project vision and suggests phase breakdown
+- [x] All phases created with PHASE-XX.md files, Beads epics, and STATE.md entries
+- [x] Phase dependencies auto-detected and reflected in phase files
+- [x] ROADMAP.md generated with pipeline view of all phases
+- [x] Existing `/bc:plan` and `/bc:new-phase` workflows unaffected
 
 ## Sources
 
