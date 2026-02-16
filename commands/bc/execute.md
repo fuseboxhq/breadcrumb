@@ -166,11 +166,13 @@ to:
 
 ### 10. Git Commit
 
-Stage and commit the changes made for this task:
+Stage and commit the changes made for this task. Use the PHASE-XX identified in step 3:
 ```bash
 git add -A
-git commit -m "[task-id]: [task title]"
+git commit -m "[task-id]: [task title] [PHASE-XX]"
 ```
+
+The `[PHASE-XX]` suffix (e.g. `[PHASE-24]`) ensures commits are linked to their phase in the Breadcrumb dashboard even without parsing planning files.
 
 Update the phase file's task table status to `done` if not already done in step 9.
 

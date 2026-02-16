@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Inbox,
   GitCommit,
+  History,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 import {
@@ -392,6 +393,12 @@ function DashboardBody({
 
       {/* Active Task List */}
       <ActiveTaskList phases={phases} projectPath={projectPath} />
+
+      {/* All Commits */}
+      <AllCommitsSection
+        projectPath={projectPath}
+        onSelectCommit={handleSelectCommit}
+      />
     </div>
   );
 }
@@ -917,6 +924,82 @@ function ActiveTaskList({
               <TaskStatusBadge status={task.status} />
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── All Commits Section ──────────────────────────────────────────────────────
+
+function AllCommitsSection({
+  projectPath,
+  onSelectCommit,
+}: {
+  projectPath: string;
+  onSelectCommit?: (hash: string) => void;
+}) {
+  const commits = useGitStore(
+    (s) => s.projects[projectPath]?.commits ?? []
+  ) as CommitInfo[];
+  const hasMore = useGitStore(
+    (s) => s.projects[projectPath]?.hasMore ?? false
+  );
+  const loading = useGitStore(
+    (s) => s.projects[projectPath]?.loading ?? false
+  );
+  const fetchMoreCommits = useGitStore((s) => s.fetchMoreCommits);
+  const [expanded, setExpanded] = useState(false);
+
+  if (commits.length === 0) return null;
+
+  const INITIAL_SHOW = 10;
+  const visibleCommits = expanded ? commits : commits.slice(0, INITIAL_SHOW);
+
+  return (
+    <div className="px-4 py-3 border-t border-border">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 mb-2 w-full text-left group"
+      >
+        <History className="w-3.5 h-3.5 text-foreground-muted" />
+        <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted">
+          All Commits
+          <span className="ml-1 text-foreground-secondary">
+            ({commits.length}{hasMore ? "+" : ""})
+          </span>
+        </p>
+        <div className="flex-1" />
+        <ChevronRight
+          className={`w-3.5 h-3.5 text-foreground-muted shrink-0 transition-transform duration-150 ${
+            expanded ? "rotate-90" : ""
+          }`}
+        />
+      </button>
+
+      {expanded && (
+        <div className="animate-fade-in">
+          {visibleCommits.map((commit) => (
+            <CommitRow
+              key={commit.hash}
+              commit={commit}
+              onSelect={onSelectCommit}
+            />
+          ))}
+
+          {/* Load more */}
+          {hasMore && (
+            <button
+              onClick={() => fetchMoreCommits(projectPath)}
+              disabled={loading}
+              className="flex items-center gap-1.5 text-2xs text-accent-secondary hover:text-accent-secondary/80 transition-default mt-1.5 ml-5 disabled:opacity-50"
+            >
+              {loading ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : null}
+              {loading ? "Loading..." : "Load more commits"}
+            </button>
+          )}
         </div>
       )}
     </div>

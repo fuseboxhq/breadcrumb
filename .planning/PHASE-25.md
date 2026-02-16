@@ -49,11 +49,11 @@ The root cause is well-understood and the fix is straightforward. Phase files al
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-6sn.1 | Build task-prefix→phase mapping from planning files | open | Medium | - |
-| breadcrumb-6sn.2 | Fix GitService to resolve task IDs to phase links | open | Medium | breadcrumb-6sn.1 |
-| breadcrumb-6sn.3 | Update gitStore indexing with task→phase resolution | open | Low | breadcrumb-6sn.2 |
-| breadcrumb-6sn.4 | Enrich bc:execute commit messages with PHASE-XX | open | Low | - |
-| breadcrumb-6sn.5 | Add All Commits view to planning panel | open | Medium | - |
+| breadcrumb-6sn.1 | Build task-prefix→phase mapping from planning files | done | Medium | - |
+| breadcrumb-6sn.2 | Fix GitService to resolve task IDs to phase links | done | Medium | breadcrumb-6sn.1 |
+| breadcrumb-6sn.3 | Update gitStore indexing with task→phase resolution | done | Low | breadcrumb-6sn.2 |
+| breadcrumb-6sn.4 | Enrich bc:execute commit messages with PHASE-XX | done | Low | - |
+| breadcrumb-6sn.5 | Add All Commits view to planning panel | done | Medium | - |
 
 ### Task Details
 

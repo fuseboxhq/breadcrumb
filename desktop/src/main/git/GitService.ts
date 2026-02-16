@@ -1,5 +1,7 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { readdir, readFile } from "fs/promises";
+import { join } from "path";
 
 const execFileAsync = promisify(execFile);
 
@@ -59,6 +61,56 @@ const LOG_DELIMITER = "---COMMIT_DELIM---";
 const FIELD_DELIMITER = "---FIELD---";
 
 export class GitService {
+  // Cache: projectPath → { epicPrefix → PHASE-XX }
+  private phaseMapCache = new Map<string, { map: Map<string, string>; ts: number }>();
+  private static CACHE_TTL_MS = 60_000; // 1 minute
+
+  /**
+   * Build a mapping from Beads epic prefix → phase ID by reading .planning/PHASE-*.md files.
+   * e.g. "breadcrumb-c9v" → "PHASE-24"
+   */
+  async getTaskPrefixToPhaseMap(projectPath: string): Promise<Map<string, string>> {
+    // Return cached if fresh
+    const cached = this.phaseMapCache.get(projectPath);
+    if (cached && Date.now() - cached.ts < GitService.CACHE_TTL_MS) {
+      return cached.map;
+    }
+
+    const map = new Map<string, string>();
+    const planningDir = join(projectPath, ".planning");
+
+    try {
+      const files = await readdir(planningDir);
+      const phaseFiles = files.filter((f) => /^PHASE-\d+/.test(f) && f.endsWith(".md"));
+
+      await Promise.all(
+        phaseFiles.map(async (fileName) => {
+          try {
+            const content = await readFile(join(planningDir, fileName), "utf-8");
+            // Extract phase ID from filename: "PHASE-24.md" or "PHASE-13-right-panel-layout-overhaul.md"
+            const phaseMatch = fileName.match(/^(PHASE-\d+)/);
+            if (!phaseMatch) return;
+            const phaseId = phaseMatch[1];
+
+            // Extract Beads epic ID: "**Beads Epic:** breadcrumb-c9v"
+            const epicMatch = content.match(/\*\*Beads Epic:\*\*\s*(\S+)/);
+            if (!epicMatch) return;
+            const epicPrefix = epicMatch[1];
+
+            map.set(epicPrefix, phaseId);
+          } catch {
+            // Skip unreadable files
+          }
+        })
+      );
+    } catch {
+      // .planning dir doesn't exist — return empty map
+    }
+
+    this.phaseMapCache.set(projectPath, { map, ts: Date.now() });
+    return map;
+  }
+
   async getGitInfo(workingDirectory: string): Promise<GitInfo> {
     if (!(await this.isGitRepo(workingDirectory))) {
       return { isGitRepo: false, branch: "", remote: "", repoName: "", provider: null };
@@ -92,6 +144,8 @@ export class GitService {
     }
 
     try {
+      const prefixToPhase = await this.getTaskPrefixToPhaseMap(cwd);
+
       const { stdout } = await execFileAsync("git", args, {
         cwd,
         timeout: GIT_LOG_TIMEOUT_MS,
@@ -117,6 +171,17 @@ export class GitService {
         const fullMessage = `${subject}\n${body}`;
         const phaseLinks = this.extractPhaseLinks(fullMessage);
         const taskLinks = this.extractTaskLinks(fullMessage);
+
+        // Resolve task IDs to phase links via the prefix map
+        for (const taskId of taskLinks) {
+          const prefix = this.extractTaskPrefix(taskId);
+          if (prefix && prefixToPhase.has(prefix)) {
+            const phase = prefixToPhase.get(prefix)!;
+            if (!phaseLinks.includes(phase)) {
+              phaseLinks.push(phase);
+            }
+          }
+        }
 
         commits.push({
           hash,
@@ -222,6 +287,12 @@ export class GitService {
     // Match patterns like: breadcrumb-rjx.3, argus-web-9tp.1
     const matches = message.match(/[a-z]+-[a-z0-9]+(?:-[a-z0-9]+)*\.\d+/g);
     return matches ? [...new Set(matches)] : [];
+  }
+
+  private extractTaskPrefix(taskId: string): string | null {
+    // "breadcrumb-c9v.5" → "breadcrumb-c9v"
+    const dotIndex = taskId.lastIndexOf(".");
+    return dotIndex > 0 ? taskId.substring(0, dotIndex) : null;
   }
 
   // ── Existing Methods ────────────────────────────────────────────────────
