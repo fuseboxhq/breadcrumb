@@ -13,6 +13,8 @@ import {
   ListChecks,
   ClipboardList,
   Inbox,
+  GitCommit,
+  ArrowLeft,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 import {
@@ -25,6 +27,11 @@ import {
   type PhaseSummary,
   type PhaseTask,
 } from "../../store/planningStore";
+import {
+  useGitStore,
+  usePhaseCommits,
+  type CommitInfo,
+} from "../../store/gitStore";
 
 // Stable empty references to avoid Zustand snapshot infinite-loop
 const EMPTY_PHASES: PhaseSummary[] = [];
@@ -73,10 +80,13 @@ export function PlanningPanel() {
     }
   }, [projects.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const fetchCommits = useGitStore((s) => s.fetchCommits);
+
   // Refresh selected project when it changes
   useEffect(() => {
     if (selectedProjectPath) {
       refreshProject(selectedProjectPath);
+      fetchCommits(selectedProjectPath);
     }
   }, [selectedProjectPath]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -278,6 +288,7 @@ function DashboardBody({
     (s) => s.projects[projectPath]?.capabilities ?? null
   );
   const refreshProject = usePlanningStore((s) => s.refreshProject);
+  const [selectedCommit, setSelectedCommit] = useState<string | null>(null);
 
   // Progress summary
   const completedPhases = phases.filter((p) => p.status === "complete").length;
@@ -315,6 +326,17 @@ function DashboardBody({
         icon={ClipboardList}
         title="No phases yet"
         description="Run /bc:new-phase or /bc:roadmap to create your first phase"
+      />
+    );
+  }
+
+  // If a commit is selected, show the diff view (placeholder for c9v.5)
+  if (selectedCommit) {
+    return (
+      <DiffViewPlaceholder
+        projectPath={projectPath}
+        hash={selectedCommit}
+        onBack={() => setSelectedCommit(null)}
       />
     );
   }
@@ -360,7 +382,11 @@ function DashboardBody({
       </div>
 
       {/* Phase Pipeline */}
-      <PhasePipeline phases={phases} projectPath={projectPath} />
+      <PhasePipeline
+        phases={phases}
+        projectPath={projectPath}
+        onSelectCommit={setSelectedCommit}
+      />
 
       {/* Active Task List */}
       <ActiveTaskList phases={phases} projectPath={projectPath} />
@@ -373,11 +399,14 @@ function DashboardBody({
 function PhasePipeline({
   phases,
   projectPath,
+  onSelectCommit,
 }: {
   phases: PhaseSummary[];
   projectPath: string;
+  onSelectCommit?: (hash: string) => void;
 }) {
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
+  const gitByPhase = useGitStore((s) => s.projects[projectPath]?.byPhase ?? {});
 
   // Sort: active first, then planned, then completed — newest (highest number) first within each group
   const sortedPhases = useMemo(() => {
@@ -418,6 +447,7 @@ function PhasePipeline({
             phase.status === "in_progress" || phase.isActive;
           const isComplete = phase.status === "complete";
           const isExpanded = expandedPhase === phase.id;
+          const commitCount = gitByPhase[phase.id]?.length ?? 0;
           const progress =
             phase.taskCount > 0
               ? (phase.completedCount / phase.taskCount) * 100
@@ -494,12 +524,18 @@ function PhasePipeline({
                       <span className="text-2xs text-foreground-muted tabular-nums">
                         {phase.completedCount}/{phase.taskCount}
                       </span>
+                      {commitCount > 0 && (
+                        <span className="flex items-center gap-0.5 text-2xs text-foreground-muted/50 ml-1">
+                          <GitCommit className="w-3 h-3" />
+                          {commitCount}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {/* Expand chevron */}
-                {phase.taskCount > 0 && (
+                {(phase.taskCount > 0 || commitCount > 0) && (
                   <ChevronRight
                     className={`w-3.5 h-3.5 text-foreground-muted shrink-0 transition-transform duration-150 ${
                       isExpanded ? "rotate-90" : ""
@@ -508,8 +544,8 @@ function PhasePipeline({
                 )}
               </button>
 
-              {/* Expanded task list — animated with CSS grid */}
-              {phase.taskCount > 0 && (
+              {/* Expanded task list + commits — animated with CSS grid */}
+              {(phase.taskCount > 0 || commitCount > 0) && (
                 <div
                   className="grid transition-[grid-template-rows] duration-150 ease-out"
                   style={{
@@ -518,10 +554,21 @@ function PhasePipeline({
                 >
                   <div className="overflow-hidden">
                     {isExpanded && (
-                      <PhaseTasksExpanded
-                        projectPath={projectPath}
-                        phaseId={phase.id}
-                      />
+                      <>
+                        {phase.taskCount > 0 && (
+                          <PhaseTasksExpanded
+                            projectPath={projectPath}
+                            phaseId={phase.id}
+                          />
+                        )}
+                        {commitCount > 0 && (
+                          <PhaseCommitsSection
+                            projectPath={projectPath}
+                            phaseId={phase.id}
+                            onSelectCommit={onSelectCommit}
+                          />
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1015,6 +1062,246 @@ function EmptySection({
     </div>
   );
 }
+
+// ── Relative Time Helper ──────────────────────────────────────────────────────
+
+function relativeTime(isoDate: string): string {
+  const now = Date.now();
+  const then = new Date(isoDate).getTime();
+  const diff = now - then;
+
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+
+  if (seconds < 60) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  if (weeks < 5) return `${weeks}w ago`;
+  return `${months}mo ago`;
+}
+
+// ── Commit Row ────────────────────────────────────────────────────────────────
+
+function CommitRow({
+  commit,
+  onSelect,
+}: {
+  commit: CommitInfo;
+  onSelect?: (hash: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect?.(commit.hash)}
+      className="w-full flex items-center gap-2 py-1 px-0.5 rounded -mx-0.5 group hover:bg-muted/15 transition-default text-left"
+    >
+      <GitCommit className="w-3 h-3 text-foreground-muted/50 shrink-0" />
+      <span className="text-2xs font-mono text-accent-secondary shrink-0">
+        {commit.hash.slice(0, 7)}
+      </span>
+      <span className="text-2xs text-foreground-secondary truncate flex-1">
+        {commit.subject}
+      </span>
+      <span className="text-2xs text-foreground-muted/50 shrink-0 tabular-nums">
+        {relativeTime(commit.date)}
+      </span>
+    </button>
+  );
+}
+
+// ── Phase Commits Section ─────────────────────────────────────────────────────
+
+function PhaseCommitsSection({
+  projectPath,
+  phaseId,
+  onSelectCommit,
+}: {
+  projectPath: string;
+  phaseId: string;
+  onSelectCommit?: (hash: string) => void;
+}) {
+  const commits = usePhaseCommits(projectPath, phaseId);
+  const [showAll, setShowAll] = useState(false);
+
+  if (commits.length === 0) return null;
+
+  const INITIAL_SHOW = 5;
+  const visibleCommits = showAll ? commits : commits.slice(0, INITIAL_SHOW);
+  const hasMore = commits.length > INITIAL_SHOW;
+
+  return (
+    <div className="ml-6 pl-3 border-l border-border py-1.5 animate-fade-in">
+      <div className="flex items-center gap-1.5 mb-1">
+        <span className="text-2xs px-1 py-px rounded bg-foreground-muted/8 text-foreground-muted">
+          Commits ({commits.length})
+        </span>
+      </div>
+      {visibleCommits.map((commit) => (
+        <CommitRow
+          key={commit.hash}
+          commit={commit}
+          onSelect={onSelectCommit}
+        />
+      ))}
+      {hasMore && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="text-2xs text-accent-secondary hover:text-accent-secondary/80 transition-default mt-0.5 ml-5"
+        >
+          Show {commits.length - INITIAL_SHOW} more
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Diff View Placeholder ─────────────────────────────────────────────────────
+
+function DiffViewPlaceholder({
+  projectPath,
+  hash,
+  onBack,
+}: {
+  projectPath: string;
+  hash: string;
+  onBack: () => void;
+}) {
+  const fetchDiff = useGitStore((s) => s.fetchDiff);
+  const fetchStats = useGitStore((s) => s.fetchStats);
+  const diff = useGitStore(
+    (s) => s.projects[projectPath]?.diffs[hash] ?? null
+  );
+  const stats = useGitStore(
+    (s) => s.projects[projectPath]?.stats[hash] ?? null
+  );
+  const loadingDiff = useGitStore(
+    (s) => s.projects[projectPath]?.loadingDiff ?? null
+  );
+  const commits = useGitStore(
+    (s) => s.projects[projectPath]?.commits ?? []
+  );
+  const commit = commits.find((c: CommitInfo) => c.hash === hash);
+
+  useEffect(() => {
+    fetchDiff(projectPath, hash);
+    fetchStats(projectPath, hash);
+  }, [projectPath, hash, fetchDiff, fetchStats]);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header with back button */}
+      <div className="px-4 py-3 border-b border-border flex items-center gap-2 shrink-0">
+        <button
+          onClick={onBack}
+          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default"
+          aria-label="Back to pipeline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-2xs font-mono text-accent-secondary">
+              {hash.slice(0, 7)}
+            </span>
+            {commit && (
+              <span className="text-sm text-foreground truncate">
+                {commit.subject}
+              </span>
+            )}
+          </div>
+          {commit && (
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-2xs text-foreground-muted">
+                {commit.author}
+              </span>
+              <span className="text-2xs text-foreground-muted/50">
+                {relativeTime(commit.date)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+        {loadingDiff === hash ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-5 bg-muted/20 rounded animate-pulse"
+                style={{ width: `${80 - i * 15}%` }}
+              />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Stats summary */}
+            {stats && (
+              <div className="mb-4">
+                <div className="flex items-center gap-3 text-2xs text-foreground-muted mb-2">
+                  <span>{stats.filesChanged} files changed</span>
+                  <span className="text-success">+{stats.totalInsertions}</span>
+                  <span className="text-destructive">-{stats.totalDeletions}</span>
+                </div>
+                {stats.files && stats.files.length > 0 && (
+                  <div className="space-y-0.5">
+                    {stats.files.map((file) => (
+                      <div
+                        key={file.path}
+                        className="flex items-center gap-2 py-0.5 text-2xs"
+                      >
+                        <span className="text-foreground-secondary truncate flex-1 font-mono">
+                          {file.path}
+                        </span>
+                        <span className="text-success tabular-nums shrink-0">
+                          +{file.insertions}
+                        </span>
+                        <span className="text-destructive tabular-nums shrink-0">
+                          -{file.deletions}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Raw diff preview */}
+            {diff?.patch && (
+              <div className="mt-3">
+                <p className="text-2xs text-foreground-muted mb-2">
+                  Diff preview (full viewer coming in next update)
+                </p>
+                <pre className="text-2xs font-mono bg-muted/10 rounded-lg p-3 overflow-x-auto max-h-[400px] overflow-y-auto scrollbar-thin">
+                  {diff.patch.slice(0, 5000)}
+                  {diff.patch.length > 5000 && (
+                    <span className="text-foreground-muted block mt-2">
+                      ... truncated ({Math.round(diff.patch.length / 1000)}k chars total)
+                    </span>
+                  )}
+                </pre>
+              </div>
+            )}
+
+            {!diff?.patch && !loadingDiff && (
+              <div className="flex items-center gap-2 text-2xs text-foreground-muted py-4">
+                <GitCommit className="w-4 h-4" />
+                <span>No diff data available for this commit</span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Error Alert ───────────────────────────────────────────────────────────────
 
 export function ErrorAlert({
   message,
