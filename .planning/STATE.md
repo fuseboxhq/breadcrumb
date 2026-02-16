@@ -6,6 +6,7 @@
 ## Active Work
 
 PHASE-22: Roadmap Command (not_started)
+PHASE-23: Breadcrumb Panel Redesign (not_started)
 
 ## Completed Phases
 
