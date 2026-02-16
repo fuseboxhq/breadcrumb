@@ -22,7 +22,6 @@ import {
   usePlanningStore,
   type PhaseSummary,
   type PhaseTask,
-  type PhaseDetail,
 } from "../../store/planningStore";
 
 // Stable empty references to avoid Zustand snapshot infinite-loop
@@ -55,6 +54,13 @@ export function PlanningPanel() {
     }
   }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-select first project if nothing is selected
+  useEffect(() => {
+    if (!selectedProjectPath && projects.length > 0) {
+      setSelectedProjectPath(projects[0].path);
+    }
+  }, [selectedProjectPath, projects]);
+
   // Auto-fetch all projects on mount
   useEffect(() => {
     for (const project of projects) {
@@ -64,6 +70,23 @@ export function PlanningPanel() {
       }
     }
   }, [projects.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refresh selected project when it changes
+  useEffect(() => {
+    if (selectedProjectPath) {
+      refreshProject(selectedProjectPath);
+    }
+  }, [selectedProjectPath]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Periodic auto-refresh every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (selectedProjectPath) {
+        refreshProject(selectedProjectPath);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [selectedProjectPath, refreshProject]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
