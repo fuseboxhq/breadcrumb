@@ -334,8 +334,8 @@ function DashboardBody({
         </div>
       </div>
 
-      {/* Phase Pipeline — will be built in rjx.2 */}
-      <PhasePipelineStub phases={phases} />
+      {/* Phase Pipeline */}
+      <PhasePipeline phases={phases} projectPath={projectPath} />
 
       {/* Active Task List — will be built in rjx.4 */}
       <ActiveTaskListStub phases={phases} />
@@ -343,48 +343,231 @@ function DashboardBody({
   );
 }
 
-// ── Stub Components (replaced in later tasks) ───────────────────────────────
+// ── Phase Pipeline ───────────────────────────────────────────────────────────
 
-function PhasePipelineStub({ phases }: { phases: PhaseSummary[] }) {
-  const activePhases = phases.filter((p) => p.status === "in_progress" || p.isActive);
-  const plannedPhases = phases.filter((p) => p.status === "not_started" && !p.isActive);
-  const completedPhases = phases.filter((p) => p.status === "complete");
+function PhasePipeline({
+  phases,
+  projectPath,
+}: {
+  phases: PhaseSummary[];
+  projectPath: string;
+}) {
+  const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
+
+  // Sort: active first, then planned, then completed
+  const sortedPhases = useMemo(() => {
+    const active = phases.filter(
+      (p) => p.status === "in_progress" || p.isActive
+    );
+    const planned = phases.filter(
+      (p) => p.status === "not_started" && !p.isActive
+    );
+    const completed = phases.filter((p) => p.status === "complete");
+    return [...active, ...planned, ...completed];
+  }, [phases]);
+
+  const toggleExpand = useCallback(
+    (phaseId: string) => {
+      setExpandedPhase((prev) => (prev === phaseId ? null : phaseId));
+    },
+    []
+  );
 
   return (
     <div className="px-4 py-3 border-b border-border">
       <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted mb-3">
         Phase Pipeline
       </p>
-      <div className="space-y-1">
-        {[...activePhases, ...plannedPhases, ...completedPhases].map(
-          (phase) => (
-            <div
-              key={phase.id}
-              className="flex items-center gap-2 py-1.5"
-            >
-              <PhaseStatusIcon status={phase.status} isActive={phase.isActive} />
-              <span
-                className={`text-sm truncate flex-1 ${
-                  phase.status === "in_progress" || phase.isActive
-                    ? "text-foreground font-medium"
-                    : phase.status === "complete"
-                      ? "text-foreground-muted"
-                      : "text-foreground-secondary"
+      <div className="relative">
+        {sortedPhases.map((phase, index) => {
+          const isLast = index === sortedPhases.length - 1;
+          const isActive =
+            phase.status === "in_progress" || phase.isActive;
+          const isComplete = phase.status === "complete";
+          const isExpanded = expandedPhase === phase.id;
+          const progress =
+            phase.taskCount > 0
+              ? (phase.completedCount / phase.taskCount) * 100
+              : 0;
+
+          return (
+            <div key={phase.id} className="relative">
+              {/* Vertical connector line */}
+              {!isLast && (
+                <div
+                  className={`absolute left-[7px] top-[28px] w-px transition-colors ${
+                    isActive
+                      ? "bg-accent-secondary/40"
+                      : isComplete
+                        ? "bg-success/30"
+                        : "bg-border"
+                  }`}
+                  style={{
+                    bottom: "0px",
+                  }}
+                />
+              )}
+
+              {/* Phase row */}
+              <button
+                onClick={() => toggleExpand(phase.id)}
+                className={`group relative w-full flex items-center gap-2.5 py-2 text-left transition-default rounded-md -mx-1 px-1 ${
+                  isActive
+                    ? "hover:bg-accent-secondary/5"
+                    : "hover:bg-muted/20"
                 }`}
+                aria-expanded={isExpanded}
+                aria-label={`${phase.title} — ${phase.completedCount} of ${phase.taskCount} tasks done`}
               >
-                {phase.title}
-              </span>
-              {phase.taskCount > 0 && (
-                <span className="text-2xs text-foreground-muted tabular-nums shrink-0">
-                  {phase.completedCount}/{phase.taskCount}
-                </span>
+                {/* Status icon */}
+                <PhaseStatusIcon
+                  status={phase.status}
+                  isActive={phase.isActive}
+                />
+
+                {/* Phase info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-sm truncate ${
+                        isActive
+                          ? "text-foreground font-medium"
+                          : isComplete
+                            ? "text-foreground-muted"
+                            : "text-foreground-secondary"
+                      }`}
+                    >
+                      {phase.title}
+                    </span>
+                  </div>
+
+                  {/* Progress bar + task count */}
+                  {phase.taskCount > 0 && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="w-16 h-[3px] bg-muted/40 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${progress}%`,
+                            backgroundColor: isComplete
+                              ? "hsl(var(--success))"
+                              : "hsl(var(--accent-secondary))",
+                          }}
+                        />
+                      </div>
+                      <span className="text-2xs text-foreground-muted tabular-nums">
+                        {phase.completedCount}/{phase.taskCount}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Expand chevron */}
+                {phase.taskCount > 0 && (
+                  <ChevronRight
+                    className={`w-3.5 h-3.5 text-foreground-muted shrink-0 transition-transform duration-150 ${
+                      isExpanded ? "rotate-90" : ""
+                    }`}
+                  />
+                )}
+              </button>
+
+              {/* Expanded task list — placeholder for rjx.3 */}
+              {isExpanded && phase.taskCount > 0 && (
+                <PhaseTasksExpanded
+                  projectPath={projectPath}
+                  phaseId={phase.id}
+                />
               )}
             </div>
-          )
-        )}
+          );
+        })}
       </div>
     </div>
   );
+}
+
+// Placeholder for rjx.3 — inline task expansion
+function PhaseTasksExpanded({
+  projectPath,
+  phaseId,
+}: {
+  projectPath: string;
+  phaseId: string;
+}) {
+  const fetchPhaseDetail = usePlanningStore((s) => s.fetchPhaseDetail);
+  const detail = usePlanningStore(
+    (s) => s.projects[projectPath]?.phaseDetails[phaseId] ?? null
+  );
+
+  useEffect(() => {
+    if (!detail) {
+      fetchPhaseDetail(projectPath, phaseId);
+    }
+  }, [projectPath, phaseId, detail, fetchPhaseDetail]);
+
+  if (!detail) {
+    return (
+      <div className="ml-6 pl-3 border-l border-border py-2">
+        <div className="space-y-1.5">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-5 bg-muted/20 rounded animate-pulse"
+              style={{ width: `${70 - i * 10}%` }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (detail.tasks.length === 0) {
+    return (
+      <div className="ml-6 pl-3 border-l border-border py-2">
+        <p className="text-2xs text-foreground-muted">
+          No tasks — run /bc:plan {phaseId}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ml-6 pl-3 border-l border-border py-1">
+      {detail.tasks.map((task) => (
+        <div
+          key={task.id}
+          className="flex items-center gap-2 py-1"
+        >
+          <TaskStatusDot status={task.status} />
+          <span
+            className={`text-2xs truncate flex-1 ${
+              task.status === "done"
+                ? "text-foreground-muted line-through"
+                : task.status === "in_progress"
+                  ? "text-foreground"
+                  : "text-foreground-secondary"
+            }`}
+          >
+            {task.title}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TaskStatusDot({ status }: { status: PhaseTask["status"] }) {
+  switch (status) {
+    case "done":
+      return <CheckCircle2 className="w-3 h-3 text-success shrink-0" />;
+    case "in_progress":
+      return <Clock className="w-3 h-3 text-warning shrink-0" />;
+    case "blocked":
+      return <AlertCircle className="w-3 h-3 text-destructive shrink-0" />;
+    default:
+      return <Circle className="w-3 h-3 text-accent-secondary shrink-0" />;
+  }
 }
 
 function ActiveTaskListStub({ phases }: { phases: PhaseSummary[] }) {
