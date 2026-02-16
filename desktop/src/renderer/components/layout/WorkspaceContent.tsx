@@ -3,11 +3,10 @@ import { useProjectsStore } from "../../store/projectsStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
 import {
   Terminal,
-  Sparkles,
   Zap,
   Command,
-  ArrowRight,
   FolderOpen,
+  LayoutGrid,
 } from "lucide-react";
 
 export function WorkspaceContent() {
@@ -67,114 +66,89 @@ function WelcomeView() {
     if (dir) addProject(dir);
   };
 
-  const quickActions = [
-    {
-      icon: FolderOpen,
-      label: "Open Project",
-      description: projectCount > 0
-        ? "Add another project to your workspace"
-        : "Add a project folder to get started",
-      shortcut: "⌘O",
-      color: "text-dracula-orange",
-      bgColor: "bg-dracula-orange/10",
-      action: handleOpenProject,
-    },
-    {
-      icon: Terminal,
-      label: "New Terminal",
-      description: activeProject
-        ? `Open terminal in ${activeProject.name}`
-        : "Open a terminal session",
-      shortcut: "⌘T",
-      color: "text-dracula-green",
-      bgColor: "bg-dracula-green/10",
-      action: () =>
-        addTab({
-          id: `terminal-${Date.now()}`,
-          type: "terminal",
-          title: activeProject ? activeProject.name : "Terminal",
-          projectId: activeProject?.id,
-        }),
-    },
-    {
-      icon: Sparkles,
-      label: "Breadcrumb Planner",
-      description: "View phases, tasks, and project status",
-      shortcut: "⌘⇧P",
-      color: "text-dracula-purple",
-      bgColor: "bg-dracula-purple/10",
-      action: () => addRightPanelPane("planning"),
-    },
-  ];
-
   return (
     <div className="flex-1 flex items-center justify-center bg-background overflow-y-auto">
-      <div className="max-w-lg w-full px-8 py-16 animate-fade-in-up">
-        {/* Hero */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6 shadow-glow">
-            <Sparkles className="w-8 h-8 text-primary" />
+      <div className="max-w-md w-full px-8 py-16 animate-fade-in-up">
+        {/* Wordmark */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-8 rounded-full bg-accent-secondary" />
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">
+              Breadcrumb
+            </h1>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight mb-2">
-            Welcome to Breadcrumb
-          </h1>
-          <p className="text-sm text-foreground-muted max-w-sm mx-auto leading-relaxed">
-            Planning, terminals, browser, and extensions — all in one place.
+          <p className="text-sm text-foreground-secondary leading-relaxed">
+            {projectCount === 0
+              ? "Open a project folder to begin. Each project gets its own terminals, planning data, and context."
+              : `${projectCount} project${projectCount !== 1 ? "s" : ""} in workspace. Open a terminal or start planning.`
+            }
           </p>
-          {projectCount === 0 && (
-            <p className="text-2xs text-foreground-muted/60 mt-3 max-w-xs mx-auto leading-relaxed">
-              Start by opening a project folder. Each project gets its own terminals, planning data, and workspace context.
-            </p>
-          )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-2 mb-10">
-          <p className="text-2xs font-semibold uppercase tracking-widest text-foreground-muted px-1 mb-3">
-            Quick Actions
-          </p>
-          {quickActions.map(
-            ({ icon: Icon, label, description, shortcut, color, bgColor, action }) => (
-              <button
-                key={label}
-                onClick={action}
-                className="group w-full flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-border-strong hover:bg-background-raised transition-default text-left"
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl ${bgColor} flex items-center justify-center shrink-0 transition-default group-hover:scale-105`}
-                >
-                  <Icon className={`w-5 h-5 ${color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-foreground group-hover:text-foreground">
-                    {label}
-                  </div>
-                  <div className="text-2xs text-foreground-muted truncate">
-                    {description}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <kbd className="hidden group-hover:inline-flex px-1.5 py-0.5 rounded bg-muted/50 text-foreground-muted text-2xs font-mono transition-default">
-                    {shortcut}
-                  </kbd>
-                  <ArrowRight className="w-4 h-4 text-foreground-muted opacity-0 group-hover:opacity-100 transition-default -translate-x-1 group-hover:translate-x-0" />
-                </div>
-              </button>
-            )
-          )}
+        {/* Actions */}
+        <div className="space-y-1 mb-12">
+          <WelcomeAction
+            icon={FolderOpen}
+            label="Open project"
+            shortcut="⌘O"
+            onClick={handleOpenProject}
+          />
+          <WelcomeAction
+            icon={Terminal}
+            label={activeProject ? `Terminal in ${activeProject.name}` : "New terminal"}
+            shortcut="⌘T"
+            onClick={() =>
+              addTab({
+                id: `terminal-${Date.now()}`,
+                type: "terminal",
+                title: activeProject ? activeProject.name : "Terminal",
+                projectId: activeProject?.id,
+              })
+            }
+          />
+          <WelcomeAction
+            icon={LayoutGrid}
+            label="Breadcrumb planner"
+            shortcut="⌘⇧P"
+            onClick={() => addRightPanelPane("planning")}
+          />
         </div>
 
-        {/* Command palette hint */}
-        <div className="text-center">
-          <p className="text-2xs text-foreground-muted/60">
-            Press{" "}
-            <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/40 text-foreground-muted text-2xs font-mono">
-              <Command className="w-2.5 h-2.5" />K
-            </kbd>{" "}
-            to open the command palette
-          </p>
-        </div>
+        {/* Keyboard hint */}
+        <p className="text-2xs text-foreground-muted">
+          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/40 text-foreground-muted text-2xs font-mono mr-1.5">
+            <Command className="w-2.5 h-2.5" />K
+          </kbd>
+          Command palette
+        </p>
       </div>
     </div>
+  );
+}
+
+function WelcomeAction({
+  icon: Icon,
+  label,
+  shortcut,
+  onClick,
+}: {
+  icon: typeof Terminal;
+  label: string;
+  shortcut: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full flex items-center gap-3 px-3 py-2.5 -mx-3 rounded-lg text-left transition-default hover:bg-background-raised"
+    >
+      <Icon className="w-4 h-4 text-foreground-muted shrink-0 group-hover:text-accent-secondary transition-default" />
+      <span className="flex-1 text-sm text-foreground-secondary group-hover:text-foreground transition-default">
+        {label}
+      </span>
+      <kbd className="text-2xs text-foreground-muted/60 font-mono opacity-0 group-hover:opacity-100 transition-default">
+        {shortcut}
+      </kbd>
+    </button>
   );
 }
