@@ -115,7 +115,7 @@ function WelcomeView() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6 shadow-glow">
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight mb-2">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight mb-2">
             Welcome to Breadcrumb
           </h1>
           <p className="text-sm text-foreground-muted max-w-sm mx-auto leading-relaxed">

@@ -93,12 +93,13 @@ const config: Config = {
         mono: ["var(--font-mono)"],
       },
       fontSize: {
-        "2xs": ["0.6875rem", { lineHeight: "1rem" }],     // 11px — status text
-        xs: ["0.75rem", { lineHeight: "1rem" }],           // 12px
-        sm: ["0.8125rem", { lineHeight: "1.25rem" }],      // 13px — base body
-        base: ["0.9375rem", { lineHeight: "1.375rem" }],   // 15px — headings
-        lg: ["1.125rem", { lineHeight: "1.5rem" }],        // 18px — hero
-        xl: ["1.5rem", { lineHeight: "2rem" }],            // 24px
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],                              // 11px — status text
+        xs: ["0.75rem", { lineHeight: "1rem" }],                                    // 12px
+        sm: ["0.8125rem", { lineHeight: "1.25rem" }],                               // 13px — base body
+        base: ["0.9375rem", { lineHeight: "1.375rem", letterSpacing: "-0.01em" }],  // 15px — headings
+        lg: ["1.125rem", { lineHeight: "1.5rem", letterSpacing: "-0.015em" }],      // 18px — hero
+        xl: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em" }],           // 24px
+        "2xl": ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.025em" }],       // 32px — display
       },
       transitionDuration: {
         fast: "var(--duration-fast)",

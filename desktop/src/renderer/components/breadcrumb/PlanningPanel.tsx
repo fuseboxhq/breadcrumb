@@ -583,7 +583,7 @@ function PhaseDetailView({
             </span>
           )}
         </div>
-        <h2 className="text-lg font-bold text-foreground mb-1">
+        <h2 className="text-lg font-semibold text-foreground mb-1">
           {detail.title}
         </h2>
         {detail.created && (

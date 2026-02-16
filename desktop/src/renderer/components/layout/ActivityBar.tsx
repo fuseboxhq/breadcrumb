@@ -101,7 +101,7 @@ function ActivityButton({
         `}
         aria-label={label}
       >
-        <Icon className="w-[18px] h-[18px]" />
+        <Icon className="w-5 h-5" />
         {/* Active indicator bar */}
         {isActive && (
           <div className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full bg-accent-secondary" />
