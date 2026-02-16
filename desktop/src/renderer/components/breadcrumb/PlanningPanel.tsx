@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   RotateCcw,
   ListChecks,
+  ClipboardList,
+  Inbox,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 import {
@@ -184,7 +186,7 @@ function PortfolioHeader({
             <button
               key={project.id}
               onClick={() => onSelectProject(project.path)}
-              className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-default ${
+              className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none ${
                 isSelected
                   ? "bg-accent-secondary/8 text-foreground"
                   : "text-foreground-secondary hover:bg-muted/30 hover:text-foreground"
@@ -310,9 +312,9 @@ function DashboardBody({
   if (phases.length === 0) {
     return (
       <EmptySection
-        icon={LayoutGrid}
+        icon={ClipboardList}
         title="No phases yet"
-        description="Create one with /bc:new-phase or /bc:roadmap"
+        description="Run /bc:new-phase or /bc:roadmap to create your first phase"
       />
     );
   }
@@ -434,7 +436,7 @@ function PhasePipeline({
               {/* Phase row */}
               <button
                 onClick={() => toggleExpand(phase.id)}
-                className={`group relative w-full flex items-center gap-2.5 py-2 text-left transition-default rounded-md -mx-1 px-1 ${
+                className={`group relative w-full flex items-center gap-2.5 py-2 text-left transition-default rounded-md -mx-1 px-1 focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none ${
                   isActive
                     ? "hover:bg-accent-secondary/5"
                     : "hover:bg-muted/20"
@@ -495,12 +497,23 @@ function PhasePipeline({
                 )}
               </button>
 
-              {/* Expanded task list — placeholder for rjx.3 */}
-              {isExpanded && phase.taskCount > 0 && (
-                <PhaseTasksExpanded
-                  projectPath={projectPath}
-                  phaseId={phase.id}
-                />
+              {/* Expanded task list — animated with CSS grid */}
+              {phase.taskCount > 0 && (
+                <div
+                  className="grid transition-[grid-template-rows] duration-150 ease-out"
+                  style={{
+                    gridTemplateRows: isExpanded ? "1fr" : "0fr",
+                  }}
+                >
+                  <div className="overflow-hidden">
+                    {isExpanded && (
+                      <PhaseTasksExpanded
+                        projectPath={projectPath}
+                        phaseId={phase.id}
+                      />
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           );
@@ -557,9 +570,15 @@ function PhaseTasksExpanded({
 
   if (detail.tasks.length === 0) {
     return (
-      <div className="ml-6 pl-3 border-l border-border py-2 animate-fade-in">
-        <p className="text-2xs text-foreground-muted">
-          No tasks — run /bc:plan {phaseId}
+      <div className="ml-6 pl-3 border-l border-border py-3 animate-fade-in">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="w-3.5 h-3.5 text-foreground-muted/60 shrink-0" />
+          <p className="text-2xs text-foreground-muted">
+            Plan this phase to create tasks
+          </p>
+        </div>
+        <p className="text-2xs text-foreground-muted/50 mt-0.5 ml-5.5">
+          Run <span className="font-mono">/bc:plan {phaseId}</span>
         </p>
       </div>
     );
@@ -607,12 +626,14 @@ function PhaseTasksExpanded({
         />
       )}
 
-      {/* Done — collapsed by default */}
+      {/* Done — collapsed by default with animated expand */}
       {doneTasks.length > 0 && (
         <div className="mt-1">
           <button
             onClick={() => setShowDone(!showDone)}
             className="flex items-center gap-1 text-2xs text-foreground-muted hover:text-foreground-secondary transition-default py-0.5"
+            aria-expanded={showDone}
+            aria-label={`Show ${doneTasks.length} completed tasks`}
           >
             <ChevronRight
               className={`w-3 h-3 transition-transform duration-150 ${
@@ -621,13 +642,20 @@ function PhaseTasksExpanded({
             />
             Done ({doneTasks.length})
           </button>
-          {showDone && (
-            <div className="mt-0.5 animate-fade-in">
-              {doneTasks.map((task) => (
-                <TaskRow key={task.id} task={task} />
-              ))}
+          <div
+            className="grid transition-[grid-template-rows] duration-150 ease-out"
+            style={{ gridTemplateRows: showDone ? "1fr" : "0fr" }}
+          >
+            <div className="overflow-hidden">
+              {showDone && (
+                <div className="mt-0.5">
+                  {doneTasks.map((task) => (
+                    <TaskRow key={task.id} task={task} />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -669,7 +697,7 @@ function TaskGroup({
 
 function TaskRow({ task }: { task: PhaseTask }) {
   return (
-    <div className="flex items-center gap-2 py-0.5 group">
+    <div className="flex items-center gap-2 py-0.5 group rounded -mx-0.5 px-0.5 hover:bg-muted/10 transition-default">
       <TaskStatusDot status={task.status} />
       <span
         className={`text-2xs truncate flex-1 ${
@@ -793,15 +821,23 @@ function ActiveTaskList({
           ))}
         </div>
       ) : activeTasks.length === 0 ? (
-        <p className="text-2xs text-foreground-muted">
-          No active tasks — all work is done or phases need planning
-        </p>
+        <div className="flex items-start gap-2 py-1">
+          <Inbox className="w-3.5 h-3.5 text-foreground-muted/60 shrink-0 mt-px" />
+          <div>
+            <p className="text-2xs text-foreground-muted">
+              All caught up — no tasks need attention
+            </p>
+            <p className="text-2xs text-foreground-muted/50 mt-0.5">
+              Tasks appear here when phases are planned and active
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="space-y-0.5">
           {activeTasks.map(({ task, phaseId }) => (
             <div
               key={`${phaseId}-${task.id}`}
-              className="flex items-center gap-2 py-1 group"
+              className="flex items-center gap-2 py-1 group rounded-md -mx-1 px-1 hover:bg-muted/15 transition-default"
             >
               <TaskStatusDot status={task.status} />
               <span className="text-2xs font-mono text-foreground-muted/60 shrink-0">
@@ -926,19 +962,19 @@ function EmptyDashboard() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in">
-      <div className="w-12 h-12 rounded-xl bg-muted/30 flex items-center justify-center mb-4">
-        <LayoutGrid className="w-6 h-6 text-foreground-muted" />
+    <div className="flex flex-col items-center justify-center h-full px-6 text-center animate-fade-in-up">
+      <div className="w-12 h-12 rounded-xl bg-muted/20 border border-border flex items-center justify-center mb-4">
+        <FolderOpen className="w-6 h-6 text-foreground-muted" />
       </div>
       <p className="text-sm font-medium text-foreground-secondary mb-1">
-        No projects in workspace
+        Add a project to get started
       </p>
-      <p className="text-2xs text-foreground-muted mb-4 max-w-xs">
-        Add a project folder to see its phases, tasks, and progress.
+      <p className="text-2xs text-foreground-muted mb-4 max-w-[240px] leading-relaxed">
+        Open a project folder to see its phases, tasks, and progress at a glance.
       </p>
       <button
         onClick={handleAdd}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-secondary/10 text-accent-secondary text-sm font-medium hover:bg-accent-secondary/15 transition-default"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-secondary/10 text-accent-secondary text-sm font-medium hover:bg-accent-secondary/15 transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
       >
         <FolderOpen className="w-4 h-4" />
         Add Project
@@ -957,12 +993,14 @@ function EmptySection({
   description: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 text-center animate-fade-in">
-      <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center mb-3">
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center animate-fade-in-up">
+      <div className="w-10 h-10 rounded-xl bg-muted/20 border border-border flex items-center justify-center mb-3">
         <Icon className="w-5 h-5 text-foreground-muted" />
       </div>
       <p className="text-sm text-foreground-secondary mb-0.5">{title}</p>
-      <p className="text-2xs text-foreground-muted">{description}</p>
+      <p className="text-2xs text-foreground-muted max-w-[220px] leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }

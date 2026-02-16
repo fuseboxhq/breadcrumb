@@ -80,12 +80,12 @@ The current PlanningPanel (`desktop/src/renderer/components/breadcrumb/PlanningP
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-rjx.1 | Scaffold dashboard layout & portfolio header | open | High | - |
-| breadcrumb-rjx.2 | Build phase pipeline component | open | High | rjx.1 |
-| breadcrumb-rjx.3 | Build inline task expansion | open | Medium | rjx.2 |
-| breadcrumb-rjx.4 | Build active task list section | open | Medium | rjx.2 |
-| breadcrumb-rjx.5 | Wire data layer & multi-project switching | open | Medium | rjx.1 |
-| breadcrumb-rjx.6 | Polish: empty states, transitions & design tokens | open | Medium | rjx.4, rjx.5 |
+| breadcrumb-rjx.1 | Scaffold dashboard layout & portfolio header | done | High | - |
+| breadcrumb-rjx.2 | Build phase pipeline component | done | High | rjx.1 |
+| breadcrumb-rjx.3 | Build inline task expansion | done | Medium | rjx.2 |
+| breadcrumb-rjx.4 | Build active task list section | done | Medium | rjx.2 |
+| breadcrumb-rjx.5 | Wire data layer & multi-project switching | done | Medium | rjx.1 |
+| breadcrumb-rjx.6 | Polish: empty states, transitions & design tokens | done | Medium | rjx.4, rjx.5 |
 
 ### Task Details
 
