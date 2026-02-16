@@ -1,10 +1,11 @@
 # Project State
 
-**Current Phase:** None
+**Current Phase:** PHASE-24
 **Last Updated:** 2026-02-14
 
 ## Active Work
 
+PHASE-24: Git Integration & Diff Viewer (not_started)
 
 ## Completed Phases
 
