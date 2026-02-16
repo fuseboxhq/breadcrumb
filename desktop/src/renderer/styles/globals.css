@@ -253,3 +253,28 @@
     transition-timing-function: var(--ease-out);
   }
 }
+
+/* ─── Git Diff View Theme (matches Breadcrumb dark palette) ─── */
+[data-component="git-diff-view"][data-theme="dark"] {
+  --diff-add-line-bg: rgba(46, 160, 67, 0.08);
+  --diff-del-line-bg: rgba(248, 81, 73, 0.08);
+  --diff-add-line-num-bg: rgba(46, 160, 67, 0.12);
+  --diff-del-line-num-bg: rgba(248, 81, 73, 0.12);
+  --diff-add-content-highlight-bg: rgba(46, 160, 67, 0.25);
+  --diff-del-content-highlight-bg: rgba(248, 81, 73, 0.25);
+  --diff-hunk-line-bg: rgba(56, 139, 253, 0.06);
+  --diff-content-bg: #101014;
+  font-family: "JetBrains Mono", "SF Mono", "Cascadia Code", monospace;
+  font-size: 12px;
+  border-radius: 0;
+}
+
+.diff-viewer-wrapper {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.diff-viewer-wrapper [data-component="git-diff-view"] {
+  border: none !important;
+  background: hsl(228 10% 7%) !important;
+}

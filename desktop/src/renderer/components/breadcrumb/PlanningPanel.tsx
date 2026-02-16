@@ -14,7 +14,6 @@ import {
   ClipboardList,
   Inbox,
   GitCommit,
-  ArrowLeft,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 import {
@@ -32,6 +31,7 @@ import {
   usePhaseCommits,
   type CommitInfo,
 } from "../../store/gitStore";
+import { DiffViewer } from "./DiffViewer";
 
 // Stable empty references to avoid Zustand snapshot infinite-loop
 const EMPTY_PHASES: PhaseSummary[] = [];
@@ -330,10 +330,10 @@ function DashboardBody({
     );
   }
 
-  // If a commit is selected, show the diff view (placeholder for c9v.5)
+  // If a commit is selected, show the diff viewer
   if (selectedCommit) {
     return (
-      <DiffViewPlaceholder
+      <DiffViewer
         projectPath={projectPath}
         hash={selectedCommit}
         onBack={() => setSelectedCommit(null)}
@@ -1155,148 +1155,6 @@ function PhaseCommitsSection({
           Show {commits.length - INITIAL_SHOW} more
         </button>
       )}
-    </div>
-  );
-}
-
-// ── Diff View Placeholder ─────────────────────────────────────────────────────
-
-function DiffViewPlaceholder({
-  projectPath,
-  hash,
-  onBack,
-}: {
-  projectPath: string;
-  hash: string;
-  onBack: () => void;
-}) {
-  const fetchDiff = useGitStore((s) => s.fetchDiff);
-  const fetchStats = useGitStore((s) => s.fetchStats);
-  const diff = useGitStore(
-    (s) => s.projects[projectPath]?.diffs[hash] ?? null
-  );
-  const stats = useGitStore(
-    (s) => s.projects[projectPath]?.stats[hash] ?? null
-  );
-  const loadingDiff = useGitStore(
-    (s) => s.projects[projectPath]?.loadingDiff ?? null
-  );
-  const commits = useGitStore(
-    (s) => s.projects[projectPath]?.commits ?? []
-  );
-  const commit = commits.find((c: CommitInfo) => c.hash === hash);
-
-  useEffect(() => {
-    fetchDiff(projectPath, hash);
-    fetchStats(projectPath, hash);
-  }, [projectPath, hash, fetchDiff, fetchStats]);
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header with back button */}
-      <div className="px-4 py-3 border-b border-border flex items-center gap-2 shrink-0">
-        <button
-          onClick={onBack}
-          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default"
-          aria-label="Back to pipeline"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-2xs font-mono text-accent-secondary">
-              {hash.slice(0, 7)}
-            </span>
-            {commit && (
-              <span className="text-sm text-foreground truncate">
-                {commit.subject}
-              </span>
-            )}
-          </div>
-          {commit && (
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-2xs text-foreground-muted">
-                {commit.author}
-              </span>
-              <span className="text-2xs text-foreground-muted/50">
-                {relativeTime(commit.date)}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
-        {loadingDiff === hash ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-5 bg-muted/20 rounded animate-pulse"
-                style={{ width: `${80 - i * 15}%` }}
-              />
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* Stats summary */}
-            {stats && (
-              <div className="mb-4">
-                <div className="flex items-center gap-3 text-2xs text-foreground-muted mb-2">
-                  <span>{stats.filesChanged} files changed</span>
-                  <span className="text-success">+{stats.totalInsertions}</span>
-                  <span className="text-destructive">-{stats.totalDeletions}</span>
-                </div>
-                {stats.files && stats.files.length > 0 && (
-                  <div className="space-y-0.5">
-                    {stats.files.map((file) => (
-                      <div
-                        key={file.path}
-                        className="flex items-center gap-2 py-0.5 text-2xs"
-                      >
-                        <span className="text-foreground-secondary truncate flex-1 font-mono">
-                          {file.path}
-                        </span>
-                        <span className="text-success tabular-nums shrink-0">
-                          +{file.insertions}
-                        </span>
-                        <span className="text-destructive tabular-nums shrink-0">
-                          -{file.deletions}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Raw diff preview */}
-            {diff?.patch && (
-              <div className="mt-3">
-                <p className="text-2xs text-foreground-muted mb-2">
-                  Diff preview (full viewer coming in next update)
-                </p>
-                <pre className="text-2xs font-mono bg-muted/10 rounded-lg p-3 overflow-x-auto max-h-[400px] overflow-y-auto scrollbar-thin">
-                  {diff.patch.slice(0, 5000)}
-                  {diff.patch.length > 5000 && (
-                    <span className="text-foreground-muted block mt-2">
-                      ... truncated ({Math.round(diff.patch.length / 1000)}k chars total)
-                    </span>
-                  )}
-                </pre>
-              </div>
-            )}
-
-            {!diff?.patch && !loadingDiff && (
-              <div className="flex items-center gap-2 text-2xs text-foreground-muted py-4">
-                <GitCommit className="w-4 h-4" />
-                <span>No diff data available for this commit</span>
-              </div>
-            )}
-          </>
-        )}
-      </div>
     </div>
   );
 }
