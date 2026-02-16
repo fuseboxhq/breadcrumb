@@ -4,6 +4,7 @@
 
 ```
 /bc:status         # View all phases and progress
+/bc:roadmap        # Create a high-level multi-phase roadmap
 /bc:plan           # Plan a phase with task breakdown
 /bc:execute        # Execute tasks in a phase
 /bc:new-phase      # Create a new phase

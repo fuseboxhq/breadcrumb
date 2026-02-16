@@ -35,6 +35,7 @@ PHASE-01: Merge claude-planz and plan-visualizer into unified Breadcrumb project
 ## Quick Commands
 
 - Map existing codebase: `/bc:integrate`
+- Create roadmap: `/bc:roadmap [vision]`
 - Create phase: `/bc:new-phase [title]`
 - Plan phase: `/bc:plan PHASE-XX`
 - Execute phase: `/bc:execute PHASE-XX`

@@ -72,10 +72,10 @@ The roadmap skill is a new markdown file (`~/.claude/commands/bc/roadmap.md`) fo
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-zrg.1 | Write the `/bc:roadmap` skill file | open | High | - |
-| breadcrumb-zrg.2 | Update `/bc:status` for roadmap awareness | open | Low | zrg.1 |
-| breadcrumb-zrg.3 | Cross-reference existing skills for compatibility | open | Low | zrg.1 |
-| breadcrumb-zrg.4 | End-to-end validation & polish | open | Medium | zrg.1 |
+| breadcrumb-zrg.1 | Write the `/bc:roadmap` skill file | done | High | - |
+| breadcrumb-zrg.2 | Update `/bc:status` for roadmap awareness | done | Low | zrg.1 |
+| breadcrumb-zrg.3 | Cross-reference existing skills for compatibility | done | Low | zrg.1 |
+| breadcrumb-zrg.4 | End-to-end validation & polish | done | Medium | zrg.1 |
 
 ### Task Details
 
