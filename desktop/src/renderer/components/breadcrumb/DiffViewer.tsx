@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { DiffView, DiffModeEnum, DiffFile } from "@git-diff-view/react";
 import "@git-diff-view/react/styles/diff-view.css";
 import {
@@ -8,6 +8,7 @@ import {
   FilePlus,
   FileX,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import {
   useGitStore,
@@ -16,16 +17,22 @@ import {
   type CommitStats,
 } from "../../store/gitStore";
 
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const MAX_FILES_SHOWN = 50;
+const MAX_HUNK_LINES = 5000;
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface FileDiff {
   oldName: string;
   newName: string;
-  hunks: string; // raw hunk text including --- and +++ headers
+  hunks: string;
   isBinary: boolean;
   isNew: boolean;
   isDeleted: boolean;
   isRenamed: boolean;
+  lineCount: number;
 }
 
 // ── Diff Parser ──────────────────────────────────────────────────────────────
@@ -34,14 +41,12 @@ function parseRawDiff(raw: string): FileDiff[] {
   if (!raw.trim()) return [];
 
   const files: FileDiff[] = [];
-  // Split on "diff --git" boundaries
   const sections = raw.split(/^diff --git /m).filter(Boolean);
 
   for (const section of sections) {
     const lines = section.split("\n");
     const headerLine = lines[0] ?? "";
 
-    // Parse filenames from "a/path b/path"
     const headerMatch = headerLine.match(/^a\/(.+?) b\/(.+?)$/);
     const oldName = headerMatch?.[1] ?? "unknown";
     const newName = headerMatch?.[2] ?? "unknown";
@@ -52,19 +57,19 @@ function parseRawDiff(raw: string): FileDiff[] {
     const isRenamed = section.includes("rename from") || section.includes("rename to");
 
     if (isBinary) {
-      files.push({ oldName, newName, hunks: "", isBinary: true, isNew, isDeleted, isRenamed });
+      files.push({ oldName, newName, hunks: "", isBinary: true, isNew, isDeleted, isRenamed, lineCount: 0 });
       continue;
     }
 
-    // Extract from --- line onwards (the actual diff content)
     const diffStart = section.indexOf("--- ");
     if (diffStart === -1) {
-      files.push({ oldName, newName, hunks: "", isBinary: false, isNew, isDeleted, isRenamed });
+      files.push({ oldName, newName, hunks: "", isBinary: false, isNew, isDeleted, isRenamed, lineCount: 0 });
       continue;
     }
 
     const hunks = section.slice(diffStart);
-    files.push({ oldName, newName, hunks, isBinary: false, isNew, isDeleted, isRenamed });
+    const lineCount = hunks.split("\n").length;
+    files.push({ oldName, newName, hunks, isBinary: false, isNew, isDeleted, isRenamed, lineCount });
   }
 
   return files;
@@ -75,37 +80,14 @@ function parseRawDiff(raw: string): FileDiff[] {
 function detectLang(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   const map: Record<string, string> = {
-    ts: "typescript",
-    tsx: "tsx",
-    js: "javascript",
-    jsx: "jsx",
-    py: "python",
-    rs: "rust",
-    go: "go",
-    rb: "ruby",
-    java: "java",
-    kt: "kotlin",
-    swift: "swift",
-    c: "c",
-    h: "c",
-    cpp: "cpp",
-    hpp: "cpp",
-    cs: "csharp",
-    css: "css",
-    scss: "scss",
-    html: "html",
-    json: "json",
-    yaml: "yaml",
-    yml: "yaml",
-    md: "markdown",
-    sh: "bash",
-    bash: "bash",
-    zsh: "bash",
-    toml: "toml",
-    sql: "sql",
-    xml: "xml",
-    vue: "vue",
-    svelte: "svelte",
+    ts: "typescript", tsx: "tsx", js: "javascript", jsx: "jsx",
+    py: "python", rs: "rust", go: "go", rb: "ruby",
+    java: "java", kt: "kotlin", swift: "swift",
+    c: "c", h: "c", cpp: "cpp", hpp: "cpp", cs: "csharp",
+    css: "css", scss: "scss", html: "html",
+    json: "json", yaml: "yaml", yml: "yaml",
+    md: "markdown", sh: "bash", bash: "bash", zsh: "bash",
+    toml: "toml", sql: "sql", xml: "xml", vue: "vue", svelte: "svelte",
   };
   return map[ext] ?? "text";
 }
@@ -165,7 +147,9 @@ export function DiffViewer({
   const commit = commits.find((c) => c.hash === hash);
 
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
+  const [showAllFiles, setShowAllFiles] = useState(false);
   const fileRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const fileListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchDiff(projectPath, hash);
@@ -178,6 +162,13 @@ export function DiffViewer({
     return parseRawDiff(diff.patch);
   }, [diff?.patch]);
 
+  // Truncate file list for large commits
+  const visibleFiles = useMemo(() => {
+    if (showAllFiles) return fileDiffs;
+    return fileDiffs.slice(0, MAX_FILES_SHOWN);
+  }, [fileDiffs, showAllFiles]);
+  const hiddenFileCount = fileDiffs.length - visibleFiles.length;
+
   // Match stats to files
   const fileStatsMap = useMemo(() => {
     const map = new Map<string, { insertions: number; deletions: number }>();
@@ -189,23 +180,36 @@ export function DiffViewer({
     return map;
   }, [stats?.files]);
 
-  const handleFileClick = (fileName: string) => {
+  const handleFileClick = useCallback((fileName: string) => {
     setExpandedFile((prev) => (prev === fileName ? null : fileName));
-    // Scroll to file after expand
     setTimeout(() => {
       fileRefs.current[fileName]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 50);
-  };
+  }, []);
+
+  // Keyboard navigation for file list
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      if (expandedFile) {
+        setExpandedFile(null);
+      } else {
+        onBack();
+      }
+    }
+  }, [expandedFile, onBack]);
 
   const isLoading = loadingDiff === hash;
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col h-full animate-fade-in"
+      onKeyDown={handleKeyDown}
+    >
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 shrink-0 bg-background-raised">
         <button
           onClick={onBack}
-          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default"
+          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
           aria-label="Back to pipeline"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -237,15 +241,7 @@ export function DiffViewer({
       {/* Content */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {isLoading ? (
-          <div className="p-4 space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-6 bg-muted/20 rounded animate-pulse"
-                style={{ width: `${90 - i * 12}%` }}
-              />
-            ))}
-          </div>
+          <DiffSkeleton />
         ) : (
           <>
             {/* Stats summary bar */}
@@ -266,11 +262,12 @@ export function DiffViewer({
             )}
 
             {/* File list with inline diffs */}
-            <div className="divide-y divide-border/50">
-              {fileDiffs.map((file) => {
+            <div className="divide-y divide-border/50" ref={fileListRef}>
+              {visibleFiles.map((file) => {
                 const fileName = file.isDeleted ? file.oldName : file.newName;
                 const isExpanded = expandedFile === fileName;
                 const fileStat = fileStatsMap.get(fileName);
+                const isTooLarge = file.lineCount > MAX_HUNK_LINES;
 
                 return (
                   <div
@@ -280,12 +277,13 @@ export function DiffViewer({
                     {/* File header row */}
                     <button
                       onClick={() => !file.isBinary && handleFileClick(fileName)}
-                      className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-default ${
+                      className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:ring-inset focus-visible:outline-none ${
                         file.isBinary
                           ? "opacity-50 cursor-default"
                           : "hover:bg-muted/10 cursor-pointer"
                       }`}
                       disabled={file.isBinary}
+                      tabIndex={0}
                     >
                       <FileStatusIcon file={file} />
 
@@ -302,6 +300,12 @@ export function DiffViewer({
                       {file.isRenamed && (
                         <span className="text-2xs px-1.5 py-0.5 rounded bg-accent-secondary/10 text-accent-secondary shrink-0">
                           Renamed
+                        </span>
+                      )}
+
+                      {isTooLarge && (
+                        <span className="text-2xs px-1.5 py-0.5 rounded bg-warning/10 text-warning shrink-0">
+                          Large
                         </span>
                       )}
 
@@ -325,29 +329,86 @@ export function DiffViewer({
                       )}
                     </button>
 
-                    {/* Expanded diff view */}
-                    {isExpanded && file.hunks && (
-                      <div className="border-t border-border/30">
-                        <FileDiffView
-                          fileName={fileName}
-                          hunks={file.hunks}
-                        />
+                    {/* Expanded diff view with animation */}
+                    <div
+                      className="grid transition-[grid-template-rows] duration-200 ease-out"
+                      style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
+                    >
+                      <div className="overflow-hidden">
+                        {isExpanded && file.hunks && (
+                          <div className="border-t border-border/30">
+                            <FileDiffView
+                              fileName={fileName}
+                              hunks={file.hunks}
+                              isTooLarge={isTooLarge}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
+            {/* "N more files" button */}
+            {hiddenFileCount > 0 && (
+              <div className="px-4 py-3 border-t border-border/50">
+                <button
+                  onClick={() => setShowAllFiles(true)}
+                  className="text-2xs text-accent-secondary hover:text-accent-secondary/80 transition-default"
+                >
+                  Show {hiddenFileCount} more file{hiddenFileCount !== 1 ? "s" : ""}
+                </button>
+              </div>
+            )}
+
             {/* Empty state */}
             {fileDiffs.length === 0 && !isLoading && (
-              <div className="flex items-center gap-2 text-2xs text-foreground-muted p-4">
-                <GitCommit className="w-4 h-4" />
-                <span>No diff data available for this commit</span>
+              <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in-up">
+                <div className="w-10 h-10 rounded-xl bg-muted/20 border border-border flex items-center justify-center mb-3">
+                  <GitCommit className="w-5 h-5 text-foreground-muted" />
+                </div>
+                <p className="text-sm text-foreground-secondary mb-0.5">
+                  No changes in this commit
+                </p>
+                <p className="text-2xs text-foreground-muted max-w-[200px]">
+                  This commit may be a merge or have no file changes
+                </p>
               </div>
             )}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+
+function DiffSkeleton() {
+  return (
+    <div className="animate-fade-in">
+      {/* Stats bar skeleton */}
+      <div className="px-4 py-2.5 border-b border-border bg-muted/5">
+        <div className="flex items-center gap-3">
+          <div className="h-3.5 w-24 bg-muted/30 rounded animate-pulse" />
+          <div className="h-3.5 w-10 bg-success/10 rounded animate-pulse" />
+          <div className="h-3.5 w-10 bg-destructive/10 rounded animate-pulse" />
+        </div>
+      </div>
+      {/* File rows skeleton */}
+      <div className="divide-y divide-border/50">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="px-4 py-2.5 flex items-center gap-2">
+            <div className="w-3.5 h-3.5 bg-muted/20 rounded animate-pulse shrink-0" />
+            <div
+              className="h-3.5 bg-muted/20 rounded animate-pulse flex-1"
+              style={{ maxWidth: `${70 - i * 8}%` }}
+            />
+            <div className="h-3.5 w-8 bg-muted/15 rounded animate-pulse shrink-0" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -358,19 +419,27 @@ export function DiffViewer({
 function FileDiffView({
   fileName,
   hunks,
+  isTooLarge,
 }: {
   fileName: string;
   hunks: string;
+  isTooLarge: boolean;
 }) {
   const [diffFile, setDiffFile] = useState<InstanceType<typeof DiffFile> | null>(null);
+  const [parseError, setParseError] = useState(false);
 
   useEffect(() => {
     try {
       const lang = detectLang(fileName);
+      // Truncate large hunks to prevent render lock
+      const truncatedHunks = isTooLarge
+        ? hunks.split("\n").slice(0, MAX_HUNK_LINES).join("\n")
+        : hunks;
+
       const file = new DiffFile(
-        fileName, "", // old content (not available from raw diff)
-        fileName, "", // new content
-        [hunks],      // raw hunks including --- +++ headers
+        fileName, "",
+        fileName, "",
+        [truncatedHunks],
         lang,
         lang
       );
@@ -379,18 +448,35 @@ function FileDiffView({
       file.buildSplitDiffLines();
       file.buildUnifiedDiffLines();
       setDiffFile(file);
+      setParseError(false);
     } catch (err) {
       console.warn("Failed to parse diff for", fileName, err);
       setDiffFile(null);
+      setParseError(true);
     }
-  }, [fileName, hunks]);
+  }, [fileName, hunks, isTooLarge]);
+
+  if (parseError) {
+    return (
+      <div className="p-3 flex items-center gap-2 text-2xs text-warning bg-warning/5">
+        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <span>Could not render diff — showing raw text</span>
+      </div>
+    );
+  }
 
   if (!diffFile) {
+    // Loading state while DiffFile is being created
     return (
-      <pre className="text-2xs font-mono bg-muted/5 p-3 overflow-x-auto max-h-[400px] overflow-y-auto scrollbar-thin text-foreground-muted">
-        {hunks.slice(0, 3000)}
-        {hunks.length > 3000 && "\n... truncated"}
-      </pre>
+      <div className="p-3 space-y-1.5">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="h-4 bg-muted/15 rounded animate-pulse"
+            style={{ width: `${85 - i * 15}%` }}
+          />
+        ))}
+      </div>
     );
   }
 
@@ -403,6 +489,12 @@ function FileDiffView({
         diffViewHighlight={false}
         diffViewWrap
       />
+      {isTooLarge && (
+        <div className="px-3 py-2 bg-warning/5 border-t border-warning/20 text-2xs text-warning flex items-center gap-1.5">
+          <AlertTriangle className="w-3 h-3 shrink-0" />
+          File truncated — showing first {MAX_HUNK_LINES.toLocaleString()} lines
+        </div>
+      )}
     </div>
   );
 }

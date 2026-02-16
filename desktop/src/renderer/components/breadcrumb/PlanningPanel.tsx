@@ -1097,7 +1097,8 @@ function CommitRow({
   return (
     <button
       onClick={() => onSelect?.(commit.hash)}
-      className="w-full flex items-center gap-2 py-1 px-0.5 rounded -mx-0.5 group hover:bg-muted/15 transition-default text-left"
+      className="w-full flex items-center gap-2 py-1 px-0.5 rounded -mx-0.5 group hover:bg-muted/15 transition-default text-left focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
+      tabIndex={0}
     >
       <GitCommit className="w-3 h-3 text-foreground-muted/50 shrink-0" />
       <span className="text-2xs font-mono text-accent-secondary shrink-0">
