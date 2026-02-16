@@ -379,15 +379,23 @@ function PhasePipeline({
 }) {
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
 
-  // Sort: active first, then planned, then completed
+  // Sort: active first, then planned, then completed — newest (highest number) first within each group
   const sortedPhases = useMemo(() => {
-    const active = phases.filter(
-      (p) => p.status === "in_progress" || p.isActive
-    );
-    const planned = phases.filter(
-      (p) => p.status === "not_started" && !p.isActive
-    );
-    const completed = phases.filter((p) => p.status === "complete");
+    const phaseNum = (p: PhaseSummary) => {
+      const m = p.id.match(/PHASE-(\d+)/);
+      return m ? parseInt(m[1], 10) : 0;
+    };
+    const desc = (a: PhaseSummary, b: PhaseSummary) => phaseNum(b) - phaseNum(a);
+
+    const active = phases
+      .filter((p) => p.status === "in_progress" || p.isActive)
+      .sort(desc);
+    const planned = phases
+      .filter((p) => p.status === "not_started" && !p.isActive)
+      .sort(desc);
+    const completed = phases
+      .filter((p) => p.status === "complete")
+      .sort(desc);
     return [...active, ...planned, ...completed];
   }, [phases]);
 
@@ -453,6 +461,9 @@ function PhasePipeline({
                 {/* Phase info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
+                    <span className="text-2xs font-mono text-foreground-muted/60 shrink-0">
+                      {phase.id.replace("PHASE-", "P")}
+                    </span>
                     <span
                       className={`text-sm truncate ${
                         isActive

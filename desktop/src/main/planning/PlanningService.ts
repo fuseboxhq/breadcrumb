@@ -225,7 +225,7 @@ export class PlanningService {
 
     for (const line of lines) {
       const match = line.match(
-        /^(PHASE-\d+):\s+(.+?)\s+\((complete|in_progress|not_started)\)(?:\s+-\s+(\d+)(?:\/(\d+))?\s+tasks?\s+done)?/
+        /^(PHASE-\d+):\s+(.+?)\s+\((complete|in_progress|not_started)\)(?:\s+-\s+(\d+)(?:\/(\d+))?\s+tasks?(?:\s+done)?)?/
       );
       if (match) {
         const taskCount = match[5]

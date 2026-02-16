@@ -254,6 +254,15 @@ export const usePlanningStore = create<PlanningStore>()(
     },
 
     refreshProject: async (projectPath) => {
+      // Clear cached phase details so they re-fetch from disk on next expand
+      set((state) => {
+        const p = state.projects[projectPath];
+        if (p) {
+          p.phaseDetails = {};
+          p.beadsTasks = {};
+        }
+      });
+
       const store = usePlanningStore.getState();
       await store.fetchCapabilities(projectPath);
       const caps = usePlanningStore.getState().projects[projectPath]?.capabilities;
