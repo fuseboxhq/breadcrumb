@@ -1,10 +1,10 @@
-import { X, Plus, Terminal, Sparkles } from "lucide-react";
+import { X, Plus, Terminal, Zap } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
 
 const TAB_ICONS: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
-  welcome: Sparkles,
+  welcome: Zap,
 };
 
 export function TabBar() {
@@ -58,7 +58,7 @@ export function TabBar() {
                   removeTab(tab.id);
                 }}
                 aria-label={`Close ${tab.title}`}
-                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none transition-default"
+                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/50 hover:text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none transition-default"
               >
                 <X className="w-3 h-3" />
               </button>

@@ -126,7 +126,7 @@ function StatusItem({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1 text-2xs text-foreground-muted hover:text-foreground-secondary transition-default rounded focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+      className="flex items-center gap-1 text-2xs text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 px-1.5 py-0.5 -mx-1.5 rounded transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
     >
       <Icon className={`w-3 h-3 ${color || ""}`} />
       <span>{label}</span>
