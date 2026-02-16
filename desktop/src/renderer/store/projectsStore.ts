@@ -1,11 +1,21 @@
 import { create } from "zustand";
 import type { persistWorkspace as PersistWorkspaceFn } from "./appStore";
+import type { useAppStore as UseAppStoreFn } from "./appStore";
 
 // Lazy import to avoid circular dependency (appStore also reads projectsStore)
 function triggerWorkspacePersist(): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { persistWorkspace } = require("./appStore") as { persistWorkspace: typeof PersistWorkspaceFn };
   persistWorkspace();
+}
+
+function openPlanningPane(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useAppStore } = require("./appStore") as { useAppStore: typeof UseAppStoreFn };
+  const state = useAppStore.getState();
+  if (!state.layout.rightPanel.panes.some((p) => p.type === "planning")) {
+    state.addRightPanelPane("planning");
+  }
 }
 
 export interface Project {
@@ -80,6 +90,9 @@ export const useProjectsStore = create<ProjectsStore>((set, get) => ({
 
     // Persist to backend
     window.breadcrumbAPI?.addRecentProject({ path: project.path, name: project.name });
+
+    // Auto-open the Breadcrumb planning pane
+    openPlanningPane();
 
     return project;
   },

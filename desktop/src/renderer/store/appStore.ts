@@ -537,7 +537,7 @@ export const useAppStore = create<AppStore>()(
         state.layout.rightPanel.isOpen = isOpen;
         if (isOpen && state.layout.panelSizes.rightPanel === 0) {
           // Expand to default size (~2x sidebar)
-          state.layout.panelSizes = { sidebar: 18, center: 46, rightPanel: 36 };
+          state.layout.panelSizes = { sidebar: 18, center: 42, rightPanel: 40 };
         } else if (!isOpen) {
           // Collapse: give right panel space back to center
           state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
@@ -551,7 +551,7 @@ export const useAppStore = create<AppStore>()(
         const wasOpen = state.layout.rightPanel.isOpen;
         state.layout.rightPanel.isOpen = !wasOpen;
         if (!wasOpen && state.layout.panelSizes.rightPanel === 0) {
-          state.layout.panelSizes = { sidebar: 18, center: 46, rightPanel: 36 };
+          state.layout.panelSizes = { sidebar: 18, center: 42, rightPanel: 40 };
         } else if (wasOpen) {
           state.layout.panelSizes.center += state.layout.panelSizes.rightPanel;
           state.layout.panelSizes.rightPanel = 0;
@@ -567,7 +567,7 @@ export const useAppStore = create<AppStore>()(
         state.layout.rightPanel.panes.push({ id, type });
         state.layout.rightPanel.isOpen = true;
         if (state.layout.panelSizes.rightPanel === 0) {
-          state.layout.panelSizes = { sidebar: 18, center: 46, rightPanel: 36 };
+          state.layout.panelSizes = { sidebar: 18, center: 42, rightPanel: 40 };
         }
         persistLayout(() => get().layout);
       }),
