@@ -135,12 +135,12 @@ A bundled extension (`extensions/debug-assistant/`) that:
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-oyb.1 | Extension API: Terminal spawning from extensions | open | Medium | - |
-| breadcrumb-oyb.2 | Extension API: Workspace state persistence | open | Medium | - |
-| breadcrumb-oyb.3 | Extension API: Input modal triggering from extensions | open | High | - |
-| breadcrumb-oyb.4 | Debug modal UI with image paste/drop and console logs | open | High | oyb.3 |
-| breadcrumb-oyb.5 | Debug extension package with Claude Code spawning | open | High | oyb.1, oyb.2, oyb.3, oyb.4 |
-| breadcrumb-oyb.6 | Skill creation workflow and bidirectional sync | open | Medium | oyb.1, oyb.5 |
+| breadcrumb-oyb.1 | Extension API: Terminal spawning from extensions | done | Medium | - |
+| breadcrumb-oyb.2 | Extension API: Workspace state persistence | done | Medium | - |
+| breadcrumb-oyb.3 | Extension API: Input modal triggering from extensions | done | High | - |
+| breadcrumb-oyb.4 | Debug modal UI with image paste/drop and console logs | done | High | oyb.3 |
+| breadcrumb-oyb.5 | Debug extension package with Claude Code spawning | done | High | oyb.1, oyb.2, oyb.3, oyb.4 |
+| breadcrumb-oyb.6 | Skill creation workflow and bidirectional sync | done | Medium | oyb.1, oyb.5 |
 
 ## Technical Decisions
 
@@ -158,15 +158,15 @@ A bundled extension (`extensions/debug-assistant/`) that:
 
 ## Completion Criteria
 
-- [ ] Extension API supports `breadcrumb.terminal.createTerminal()` — any extension can spawn a terminal pane
-- [ ] Extension API supports modal/panel triggering from extensions
-- [ ] Extension API supports workspace state persistence
-- [ ] Debug extension is a standalone package in `extensions/debug-assistant/`
-- [ ] Debug modal collects issue description, screenshots, and console logs
-- [ ] Claude Code instance spawns with debug skill + issue context pre-loaded
-- [ ] Debug skill creation workflow works end-to-end (first-time project setup)
-- [ ] Skill files sync between `.breadcrumb/skills/` and `.claude/commands/`
-- [ ] Works across multiple projects in the same workspace
+- [x] Extension API supports `breadcrumb.terminal.createTerminal()` — any extension can spawn a terminal pane
+- [x] Extension API supports modal/panel triggering from extensions
+- [x] Extension API supports workspace state persistence
+- [x] Debug extension is a standalone package in `extensions/debug-assistant/`
+- [x] Debug modal collects issue description, screenshots, and console logs
+- [x] Claude Code instance spawns with debug skill + issue context pre-loaded
+- [x] Debug skill creation workflow works end-to-end (first-time project setup)
+- [x] Skill files sync between `.breadcrumb/skills/` and `.claude/commands/`
+- [x] Works across multiple projects in the same workspace
 
 ## Sources
 
