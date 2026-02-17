@@ -1,6 +1,6 @@
 # Phase 27: AI Debug Assistant
 
-**Status:** not_started
+**Status:** in_progress
 **Beads Epic:** breadcrumb-oyb
 **Created:** 2026-02-14
 
@@ -39,20 +39,86 @@ Build a per-project AI debug assistant that lets users describe a bug (with scre
 
 ## Research Summary
 
-Run `/bc:plan PHASE-27` to research this phase and populate this section.
+**Overall Confidence:** HIGH
+
+The three core technical domains (Claude Code skills, extension IPC, image handling) are well-understood from official docs and source code analysis. The extension system follows a predictable 5-file pattern for new APIs. Claude Code skills use markdown with YAML frontmatter in `.claude/skills/<name>/SKILL.md`. Images are passed to Claude Code via file path in prompt text (not piped).
+
+### Claude Code Skills Format
+
+Skills are markdown files with optional YAML frontmatter stored in `.claude/skills/<name>/SKILL.md` (or legacy `.claude/commands/<name>.md`). Key features:
+- `$ARGUMENTS` / `$0`, `$1` for positional argument substitution
+- `!` backtick preprocessing for dynamic shell context injection
+- `context: fork` for isolated subagent execution
+- `allowed-tools` for scoped tool permissions
+- Invoked interactively with `/skill-name` or programmatically with `claude "/skill-name args"`
+- Images: pass absolute file path in prompt text — Claude reads from disk
+
+### Extension IPC Protocol
+
+Every new API touches 5 files in order:
+1. `types.ts` — Add union members to `HostMessage` / `HostResponse`
+2. `extensionHostWorker.ts` — Add API to `breadcrumb.*` + message handler
+3. `ExtensionHost.ts` — Bridge method + event emission
+4. `ExtensionManager.ts` — State management + forwarding
+5. `extensionIpc.ts` — Electron IPC handlers + renderer push
+
+Terminal creation bridges to existing `terminalService.createSession()`. Modals use renderer push events. Workspace state uses a second `electron-store` instance with initial state dump on activation.
+
+### Image Handling
+
+- **Clipboard paste**: Browser `ClipboardEvent.clipboardData.items` (not `.files`) — works in renderer without Electron clipboard
+- **Drag-and-drop**: Standard HTML5 `DragEvent.dataTransfer.files`
+- **Preview**: `FileReader.readAsDataURL()` for base64 preview in `<img>` tags
+- **Persistence**: Save to temp via IPC (`app.getPath('temp')`), pass file path to Claude
+- **No new npm packages needed** — all browser APIs
+
+### Key Patterns
+
+| Pattern | Approach |
+|---------|----------|
+| Terminal from extension | Worker → `HostResponse` → ExtensionHost event → ExtensionManager calls `terminalService.createSession()` → push to renderer |
+| Modal from extension | Worker → `HostResponse` → ExtensionManager → push to renderer → renderer renders modal → user response → IPC back → resolve worker promise |
+| Workspace state sync | Pre-load into worker at activation time for sync `get()`, fire-and-forget IPC for `update()` |
+| Image to Claude Code | Save to temp file → reference absolute path in prompt text sent to terminal |
+
+### Don't Hand-Roll
+
+| Problem | Use Instead | Why |
+|---------|-------------|-----|
+| Extension persistence | `electron-store` (already installed) | JSON file with schema, atomic writes |
+| Simple confirmation dialogs | `electron.dialog.showMessageBox()` | No renderer changes needed |
+| Terminal creation | `terminalService.createSession()` (already exists) | Full PTY with replay buffer already wired |
+| Image MIME detection | `file.type.startsWith("image/")` | Built-in, handles all formats |
+| Drag-and-drop library | Inline HTML5 drag events | Zero extra deps, codebase has no drag-drop lib |
+| Clipboard images | Browser `ClipboardEvent` in renderer | No Electron IPC needed |
+
+### Pitfalls
+
+- **`clipboardData.files` empty for screenshot pastes**: Use `.items` and `getAsFile()` — `.files` is only populated for drag-and-drop
+- **`dragLeave` flickering on child elements**: Check `!e.currentTarget.contains(e.relatedTarget)` before clearing drag state
+- **Sync `get()` impossible over IPC**: Pre-load extension state into worker at activation time, maintain local cache
+- **`registerCommand` monkey-patch not reentrant**: Bind `extensionId` as closure variable for new APIs
+- **Temp file cleanup**: Delete on modal close via `useEffect` cleanup; add `app.on('before-quit')` fallback
+- **`window.isDestroyed()` guard**: Must check before every `webContents.send()` in extensionIpc.ts
 
 ## Recommended Approach
 
 ### Layer 1: Extension API Foundation
 Extend the extension host worker's `breadcrumb` global with:
 - `breadcrumb.terminal.createTerminal(options)` — spawns a terminal pane in the active tab, returns a handle for writing/listening
-- `breadcrumb.panels.registerPanel(id, options)` — registers a panel type that can be added to the right panel or as a modal
-- `breadcrumb.workspace.rootPath` / `breadcrumb.workspace.getConfiguration()` — workspace awareness
-- `context.workspaceState` / `context.globalState` — persisted key-value storage
+- `breadcrumb.window.showInputModal(schema)` — triggers a custom form modal in the renderer, returns user input
+- `context.workspaceState` — persisted key-value storage via electron-store with sync `get()` and async `update()`
 
 Each API call goes through the existing IPC protocol (worker → main → renderer) with new message types.
 
-### Layer 2: Debug Extension
+### Layer 2: Debug Modal UI
+A React modal component rendered by the main app (not by the extension — extensions can't render React). The extension triggers it via the `showInputModal` API. The modal collects:
+- Issue description (markdown textarea)
+- Screenshots (drag & drop, paste from clipboard)
+- Console logs (paste, auto-format)
+- Instance choice: "New Claude instance" or "Reuse last selected"
+
+### Layer 3: Debug Extension
 A bundled extension (`extensions/debug-assistant/`) that:
 1. Registers a `debug-assistant.start` command
 2. On activation, checks for `.breadcrumb/skills/debug.md` in the active project
@@ -60,35 +126,35 @@ A bundled extension (`extensions/debug-assistant/`) that:
 4. If present, opens the debug modal for issue input
 5. On submit, spawns or reuses a Claude Code pane with the skill + issue context injected
 
-### Layer 3: Debug Modal UI
-A React modal component rendered by the main app (not by the extension — extensions can't render React). The extension triggers it via a new `breadcrumb.window.showInputModal(schema)` API that lets extensions define form fields. The modal collects:
-- Issue description (rich text / markdown)
-- Screenshots (drag & drop, paste from clipboard)
-- Console logs (paste, auto-format)
-- Instance choice: "New Claude instance" or "Reuse last selected"
-
 ### Layer 4: Skill Sync
 - `.breadcrumb/skills/debug.md` is the source of truth
 - On project open and on skill file change, sync to `.claude/commands/debug.md`
-- Use a file watcher or sync-on-action approach
+- Sync-on-action approach (sync when debug extension activates or skill is created/modified)
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| - | No tasks yet | - | - |
-
-Run `/bc:plan PHASE-27` to break down this phase into tasks.
+| ID | Title | Status | Complexity | Dependencies |
+|----|-------|--------|------------|--------------|
+| breadcrumb-oyb.1 | Extension API: Terminal spawning from extensions | open | Medium | - |
+| breadcrumb-oyb.2 | Extension API: Workspace state persistence | open | Medium | - |
+| breadcrumb-oyb.3 | Extension API: Input modal triggering from extensions | open | High | - |
+| breadcrumb-oyb.4 | Debug modal UI with image paste/drop and console logs | open | High | oyb.3 |
+| breadcrumb-oyb.5 | Debug extension package with Claude Code spawning | open | High | oyb.1, oyb.2, oyb.3, oyb.4 |
+| breadcrumb-oyb.6 | Skill creation workflow and bidirectional sync | open | Medium | oyb.1, oyb.5 |
 
 ## Technical Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Skill storage | `.breadcrumb/skills/debug.md` synced to `.claude/commands/debug.md` | Keeps Breadcrumb concerns separate while ensuring Claude Code natively picks up the skill |
+| Skill format | Claude Code skill with YAML frontmatter + markdown body | Compatible with `.claude/skills/` directory, supports `$ARGUMENTS`, `!` backtick preprocessing |
 | Skill creation | Interactive Claude terminal session | More natural — Claude can probe deeper based on answers, discover project structure |
-| Debug UI | Modal dialog | Focused workflow — input issue, attach evidence, launch. Doesn't need to persist as a panel. |
-| Extension API scope | General-purpose additions | Terminal spawning and panel registration benefit all future extensions, not just debug |
+| Debug UI | Custom input modal via extension API | Focused workflow — input issue, attach evidence, launch. Extension triggers it, renderer renders it. |
+| Extension API scope | General-purpose additions | Terminal spawning and modal triggering benefit all future extensions, not just debug |
 | Extension architecture | Full implementation, no shortcuts | Professional and scalable — proper extension API, proper IPC, proper isolation |
+| Image handling | Browser Clipboard API + HTML5 drag events | No new deps, no Electron clipboard IPC needed, works directly in renderer |
+| Image to Claude | Save to temp file, pass path in prompt | Confirmed method from official Claude Code docs — no `--image` flag exists |
+| Workspace state | Second electron-store instance + worker cache | Sync `get()` via pre-loaded cache, fire-and-forget `update()` |
 
 ## Completion Criteria
 
@@ -101,3 +167,17 @@ Run `/bc:plan PHASE-27` to break down this phase into tasks.
 - [ ] Debug skill creation workflow works end-to-end (first-time project setup)
 - [ ] Skill files sync between `.breadcrumb/skills/` and `.claude/commands/`
 - [ ] Works across multiple projects in the same workspace
+
+## Sources
+
+**HIGH confidence:**
+- Claude Code skills documentation (code.claude.com/docs/en/slash-commands)
+- Claude Code CLI reference (code.claude.com/docs/en/cli-reference)
+- Claude Code common workflows — image handling (code.claude.com/docs/en/common-workflows)
+- Extension system source code (types.ts, extensionHostWorker.ts, ExtensionHost.ts, ExtensionManager.ts, extensionIpc.ts)
+- Electron clipboard API docs
+- MDN ClipboardEvent / DragEvent / FileReader APIs
+
+**MEDIUM confidence:**
+- `clipboardData.files` empty for screenshot pastes (MDN + multiple implementation reports)
+- Claude Code 5MB image limit (unofficial source)
