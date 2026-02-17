@@ -1,5 +1,7 @@
 import { BrowserWindow, ipcMain, dialog, app } from "electron";
 import fs from "fs/promises";
+import path from "path";
+import crypto from "crypto";
 import { IPC_CHANNELS } from "../../shared/types";
 import { gitService, type CommitLogOptions } from "../git/GitService";
 import { validatePath } from "../utils/pathValidation";
@@ -102,6 +104,41 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
     }
   );
 
+  // Image temp file save (for debug modal screenshots)
+  ipcMain.handle(
+    IPC_CHANNELS.IMAGE_SAVE_TEMP,
+    async (_event, { dataUrl, extension }: { dataUrl: string; extension: string }) => {
+      try {
+        const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const fileName = `breadcrumb-debug-${crypto.randomUUID()}.${extension}`;
+        const filePath = path.join(app.getPath("temp"), fileName);
+        await fs.writeFile(filePath, buffer);
+        return { success: true, filePath };
+      } catch (error) {
+        return { success: false, error: String(error) };
+      }
+    }
+  );
+
+  // Image temp file delete
+  ipcMain.handle(
+    IPC_CHANNELS.IMAGE_DELETE_TEMP,
+    async (_event, filePath: string) => {
+      try {
+        // Only allow deleting files from the temp directory
+        const tempDir = app.getPath("temp");
+        if (!filePath.startsWith(tempDir)) {
+          return { success: false, error: "Path not in temp directory" };
+        }
+        await fs.unlink(filePath);
+        return { success: true };
+      } catch {
+        return { success: true }; // Ignore if already deleted
+      }
+    }
+  );
+
   return () => {
     ipcMain.removeHandler(IPC_CHANNELS.DIALOG_SELECT_DIRECTORY);
     ipcMain.removeHandler(IPC_CHANNELS.SYSTEM_GET_WORKING_DIR);
@@ -110,6 +147,8 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
     ipcMain.removeHandler(IPC_CHANNELS.GIT_LOG);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_DIFF);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_COMMIT_STATS);
+    ipcMain.removeHandler(IPC_CHANNELS.IMAGE_SAVE_TEMP);
+    ipcMain.removeHandler(IPC_CHANNELS.IMAGE_DELETE_TEMP);
     handlersRegistered = false;
   };
 }

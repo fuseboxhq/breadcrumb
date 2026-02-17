@@ -99,6 +99,10 @@ export interface BreadcrumbAPI {
   onExtensionShowModal: (callback: (data: { requestId: string; schema: unknown }) => void) => () => void;
   resolveExtensionModal: (requestId: string, result: Record<string, unknown> | null) => Promise<{ success: boolean }>;
 
+  // Image temp file operations (for debug modal screenshots)
+  saveImageTemp: (dataUrl: string, extension: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+  deleteImageTemp: (filePath: string) => Promise<{ success: boolean; error?: string }>;
+
   // Browser operations (embedded WebContentsView)
   browser: {
     create: (browserId: string) => Promise<{ success: boolean; error?: string }>;
@@ -255,6 +259,13 @@ const api: BreadcrumbAPI = {
 
   resolveExtensionModal: (requestId, result) =>
     ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_MODAL_RESULT, requestId, result),
+
+  // Image temp file operations
+  saveImageTemp: (dataUrl, extension) =>
+    ipcRenderer.invoke(IPC_CHANNELS.IMAGE_SAVE_TEMP, { dataUrl, extension }),
+
+  deleteImageTemp: (filePath) =>
+    ipcRenderer.invoke(IPC_CHANNELS.IMAGE_DELETE_TEMP, filePath),
 
   // Browser operations
   browser: {

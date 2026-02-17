@@ -66,6 +66,10 @@ export const IPC_CHANNELS = {
   BROWSER_SET_DEVTOOLS_BOUNDS: "browser:set-devtools-bounds",
   BROWSER_OPEN_EXTERNAL: "browser:open-external",
 
+  // Image temp file operations
+  IMAGE_SAVE_TEMP: "image:save-temp",
+  IMAGE_DELETE_TEMP: "image:delete-temp",
+
   // Browser events (main → renderer)
   BROWSER_NAVIGATE_EVENT: "browser:navigate-event",
   BROWSER_LOADING_CHANGE: "browser:loading-change",
