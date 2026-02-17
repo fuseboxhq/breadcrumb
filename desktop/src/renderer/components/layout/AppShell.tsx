@@ -53,12 +53,14 @@ export function AppShell() {
       if (workspaceSettings.tabs && Array.isArray(workspaceSettings.tabs) && workspaceSettings.tabs.length > 0) {
         restoreWorkspace({
           tabs: workspaceSettings.tabs
-            .filter((t) => t.type === "terminal" || t.type === "welcome")
+            .filter((t) => t.type === "terminal" || t.type === "welcome" || t.type === "browser")
             .map((t) => ({
               id: t.id,
-              type: t.type as "terminal" | "welcome",
+              type: t.type as "terminal" | "welcome" | "browser",
               title: t.title,
               projectId: t.projectId,
+              // Restore browser tab fields
+              ...(t.type === "browser" ? { browserId: t.browserId, initialUrl: t.initialUrl } : {}),
             })),
           activeTabId: workspaceSettings.activeTabId ?? null,
           terminalPanes: workspaceSettings.terminalPanes ?? {},
@@ -90,13 +92,23 @@ export function AppShell() {
       type: p.type as "browser" | "planning",
     }));
 
+    // Restore right panel browser tabs from persisted layout
+    const savedBrowserTabs = layoutSettings.rightPanel.browserTabs || [];
+    const savedActiveBrowserTabId = layoutSettings.rightPanel.activeBrowserTabId || null;
+
     // Restore Zustand state
     restoreLayout({
       rightPanel: {
         isOpen: layoutSettings.rightPanel.isOpen,
         panes: savedPanes,
-        browserTabs: [],
-        activeBrowserTabId: null,
+        browserTabs: savedBrowserTabs.map((t, i) => ({
+          id: t.id,
+          // Fresh browserId — old WebContentsViews don't survive restart
+          browserId: `rp-restored-${Date.now()}-${i}`,
+          url: t.url,
+          title: t.title,
+        })),
+        activeBrowserTabId: savedActiveBrowserTabId,
       },
       panelSizes: savedPanelSizes,
       devToolsDockOpen: false, // Always start with DevTools closed

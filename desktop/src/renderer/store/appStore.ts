@@ -178,6 +178,8 @@ export interface SerializedTab {
   diffHash?: string;
   diffProjectPath?: string;
   pinned?: boolean;
+  browserId?: string;
+  initialUrl?: string;
 }
 
 export interface WorkspaceSnapshot {
@@ -319,6 +321,8 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
         type: t.type,
         title: t.title,
         projectId: t.projectId,
+        // Persist browser tab fields
+        ...(t.type === "browser" ? { browserId: t.browserId, initialUrl: t.initialUrl } : {}),
       })),
     activeTabId: state.activeTabId,
     terminalPanes: Object.fromEntries(
@@ -372,6 +376,13 @@ function persistLayout(getLayout: () => LayoutState) {
       rightPanel: {
         isOpen: layout.rightPanel.isOpen,
         panes: layout.rightPanel.panes.map((p) => ({ id: p.id, type: p.type, size: 50 })),
+        browserTabs: layout.rightPanel.browserTabs.map((t) => ({
+          id: t.id,
+          browserId: t.browserId,
+          url: t.url,
+          title: t.title,
+        })),
+        activeBrowserTabId: layout.rightPanel.activeBrowserTabId,
       },
       panelSizes: layout.panelSizes,
     };
@@ -796,10 +807,16 @@ export const useAppStore = create<AppStore>()(
         });
         state.layout.rightPanel.activeBrowserTabId = tabId;
       });
+      persistLayout(() => get().layout);
       return browserId;
     },
 
-    removeBrowserTab: (tabId) =>
+    removeBrowserTab: (tabId) => {
+      // Destroy the browser view for the removed tab
+      const tab = get().layout.rightPanel.browserTabs.find((t) => t.id === tabId);
+      if (tab) {
+        window.breadcrumbAPI?.browser?.destroy(tab.browserId);
+      }
       set((state) => {
         const tabs = state.layout.rightPanel.browserTabs;
         const index = tabs.findIndex((t) => t.id === tabId);
@@ -812,21 +829,27 @@ export const useAppStore = create<AppStore>()(
           const next = tabs[Math.min(index, tabs.length - 1)];
           state.layout.rightPanel.activeBrowserTabId = next?.id || null;
         }
-      }),
+      });
+      persistLayout(() => get().layout);
+    },
 
-    setActiveBrowserTab: (tabId) =>
+    setActiveBrowserTab: (tabId) => {
       set((state) => {
         state.layout.rightPanel.activeBrowserTabId = tabId;
-      }),
+      });
+      persistLayout(() => get().layout);
+    },
 
-    updateBrowserTab: (tabId, updates) =>
+    updateBrowserTab: (tabId, updates) => {
       set((state) => {
         const tab = state.layout.rightPanel.browserTabs.find((t) => t.id === tabId);
         if (tab) {
           if (updates.url !== undefined) tab.url = updates.url;
           if (updates.title !== undefined) tab.title = updates.title;
         }
-      }),
+      });
+      persistLayout(() => get().layout);
+    },
 
     // Project
     setCurrentProjectPath: (path) =>
@@ -871,6 +894,11 @@ export const useAppStore = create<AppStore>()(
             title: t.title || t.type,
             url: t.url,
             projectId: t.projectId ? (projectIdMap.get(t.projectId) || t.projectId) : undefined,
+            // Restore browser tab fields with fresh browserId to avoid stale view references
+            ...(t.type === "browser" ? {
+              browserId: `center-browser-${Date.now()}-${t.id}`,
+              initialUrl: t.initialUrl || t.url || "http://localhost:3000",
+            } : {}),
           }));
 
         // If all tabs were filtered out, fall back to default welcome tab

@@ -19,6 +19,8 @@ export interface LayoutSettings {
   rightPanel: {
     isOpen: boolean;
     panes: RightPanelPane[];
+    browserTabs?: Array<{ id: string; browserId: string; url: string; title: string }>;
+    activeBrowserTabId?: string | null;
   };
   panelSizes: {
     sidebar: number;
@@ -38,6 +40,8 @@ export interface WorkspaceSettings {
     title: string;
     url?: string;
     projectId?: string;
+    browserId?: string;
+    initialUrl?: string;
   }>;
   activeTabId?: string | null;
   terminalPanes?: Record<string, {
