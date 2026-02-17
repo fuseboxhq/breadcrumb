@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
+// NOTE: Circular import with projectsStore (it also imports from us).
+// Safe because all cross-references are inside functions, not top-level code.
+// ESM live bindings resolve by the time any store action executes.
+import { useProjectsStore } from "./projectsStore";
 
 // Sidebar navigation views
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
@@ -236,6 +240,9 @@ export interface AppActions {
   // Browser tab in center workspace
   openBrowserTab: (url?: string) => void;
 
+  // Tab merging (drag-and-drop)
+  mergeTabInto: (sourceTabId: string, targetTabId: string) => void;
+
   // Pane management
   initializeTabPanes: (tabId: string, workingDirectory?: string) => void;
   addPane: (tabId: string, direction?: "horizontal" | "vertical", initialCommand?: string) => void;
@@ -302,9 +309,6 @@ let persistWorkspaceTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function buildWorkspaceSnapshot(): WorkspaceSnapshot {
   const state = useAppStore.getState();
-  // Import projectsStore lazily to avoid circular dep at module init time
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useProjectsStore } = require("./projectsStore") as typeof import("./projectsStore");
   const projectsState = useProjectsStore.getState();
 
   // Build a projectId → path map for resolving associations on restore
@@ -514,6 +518,73 @@ export const useAppStore = create<AppStore>()(
           initialUrl: url || "http://localhost:3000",
         });
         state.activeTabId = id;
+      });
+      persistWorkspace();
+    },
+
+    // Tab merging — drag one terminal tab onto another to combine panes
+    mergeTabInto: (sourceTabId, targetTabId) => {
+      if (sourceTabId === targetTabId) return;
+
+      const state = get();
+      const sourceTab = state.tabs.find((t) => t.id === sourceTabId);
+      const targetTab = state.tabs.find((t) => t.id === targetTabId);
+      if (!sourceTab || !targetTab) return;
+      if (sourceTab.type !== "terminal" || targetTab.type !== "terminal") return;
+
+      const sourcePaneState = state.terminalPanes[sourceTabId];
+      const targetPaneState = state.terminalPanes[targetTabId];
+      if (!sourcePaneState || !targetPaneState) return;
+
+      set((draft) => {
+        const draftTarget = draft.terminalPanes[targetTabId];
+        const draftSource = draft.terminalPanes[sourceTabId];
+        if (!draftTarget || !draftSource) return;
+
+        // Append all source panes into target, re-IDing to avoid duplicates
+        // (every tab starts with "pane-1", so merged panes would collide)
+        const existingIds = new Set(draftTarget.panes.map((p) => p.id));
+        for (const pane of draftSource.panes) {
+          if (existingIds.has(pane.id)) {
+            pane.id = `pane-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          }
+          draftTarget.panes.push(pane);
+        }
+
+        // Remove source tab
+        draft.tabs = draft.tabs.filter((t) => t.id !== sourceTabId);
+        delete draft.terminalPanes[sourceTabId];
+
+        // Activate target if source was active
+        if (draft.activeTabId === sourceTabId) {
+          draft.activeTabId = targetTabId;
+        }
+
+        // Clear zoom if it was on the source tab
+        if (draft.zoomedPane?.tabId === sourceTabId) {
+          draft.zoomedPane = null;
+        }
+
+        // Re-number Claude instances per project to avoid duplicates after merge
+        const projectGroups = new Map<string | undefined, Array<TerminalPaneData>>();
+        for (const [tid, tabState] of Object.entries(draft.terminalPanes)) {
+          const tab = draft.tabs.find((t) => t.id === tid);
+          for (const pane of tabState.panes) {
+            if (pane.type === "terminal" && pane.claudeInstanceNumber) {
+              const pid = tab?.projectId;
+              if (!projectGroups.has(pid)) projectGroups.set(pid, []);
+              projectGroups.get(pid)!.push(pane);
+            }
+          }
+        }
+        for (const panes of projectGroups.values()) {
+          // Sort by existing number to preserve relative order
+          panes.sort((a, b) => (a.claudeInstanceNumber || 0) - (b.claudeInstanceNumber || 0));
+          for (let i = 0; i < panes.length; i++) {
+            panes[i].claudeInstanceNumber = i + 1;
+            panes[i].processLabel = `Claude #${i + 1}`;
+          }
+        }
       });
       persistWorkspace();
     },
@@ -869,8 +940,6 @@ export const useAppStore = create<AppStore>()(
         if (!snapshot.tabs || !Array.isArray(snapshot.tabs) || snapshot.tabs.length === 0) return;
 
         // Build reverse map: old projectId → path, then path → current projectId
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { useProjectsStore } = require("./projectsStore") as typeof import("./projectsStore");
         const currentProjects = useProjectsStore.getState().projects;
         const savedPaths = snapshot.projectPaths || {};
 

@@ -1,17 +1,14 @@
 import { create } from "zustand";
-import type { persistWorkspace as PersistWorkspaceFn } from "./appStore";
-import type { useAppStore as UseAppStoreFn } from "./appStore";
+// NOTE: Circular import with appStore (it also imports from us).
+// Safe because all cross-references are inside functions, not top-level code.
+// ESM live bindings resolve by the time any store action executes.
+import { persistWorkspace, useAppStore } from "./appStore";
 
-// Lazy import to avoid circular dependency (appStore also reads projectsStore)
 function triggerWorkspacePersist(): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { persistWorkspace } = require("./appStore") as { persistWorkspace: typeof PersistWorkspaceFn };
   persistWorkspace();
 }
 
 function openPlanningPane(): void {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useAppStore } = require("./appStore") as { useAppStore: typeof UseAppStoreFn };
   const state = useAppStore.getState();
   if (!state.layout.rightPanel.panes.some((p) => p.type === "planning")) {
     state.addRightPanelPane("planning");

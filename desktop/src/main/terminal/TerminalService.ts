@@ -370,6 +370,15 @@ export class TerminalService extends EventEmitter {
   private inspectGeneration: Map<string, number> = new Map();
   /** Track whether each session is in "active" (fast) polling mode */
   private activePolling: Map<string, NodeJS.Timeout | null> = new Map();
+  /**
+   * Ring buffer of recent PTY output per session. Used to replay terminal
+   * state when a renderer reconnects to an existing session (e.g. after a
+   * tab merge moves a pane to a different tab, creating a fresh xterm.js
+   * instance that needs the full escape sequence history to restore
+   * alternate screen mode, cursor position, colors, etc.).
+   */
+  private outputBuffers: Map<string, string> = new Map();
+  private static readonly MAX_REPLAY_BUFFER = 100_000; // 100KB
 
   constructor() {
     super();
@@ -414,10 +423,19 @@ export class TerminalService extends EventEmitter {
 
     ptyProcess.onData((data: string) => {
       this.emit("data", { sessionId: id, data });
+
+      // Append to replay buffer (ring-trimmed to MAX_REPLAY_BUFFER)
+      let buf = this.outputBuffers.get(id) || "";
+      buf += data;
+      if (buf.length > TerminalService.MAX_REPLAY_BUFFER) {
+        buf = buf.slice(-TerminalService.MAX_REPLAY_BUFFER);
+      }
+      this.outputBuffers.set(id, buf);
     });
 
     ptyProcess.onExit(({ exitCode, signal }) => {
       this.stopProcessPolling(id);
+      this.outputBuffers.delete(id);
       this.emit("exit", { sessionId: id, exitCode, signal });
       this.sessions.delete(id);
     });
@@ -645,12 +663,18 @@ export class TerminalService extends EventEmitter {
     if (!session) return false;
     try {
       this.stopProcessPolling(sessionId);
+      this.outputBuffers.delete(sessionId);
       session.pty.kill();
       this.sessions.delete(sessionId);
       return true;
     } catch {
       return false;
     }
+  }
+
+  /** Return buffered output for replay when reconnecting to an existing session. */
+  getReplayBuffer(sessionId: string): string | undefined {
+    return this.outputBuffers.get(sessionId);
   }
 
   getSessionIds(): string[] {

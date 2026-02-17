@@ -12,27 +12,35 @@ import {
 } from "lucide-react";
 
 export function WorkspaceContent() {
-  const activeTab = useAppStore((s) =>
-    s.tabs.find((t) => t.id === s.activeTabId)
-  );
+  const tabs = useAppStore((s) => s.tabs);
+  const activeTabId = useAppStore((s) => s.activeTabId);
   const projects = useProjectsStore((s) => s.projects);
 
-  if (!activeTab) {
-    return <EmptyWorkspace />;
-  }
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const terminalTabs = tabs.filter((t) => t.type === "terminal");
 
-  // Resolve project working directory for terminal tabs
-  const projectDir = activeTab.projectId
-    ? projects.find((p) => p.id === activeTab.projectId)?.path
-    : undefined;
+  return (
+    <div className="relative flex-1 min-h-0">
+      {/* Terminal tabs — always mounted, hidden when inactive.
+          This preserves xterm.js content across tab switches. */}
+      {terminalTabs.map((tab) => {
+        const isActive = tab.id === activeTabId;
+        const projectDir = tab.projectId
+          ? projects.find((p) => p.id === tab.projectId)?.path
+          : undefined;
+        return (
+          <div
+            key={tab.id}
+            className={`absolute inset-0 ${isActive ? "" : "invisible pointer-events-none"}`}
+          >
+            <TerminalPanel tabId={tab.id} workingDirectory={projectDir} isTabActive={isActive} />
+          </div>
+        );
+      })}
 
-  switch (activeTab.type) {
-    case "welcome":
-      return <WelcomeView />;
-    case "terminal":
-      return <TerminalPanel tabId={activeTab.id} workingDirectory={projectDir} />;
-    case "browser":
-      return activeTab.browserId ? (
+      {/* Non-terminal active tab — mounted only when active */}
+      {activeTab && activeTab.type === "welcome" && <WelcomeView />}
+      {activeTab && activeTab.type === "browser" && activeTab.browserId && (
         <BrowserPanel
           browserId={activeTab.browserId}
           initialUrl={activeTab.initialUrl}
@@ -40,22 +48,17 @@ export function WorkspaceContent() {
             useAppStore.getState().updateTab(activeTab.id, { title });
           }}
         />
-      ) : (
-        <EmptyWorkspace />
-      );
-    case "diff":
-      return activeTab.diffHash && activeTab.diffProjectPath ? (
+      )}
+      {activeTab && activeTab.type === "diff" && activeTab.diffHash && activeTab.diffProjectPath && (
         <DiffViewer
           projectPath={activeTab.diffProjectPath}
           hash={activeTab.diffHash}
           onBack={() => useAppStore.getState().removeTab(activeTab.id)}
         />
-      ) : (
-        <EmptyWorkspace />
-      );
-    default:
-      return <EmptyWorkspace />;
-  }
+      )}
+      {!activeTab && <EmptyWorkspace />}
+    </div>
+  );
 }
 
 function EmptyWorkspace() {
