@@ -38,6 +38,7 @@ import { useAppStore } from "../../store/appStore";
 
 // Stable empty references to avoid Zustand snapshot infinite-loop
 const EMPTY_PHASES: PhaseSummary[] = [];
+const EMPTY_COMMITS: CommitInfo[] = [];
 
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 
@@ -295,7 +296,7 @@ function DashboardBody({
 
   // Look up commit subject for tab title
   const gitCommits = useGitStore(
-    (s) => s.projects[projectPath]?.commits ?? []
+    (s) => s.projects[projectPath]?.commits ?? EMPTY_COMMITS
   ) as CommitInfo[];
 
   const handleSelectCommit = useCallback(
@@ -1057,7 +1058,7 @@ function AllCommitsSection({
   onSelectCommit?: (hash: string) => void;
 }) {
   const commits = useGitStore(
-    (s) => s.projects[projectPath]?.commits ?? []
+    (s) => s.projects[projectPath]?.commits ?? EMPTY_COMMITS
   ) as CommitInfo[];
   const hasMore = useGitStore(
     (s) => s.projects[projectPath]?.hasMore ?? false
