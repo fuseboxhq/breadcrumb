@@ -623,6 +623,16 @@ function PhaseTasksExpanded({
     }
   }, [projectPath, detail?.beadsEpic, fetchBeadsTasks]);
 
+  // Resolve task details from the detail object (must be before early returns — rules of hooks)
+  const taskDetails = detail?.taskDetails ?? {};
+  const getTaskDetail = useCallback(
+    (taskId: string): string | null => {
+      const key = resolveTaskDetailKey(taskDetails, taskId);
+      return key ? taskDetails[key] : null;
+    },
+    [taskDetails]
+  );
+
   if (!detail) {
     return (
       <div className="ml-6 pl-3 border-l border-border py-2 animate-fade-in">
@@ -664,17 +674,6 @@ function PhaseTasksExpanded({
   );
   const blockedTasks = detail.tasks.filter((t) => t.status === "blocked");
   const doneTasks = detail.tasks.filter((t) => t.status === "done");
-
-  // Resolve task details directly from the detail object (avoids per-row store subscriptions)
-  const taskDetails = detail.taskDetails ?? {};
-
-  const getTaskDetail = useCallback(
-    (taskId: string): string | null => {
-      const key = resolveTaskDetailKey(taskDetails, taskId);
-      return key ? taskDetails[key] : null;
-    },
-    [taskDetails]
-  );
 
   return (
     <div className="ml-6 pl-3 border-l border-border py-1.5 animate-fade-in">
