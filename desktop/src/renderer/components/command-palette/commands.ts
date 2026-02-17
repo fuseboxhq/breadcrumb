@@ -34,7 +34,7 @@ interface CommandContext {
   toggleRightPanel: () => void;
   navigateToView: (view: SidebarView) => void;
   addProject: (path: string) => void;
-  openDebugModal: (projectPath: string) => void;
+  startDebugSession: (projectPath: string) => void;
   dispatchKey: (key: string, opts?: { meta?: boolean; shift?: boolean; alt?: boolean }) => void;
   close: () => void;
 }
@@ -154,12 +154,7 @@ export function buildCommands(ctx: CommandContext): CommandItem[] {
       icon: Bug,
       category: "Debug",
       action: () => {
-        if (ctx.activeProjectPath) {
-          ctx.openDebugModal(ctx.activeProjectPath);
-        } else {
-          // No project — still open with cwd
-          ctx.openDebugModal(process.cwd?.() || "");
-        }
+        ctx.startDebugSession(ctx.activeProjectPath || "");
         close();
       },
     },

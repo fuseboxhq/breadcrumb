@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe, Bug } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
-import { useDebugStore } from "../../store/debugStore";
+import { startDebugSession } from "../../store/debugStore";
 import {
   ContextMenu,
   MenuItem,
@@ -26,7 +26,6 @@ export function TabBar() {
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
-  const openDebugModal = useDebugStore((s) => s.openDebugModal);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
@@ -232,7 +231,7 @@ export function TabBar() {
       </button>
 
       <button
-        onClick={() => openDebugModal(activeProject?.path || "")}
+        onClick={() => startDebugSession(activeProject?.path || "")}
         className="h-full px-2.5 flex items-center text-foreground-muted hover:text-accent-error hover:bg-background-raised/50 transition-default shrink-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
         title="Debug with Claude"
       >
