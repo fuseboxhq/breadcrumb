@@ -39,6 +39,7 @@ import { useAppStore } from "../../store/appStore";
 // Stable empty references to avoid Zustand snapshot infinite-loop
 const EMPTY_PHASES: PhaseSummary[] = [];
 const EMPTY_COMMITS: CommitInfo[] = [];
+const EMPTY_BY_PHASE: Record<string, CommitInfo[]> = {};
 
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 
@@ -418,7 +419,7 @@ function PhasePipeline({
   onSelectCommit?: (hash: string) => void;
 }) {
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
-  const gitByPhase = useGitStore((s) => s.projects[projectPath]?.byPhase ?? {});
+  const gitByPhase = useGitStore((s) => s.projects[projectPath]?.byPhase ?? EMPTY_BY_PHASE);
 
   // Sort: active first, then planned, then completed — newest (highest number) first within each group
   const sortedPhases = useMemo(() => {
