@@ -24,6 +24,8 @@ interface TerminalInstanceProps {
   initialCommand?: string;
   /** Called after the initial command has been sent */
   onInitialCommandSent?: () => void;
+  /** Called when the PTY process exits (shell closed) */
+  onProcessExit?: (exitCode: number) => void;
   // Context menu actions passed from TerminalPanel
   onSplitHorizontal?: () => void;
   onSplitVertical?: () => void;
@@ -117,6 +119,7 @@ export function TerminalInstance({
   onCwdChange,
   initialCommand,
   onInitialCommandSent,
+  onProcessExit,
   onSplitHorizontal,
   onSplitVertical,
   onToggleZoom,
@@ -137,6 +140,8 @@ export function TerminalInstance({
   initialCommandRef.current = initialCommand;
   const onInitialCommandSentRef = useRef(onInitialCommandSent);
   onInitialCommandSentRef.current = onInitialCommandSent;
+  const onProcessExitRef = useRef(onProcessExit);
+  onProcessExitRef.current = onProcessExit;
 
   // Stable ref for settings — used during terminal creation without
   // being a dependency (so changing settings doesn't recreate the terminal)
@@ -332,10 +337,26 @@ export function TerminalInstance({
             workingDirectory: resolvedCwd,
             cols: dims.cols,
             rows: dims.rows,
-          }).then(() => {
+          }).then((result) => {
+            if (destroyed) return;
+
+            // When reconnecting to an existing PTY session (e.g. pane moved
+            // via tab merge), replay the output buffer so the fresh xterm.js
+            // restores the full terminal state — alternate screen mode, cursor
+            // position, colors, scroll regions, etc.
+            if (result?.replayBuffer) {
+              terminal.write(result.replayBuffer);
+            }
+
+            // Sync PTY dimensions — handles the case where the session
+            // already existed and the PTY still has old dimensions from
+            // the previous container. Also triggers SIGWINCH so TUI apps
+            // (like Claude Code) redraw at the correct size.
+            window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+
             // Send initial command (e.g. "claude\n") after shell starts
             const cmd = initialCommandRef.current;
-            if (cmd && !destroyed) {
+            if (cmd) {
               setTimeout(() => {
                 if (!destroyed) {
                   window.breadcrumbAPI?.writeTerminal(sessionId, cmd);
@@ -363,8 +384,14 @@ export function TerminalInstance({
 
     const cleanupExit = window.breadcrumbAPI?.onTerminalExit((event) => {
       if (event.sessionId === sessionId) {
-        terminal.write(`\r\n[Process exited with code ${event.exitCode}]\r\n`);
         setPtyExited(true);
+        // Auto-close pane/tab after a short delay so the user sees
+        // the exit briefly (like iTerm/tmux closing on shell exit).
+        setTimeout(() => {
+          if (!destroyed) {
+            onProcessExitRef.current?.(event.exitCode);
+          }
+        }, 150);
       }
     });
 
@@ -413,12 +440,17 @@ export function TerminalInstance({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, workingDirectory]);
 
-  // Refit + focus on activation — no PTY resize if dimensions unchanged
+  // Refit + focus on activation — handles tab switches where the container
+  // was invisible. refresh() forces xterm to re-render its buffer content.
   useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
+        const terminal = terminalRef.current;
+        if (terminal) {
+          terminal.refresh(0, terminal.rows - 1);
+        }
         fit();
-        terminalRef.current?.focus();
+        terminal?.focus();
       });
     }
   }, [isActive, fit]);

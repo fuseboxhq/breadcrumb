@@ -11,9 +11,11 @@ import { folderName } from "../../utils/path";
 interface TerminalPanelProps {
   tabId: string;
   workingDirectory?: string;
+  /** Whether this tab is the active/visible tab in the workspace */
+  isTabActive?: boolean;
 }
 
-export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
+export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: TerminalPanelProps) {
   // Read pane state from shared store (all pane types for universal rendering)
   const tabPaneState = useTabPanes(tabId);
   const panes = tabPaneState?.panes || [];
@@ -159,6 +161,16 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       if (p && p.type === "terminal") p.initialCommand = undefined;
     });
   }, [tabId]);
+
+  // Close pane on shell exit — if last pane, close the whole tab
+  const handleProcessExit = useCallback((paneId: string, _exitCode: number) => {
+    const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+    if (currentPanes.length > 1) {
+      storeRemovePane(tabId, paneId);
+    } else {
+      useAppStore.getState().removeTab(tabId);
+    }
+  }, [tabId, storeRemovePane]);
 
   // Launch Claude Code in a new pane within the current terminal tab
   const handleLaunchClaude = useCallback(() => {
@@ -361,28 +373,20 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
             pane={zoomedPaneData}
             tabId={tabId}
             isActive={true}
+            isTabActive={isTabActive}
             workingDirectory={workingDirectory}
             onCwdChange={handleCwdChange}
+            onProcessExit={handleProcessExit}
             onSplitHorizontal={() => addPane("horizontal")}
             onSplitVertical={() => addPane("vertical")}
             onToggleZoom={() => togglePaneZoom(tabId, zoomedPaneData.id)}
             isZoomed={true}
             canZoom={true}
           />
-        ) : panes.length === 1 ? (
-          <PaneContentRenderer
-            pane={panes[0]}
-            tabId={tabId}
-            isActive={true}
-            workingDirectory={workingDirectory}
-            tabInitialCommand={initialCommand}
-            onCwdChange={handleCwdChange}
-            onSplitHorizontal={() => addPane("horizontal")}
-            onSplitVertical={() => addPane("vertical")}
-            onInitialCommandSent={clearInitialCommand}
-            onPaneInitialCommandSent={clearPaneInitialCommand}
-          />
         ) : (
+          /* Always render through PanelGroup — even for a single pane.
+             This preserves the component tree when panes are added (e.g. tab merge),
+             so existing TerminalInstances stay mounted and keep their xterm content. */
           <PanelGroup direction={splitDirection}>
             {panes.map((pane, index) => (
               <div key={pane.id} className="contents">
@@ -405,26 +409,32 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                     />
                   </PanelResizeHandle>
                 )}
-                <Panel minSize={10}>
+                <Panel id={pane.id} order={index} minSize={10}>
                   <div
-                    className={`h-full transition-default ${
-                      activePane === pane.id
-                        ? "ring-1 ring-accent-secondary/20 rounded-sm"
-                        : panes.length > 1 ? "opacity-90 hover:opacity-100" : ""
+                    className={`h-full ${
+                      panes.length > 1
+                        ? activePane === pane.id
+                          ? "ring-1 ring-accent-secondary/20 rounded-sm transition-default"
+                          : "opacity-90 hover:opacity-100 transition-default"
+                        : ""
                     }`}
                     onClick={() => setActivePane(pane.id)}
                   >
                     <PaneContentRenderer
                       pane={pane}
                       tabId={tabId}
-                      isActive={activePane === pane.id}
+                      isActive={panes.length === 1 || activePane === pane.id}
+                      isTabActive={isTabActive}
                       workingDirectory={workingDirectory}
+                      tabInitialCommand={index === 0 ? initialCommand : undefined}
                       onCwdChange={handleCwdChange}
+                      onProcessExit={handleProcessExit}
                       onSplitHorizontal={() => addPane("horizontal")}
                       onSplitVertical={() => addPane("vertical")}
                       onToggleZoom={() => togglePaneZoom(tabId, pane.id)}
                       isZoomed={false}
                       canZoom={panes.length > 1}
+                      onInitialCommandSent={index === 0 ? clearInitialCommand : undefined}
                       onPaneInitialCommandSent={clearPaneInitialCommand}
                     />
                   </div>

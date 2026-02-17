@@ -8,6 +8,8 @@ interface PaneContentRendererProps {
   pane: ContentPane;
   tabId: string;
   isActive: boolean;
+  /** Whether the parent tab is the visible tab in the workspace */
+  isTabActive?: boolean;
   workingDirectory?: string;
   /** Tab-level initial command (for first terminal pane only) */
   tabInitialCommand?: string;
@@ -19,12 +21,14 @@ interface PaneContentRendererProps {
   canZoom?: boolean;
   onInitialCommandSent?: () => void;
   onPaneInitialCommandSent?: (paneId: string) => void;
+  onProcessExit?: (paneId: string, exitCode: number) => void;
 }
 
 export function PaneContentRenderer({
   pane,
   tabId,
   isActive,
+  isTabActive = true,
   workingDirectory,
   tabInitialCommand,
   onCwdChange,
@@ -35,6 +39,7 @@ export function PaneContentRenderer({
   canZoom,
   onInitialCommandSent,
   onPaneInitialCommandSent,
+  onProcessExit,
 }: PaneContentRendererProps) {
   switch (pane.type) {
     case "terminal": {
@@ -42,7 +47,7 @@ export function PaneContentRenderer({
       return (
         <TerminalInstance
           sessionId={terminalPane.sessionId}
-          isActive={isActive}
+          isActive={isActive && isTabActive}
           workingDirectory={workingDirectory}
           onCwdChange={onCwdChange ? (cwd) => onCwdChange(pane.id, cwd) : undefined}
           initialCommand={tabInitialCommand || terminalPane.initialCommand}
@@ -50,6 +55,7 @@ export function PaneContentRenderer({
             onInitialCommandSent?.();
             onPaneInitialCommandSent?.(pane.id);
           }}
+          onProcessExit={onProcessExit ? (exitCode) => onProcessExit(pane.id, exitCode) : undefined}
           onSplitHorizontal={onSplitHorizontal}
           onSplitVertical={onSplitVertical}
           onToggleZoom={onToggleZoom}
