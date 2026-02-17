@@ -25,7 +25,7 @@ import {
 } from "../../store/projectsStore";
 import {
   usePlanningStore,
-  useTaskDetail,
+  resolveTaskDetailKey,
   type PhaseSummary,
   type PhaseTask,
 } from "../../store/planningStore";
@@ -665,6 +665,17 @@ function PhaseTasksExpanded({
   const blockedTasks = detail.tasks.filter((t) => t.status === "blocked");
   const doneTasks = detail.tasks.filter((t) => t.status === "done");
 
+  // Resolve task details directly from the detail object (avoids per-row store subscriptions)
+  const taskDetails = detail.taskDetails ?? {};
+
+  const getTaskDetail = useCallback(
+    (taskId: string): string | null => {
+      const key = resolveTaskDetailKey(taskDetails, taskId);
+      return key ? taskDetails[key] : null;
+    },
+    [taskDetails]
+  );
+
   return (
     <div className="ml-6 pl-3 border-l border-border py-1.5 animate-fade-in">
       {/* In Progress */}
@@ -676,6 +687,7 @@ function PhaseTasksExpanded({
           tasks={inProgressTasks}
           projectPath={projectPath}
           phaseId={phaseId}
+          getTaskDetail={getTaskDetail}
         />
       )}
 
@@ -688,6 +700,7 @@ function PhaseTasksExpanded({
           tasks={readyTasks}
           projectPath={projectPath}
           phaseId={phaseId}
+          getTaskDetail={getTaskDetail}
         />
       )}
 
@@ -700,6 +713,7 @@ function PhaseTasksExpanded({
           tasks={blockedTasks}
           projectPath={projectPath}
           phaseId={phaseId}
+          getTaskDetail={getTaskDetail}
         />
       )}
 
@@ -727,7 +741,7 @@ function PhaseTasksExpanded({
               {showDone && (
                 <div className="mt-0.5">
                   {doneTasks.map((task) => (
-                    <TaskRow key={task.id} task={task} projectPath={projectPath} phaseId={phaseId} />
+                    <TaskRow key={task.id} task={task} projectPath={projectPath} phaseId={phaseId} taskDetail={getTaskDetail(task.id)} />
                   ))}
                 </div>
               )}
@@ -746,6 +760,7 @@ function TaskGroup({
   tasks,
   projectPath,
   phaseId,
+  getTaskDetail,
 }: {
   label: string;
   count: number;
@@ -753,6 +768,7 @@ function TaskGroup({
   tasks: PhaseTask[];
   projectPath: string;
   phaseId: string;
+  getTaskDetail: (taskId: string) => string | null;
 }) {
   const badgeClasses = {
     teal: "bg-accent-secondary/10 text-accent-secondary",
@@ -770,7 +786,7 @@ function TaskGroup({
         </span>
       </div>
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} projectPath={projectPath} phaseId={phaseId} />
+        <TaskRow key={task.id} task={task} projectPath={projectPath} phaseId={phaseId} taskDetail={getTaskDetail(task.id)} />
       ))}
     </div>
   );
@@ -780,17 +796,18 @@ function TaskRow({
   task,
   projectPath,
   phaseId,
+  taskDetail,
 }: {
   task: PhaseTask;
   projectPath: string;
   phaseId: string;
+  taskDetail: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const taskDetail = useTaskDetail(projectPath, phaseId, task.id);
   const saveTaskDetail = usePlanningStore((s) => s.saveTaskDetail);
 
   const hasDetail = taskDetail !== null;
@@ -945,18 +962,21 @@ function ActiveTaskList({
     }
   }, [activePhases, projectPath, projectData?.phaseDetails, fetchPhaseDetail]);
 
-  // Collect tasks from active phases, tagged with their phase
+  // Collect tasks from active phases, tagged with their phase + resolved detail
   const activeTasks = useMemo(() => {
-    const tasks: Array<{ task: PhaseTask; phaseId: string; phaseTitle: string }> = [];
+    const tasks: Array<{ task: PhaseTask; phaseId: string; phaseTitle: string; taskDetail: string | null }> = [];
     for (const phase of activePhases) {
       const detail = projectData?.phaseDetails[phase.id];
       if (detail?.tasks) {
+        const td = detail.taskDetails ?? {};
         for (const task of detail.tasks) {
           if (task.status !== "done") {
+            const key = resolveTaskDetailKey(td, task.id);
             tasks.push({
               task,
               phaseId: phase.id,
               phaseTitle: phase.title,
+              taskDetail: key ? td[key] : null,
             });
           }
         }
@@ -1020,28 +1040,14 @@ function ActiveTaskList({
         </div>
       ) : (
         <div className="space-y-0.5">
-          {activeTasks.map(({ task, phaseId }) => (
-            <div
+          {activeTasks.map(({ task, phaseId, taskDetail }) => (
+            <TaskRow
               key={`${phaseId}-${task.id}`}
-              className="flex items-center gap-2 py-1 group rounded-md -mx-1 px-1 hover:bg-muted/15 transition-default"
-            >
-              <TaskStatusDot status={task.status} />
-              <span className="text-2xs font-mono text-foreground-muted/60 shrink-0">
-                {phaseId.replace("PHASE-", "P")}
-              </span>
-              <span
-                className={`text-2xs truncate flex-1 ${
-                  task.status === "in_progress"
-                    ? "text-foreground"
-                    : task.status === "blocked"
-                      ? "text-destructive/80"
-                      : "text-foreground-secondary"
-                }`}
-              >
-                {task.title}
-              </span>
-              <TaskStatusBadge status={task.status} />
-            </div>
+              task={task}
+              projectPath={projectPath}
+              phaseId={phaseId}
+              taskDetail={taskDetail}
+            />
           ))}
         </div>
       )}

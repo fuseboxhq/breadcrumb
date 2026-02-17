@@ -211,9 +211,12 @@ export const usePlanningStore = create<PlanningStore>()(
             phaseId
           );
         if (result?.success && result.data) {
+          const data = result.data as unknown as PhaseDetail;
+          const tdKeys = data.taskDetails ? Object.keys(data.taskDetails) : [];
+          console.log(`[planningStore] fetchPhaseDetail ${phaseId}: taskDetails has ${tdKeys.length} entries`, tdKeys);
           set((state) => {
             const p = ensureProject(state, projectPath);
-            p.phaseDetails[phaseId] = result.data as unknown as PhaseDetail;
+            p.phaseDetails[phaseId] = data;
             p.error = null;
           });
         } else if (result && !result.success) {
@@ -334,7 +337,7 @@ export const usePlanningStore = create<PlanningStore>()(
  * Resolve a task ID to its key in the taskDetails record.
  * Handles ID format mismatches (e.g., `breadcrumb-ahr.1` vs `ahr.1`).
  */
-function resolveTaskDetailKey(
+export function resolveTaskDetailKey(
   details: Record<string, string>,
   taskId: string
 ): string | null {
