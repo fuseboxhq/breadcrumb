@@ -240,6 +240,10 @@ export class ExtensionHost extends EventEmitter {
         this.emit("command-registered", msg.extensionId, msg.commandId);
         break;
       }
+      case "terminal-create": {
+        this.emit("terminal-create-request", msg.requestId, msg.extensionId, msg.name, msg.workingDirectory, msg.shell);
+        break;
+      }
       case "error": {
         const key = msg.extensionId
           ? `activate:${msg.extensionId}`

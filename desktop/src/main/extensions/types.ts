@@ -106,6 +106,8 @@ export type HostMessage =
   | { type: "activate"; extensionId: string; extensionPath: string; main: string }
   | { type: "deactivate"; extensionId: string }
   | { type: "execute-command"; commandId: string; args: unknown[] }
+  | { type: "terminal-created"; requestId: string; sessionId: string }
+  | { type: "terminal-create-failed"; requestId: string; error: string }
   | { type: "shutdown" };
 
 /** Messages sent from Extension Host → main process */
@@ -115,7 +117,8 @@ export type HostResponse =
   | { type: "command-result"; commandId: string; result: unknown }
   | { type: "error"; extensionId?: string; message: string; stack?: string }
   | { type: "register-command"; extensionId: string; commandId: string }
-  | { type: "log"; level: "info" | "warn" | "error"; message: string };
+  | { type: "log"; level: "info" | "warn" | "error"; message: string }
+  | { type: "terminal-create"; requestId: string; extensionId: string; name: string; workingDirectory?: string; shell?: string };
 
 // ---------- Renderer-facing extension info ----------
 

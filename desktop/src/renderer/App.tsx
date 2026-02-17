@@ -29,6 +29,43 @@ function App() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
+  // Listen for extension-spawned terminal creation from main process
+  useEffect(() => {
+    const cleanup = window.breadcrumbAPI?.onExtensionTerminalCreated?.((data) => {
+      const { sessionId, name, workingDirectory } = data;
+      const store = useAppStore.getState();
+
+      // Create a new terminal tab for the extension-spawned terminal
+      const tabId = `ext-tab-${Date.now()}`;
+      const paneId = `pane-${Date.now()}`;
+
+      store.addTab({
+        id: tabId,
+        type: "terminal",
+        title: name,
+      });
+
+      // Directly set up pane state with the pre-created sessionId
+      useAppStore.setState((state) => {
+        state.terminalPanes[tabId] = {
+          panes: [
+            {
+              type: "terminal",
+              id: paneId,
+              sessionId,
+              cwd: workingDirectory || "",
+              lastActivity: Date.now(),
+              processLabel: name,
+            },
+          ],
+          activePane: paneId,
+          splitDirection: "horizontal",
+        };
+      });
+    });
+    return () => cleanup?.();
+  }, []);
+
   // Listen for terminal process name changes from main process
   useEffect(() => {
     const cleanup = window.breadcrumbAPI?.onTerminalProcessChange((event) => {

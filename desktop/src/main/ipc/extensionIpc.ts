@@ -76,6 +76,17 @@ export function registerExtensionIPCHandlers(
   ipcMain.handle(IPC_CHANNELS.EXTENSIONS_COMMANDS, handleCommands);
   ipcMain.handle(IPC_CHANNELS.EXTENSIONS_EXECUTE_COMMAND, handleExecuteCommand);
 
+  // Forward terminal creation to renderer so it opens a pane
+  const onTerminalCreated = (sessionId: string, name: string, extensionId: string, workingDirectory?: string) => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(
+        IPC_CHANNELS.EXTENSIONS_TERMINAL_CREATED,
+        { sessionId, name, extensionId, workingDirectory }
+      );
+    }
+  };
+  extensionManager.on("terminal-created", onTerminalCreated);
+
   // Forward status changes to renderer
   const onStatusChanged = (id: string, status: string) => {
     if (!mainWindow.isDestroyed()) {
@@ -105,5 +116,6 @@ export function registerExtensionIPCHandlers(
     ipcMain.removeHandler(IPC_CHANNELS.EXTENSIONS_EXECUTE_COMMAND);
     extensionManager.removeListener("extensions-changed", onExtensionsChanged);
     extensionManager.removeListener("extension-status-changed", onStatusChanged);
+    extensionManager.removeListener("terminal-created", onTerminalCreated);
   };
 }

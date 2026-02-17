@@ -15,6 +15,7 @@ import path from "path";
 import os from "os";
 import { EventEmitter } from "events";
 import { ExtensionHost } from "./ExtensionHost";
+import { terminalService } from "../terminal/TerminalService";
 import type {
   ExtensionManifest,
   ExtensionInfo,
@@ -55,6 +56,29 @@ export class ExtensionManager extends EventEmitter {
     this.host.on("command-registered", (extId: string, cmdId: string) => {
       this.registeredCommands.set(cmdId, extId);
       this.emit("commands-changed");
+    });
+
+    this.host.on("terminal-create-request", (requestId: string, extensionId: string, name: string, workingDirectory?: string, shell?: string) => {
+      // Verify the extension has terminal capability
+      const ext = this.extensions.get(extensionId);
+      if (ext && ext.manifest.breadcrumb?.capabilities?.terminal === false) {
+        this.host.send({ type: "terminal-create-failed", requestId, error: "Extension lacks terminal capability" });
+        return;
+      }
+
+      const sessionId = `ext-${extensionId}-${Date.now()}`;
+      try {
+        terminalService.createSession({
+          id: sessionId,
+          name: name || extensionId,
+          workingDirectory: workingDirectory || os.homedir(),
+          shell,
+        });
+        this.emit("terminal-created", sessionId, name || extensionId, extensionId, workingDirectory);
+        this.host.send({ type: "terminal-created", requestId, sessionId });
+      } catch (err) {
+        this.host.send({ type: "terminal-create-failed", requestId, error: String(err) });
+      }
     });
 
     this.host.on("restarted", (attempt: number) => {

@@ -49,6 +49,7 @@ export const IPC_CHANNELS = {
   EXTENSIONS_COMMANDS: "extensions:commands",
   EXTENSIONS_EXECUTE_COMMAND: "extensions:execute-command",
   EXTENSIONS_STATUS_CHANGED: "extensions:status-changed",
+  EXTENSIONS_TERMINAL_CREATED: "extensions:terminal-created",
 
   // Browser channels (embedded WebContentsView browser)
   BROWSER_CREATE: "browser:create",

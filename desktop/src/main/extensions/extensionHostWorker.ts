@@ -38,6 +38,7 @@ interface LoadedExtension {
 
 const extensions = new Map<string, LoadedExtension>();
 const commands = new Map<string, (...args: unknown[]) => unknown>();
+const pendingTerminalRequests = new Map<string, { resolve: (v: { sessionId: string }) => void; reject: (e: Error) => void }>();
 
 // ---------- API exposed to extensions ----------
 
@@ -66,6 +67,26 @@ const breadcrumb = {
       const handler = commands.get(commandId);
       if (!handler) throw new Error(`Unknown command: ${commandId}`);
       return handler(...args);
+    },
+  },
+  terminal: {
+    createTerminal(options: {
+      name: string;
+      workingDirectory?: string;
+      shell?: string;
+    }): Promise<{ sessionId: string }> {
+      const requestId = Math.random().toString(36).slice(2);
+      return new Promise((resolve, reject) => {
+        pendingTerminalRequests.set(requestId, { resolve, reject });
+        sendToMain({
+          type: "terminal-create",
+          requestId,
+          extensionId: "", // filled in by activate wrapper
+          name: options.name,
+          workingDirectory: options.workingDirectory,
+          shell: options.shell,
+        });
+      });
     },
   },
   window: {
@@ -110,6 +131,23 @@ async function handleActivate(
       extensionId,
     };
 
+    // Patch terminal.createTerminal to include extensionId
+    const origCreateTerminal = breadcrumb.terminal.createTerminal;
+    breadcrumb.terminal.createTerminal = (options) => {
+      const requestId = Math.random().toString(36).slice(2);
+      return new Promise((resolve, reject) => {
+        pendingTerminalRequests.set(requestId, { resolve, reject });
+        sendToMain({
+          type: "terminal-create",
+          requestId,
+          extensionId,
+          name: options.name,
+          workingDirectory: options.workingDirectory,
+          shell: options.shell,
+        });
+      });
+    };
+
     // Patch command registration to include extensionId
     const origRegister = breadcrumb.commands.registerCommand;
     breadcrumb.commands.registerCommand = (commandId, handler) => {
@@ -136,8 +174,9 @@ async function handleActivate(
     // Activate
     await mod.activate(context);
 
-    // Restore original
+    // Restore originals
     breadcrumb.commands.registerCommand = origRegister;
+    breadcrumb.terminal.createTerminal = origCreateTerminal;
 
     extensions.set(extensionId, { id: extensionId, module: mod, context });
     sendToMain({ type: "activated", extensionId });
@@ -242,6 +281,22 @@ process.on("message", async (msg: HostMessage) => {
     case "execute-command":
       await handleCommand(msg.commandId, msg.args);
       break;
+    case "terminal-created": {
+      const pending = pendingTerminalRequests.get(msg.requestId);
+      if (pending) {
+        pending.resolve({ sessionId: msg.sessionId });
+        pendingTerminalRequests.delete(msg.requestId);
+      }
+      break;
+    }
+    case "terminal-create-failed": {
+      const pending = pendingTerminalRequests.get(msg.requestId);
+      if (pending) {
+        pending.reject(new Error(msg.error));
+        pendingTerminalRequests.delete(msg.requestId);
+      }
+      break;
+    }
     case "shutdown":
       await handleShutdown();
       break;
