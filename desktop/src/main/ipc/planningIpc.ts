@@ -67,11 +67,44 @@ export function registerPlanningIPCHandlers(): () => void {
     }
   );
 
+  ipcMain.handle(
+    IPC_CHANNELS.PLANNING_UPDATE_TASK_DETAIL,
+    async (
+      _,
+      {
+        projectPath,
+        phaseId,
+        taskId,
+        content,
+      }: {
+        projectPath: string;
+        phaseId: string;
+        taskId: string;
+        content: string;
+      }
+    ) => {
+      try {
+        const validated = validatePath(projectPath);
+        if (!/^PHASE-\d+$/.test(phaseId)) {
+          return { success: false, error: "Invalid phase ID format" };
+        }
+        if (!/^[\w.-]+$/.test(taskId)) {
+          return { success: false, error: "Invalid task ID format" };
+        }
+        await planningService.updateTaskDetail(validated, phaseId, taskId, content);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: String(error) };
+      }
+    }
+  );
+
   return () => {
     ipcMain.removeHandler(IPC_CHANNELS.PLANNING_GET_CAPABILITIES);
     ipcMain.removeHandler(IPC_CHANNELS.PLANNING_GET_PHASES);
     ipcMain.removeHandler(IPC_CHANNELS.PLANNING_GET_PHASE_DETAIL);
     ipcMain.removeHandler(IPC_CHANNELS.PLANNING_GET_BEADS_TASKS);
+    ipcMain.removeHandler(IPC_CHANNELS.PLANNING_UPDATE_TASK_DETAIL);
     handlersRegistered = false;
   };
 }

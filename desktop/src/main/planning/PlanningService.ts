@@ -1,4 +1,4 @@
-import { access, readFile, readdir } from "fs/promises";
+import { access, readFile, readdir, writeFile } from "fs/promises";
 import { join } from "path";
 import Database from "better-sqlite3";
 
@@ -58,6 +58,8 @@ export interface PhaseDetail {
   tasks: PhaseTask[];
   completionCriteria: CompletionCriterion[];
   decisions: TechnicalDecision[];
+  /** Per-task detail markdown blocks, keyed by task ID as found in the file */
+  taskDetails: Record<string, string>;
 }
 
 export interface BeadsTask {
@@ -272,6 +274,9 @@ export class PlanningService {
     // Split into sections by ## headers
     const sections = this.splitSections(content);
 
+    // Parse per-task detail blocks from raw content (works across ## and ### headings)
+    const taskDetails = this.parseTaskDetails(content);
+
     return {
       id: phaseId,
       title,
@@ -290,6 +295,7 @@ export class PlanningService {
       decisions: this.parseDecisions(
         this.extractSection(sections, "Technical Decisions")
       ),
+      taskDetails,
     };
   }
 
@@ -473,6 +479,129 @@ export class PlanningService {
     }
 
     return decisions;
+  }
+
+  /**
+   * Parse the "Task Details" section into per-task markdown blocks.
+   * Handles multiple format variants:
+   *   - `### task-id — Title` (h3 heading)
+   *   - `**task-id: Title**` (bold line)
+   *   - `**task-id — Title**` (bold line with em-dash)
+   */
+  private parseTaskDetails(content: string): Record<string, string> {
+    const details: Record<string, string> = {};
+
+    // Find the Task Details section (## or ###)
+    const sectionMatch = content.match(/^#{2,3}\s+Task Details\s*$/m);
+    if (!sectionMatch || sectionMatch.index === undefined) return details;
+
+    const sectionStart =
+      sectionMatch.index + sectionMatch[0].length;
+
+    // Find the end of the section: next ## heading (not ###)
+    const rest = content.slice(sectionStart);
+    const nextH2 = rest.match(/^## /m);
+    const sectionBody = nextH2 && nextH2.index !== undefined
+      ? rest.slice(0, nextH2.index)
+      : rest;
+
+    // Match block starts: ### id — ...  OR  **id: ...  OR  **id — ...
+    const blockPattern =
+      /^(?:###\s+([\w.-]+)\s*[—-]|\*\*([\w.-]+)(?:[:.]\s|\s*[—-]\s))/gm;
+
+    const blocks: Array<{ id: string; start: number }> = [];
+    let match: RegExpExecArray | null;
+    while ((match = blockPattern.exec(sectionBody)) !== null) {
+      const taskId = match[1] || match[2];
+      blocks.push({ id: taskId, start: match.index });
+    }
+
+    for (let i = 0; i < blocks.length; i++) {
+      const start = blocks[i].start;
+      const end =
+        i + 1 < blocks.length ? blocks[i + 1].start : sectionBody.length;
+      details[blocks[i].id] = sectionBody.slice(start, end).trim();
+    }
+
+    return details;
+  }
+
+  /**
+   * Replace a single task's detail block in the raw file content.
+   * Returns the updated file content string.
+   */
+  spliceTaskDetail(
+    fileContent: string,
+    taskId: string,
+    newBlock: string
+  ): string {
+    // Find Task Details section
+    const sectionMatch = fileContent.match(/^#{2,3}\s+Task Details\s*$/m);
+    if (!sectionMatch || sectionMatch.index === undefined) {
+      throw new Error("No Task Details section found in phase file");
+    }
+
+    const sectionStart =
+      sectionMatch.index + sectionMatch[0].length;
+    const rest = fileContent.slice(sectionStart);
+    const nextH2 = rest.match(/^## /m);
+    const sectionEnd =
+      nextH2 && nextH2.index !== undefined
+        ? sectionStart + nextH2.index
+        : fileContent.length;
+    const sectionBody = fileContent.slice(sectionStart, sectionEnd);
+
+    // Find task blocks
+    const blockPattern =
+      /^(?:###\s+([\w.-]+)\s*[—-]|\*\*([\w.-]+)(?:[:.]\s|\s*[—-]\s))/gm;
+    const blocks: Array<{ id: string; start: number }> = [];
+    let match: RegExpExecArray | null;
+    while ((match = blockPattern.exec(sectionBody)) !== null) {
+      blocks.push({ id: match[1] || match[2], start: match.index });
+    }
+
+    // Find matching block (with suffix normalization)
+    const blockIndex = blocks.findIndex((b) => {
+      if (b.id === taskId) return true;
+      if (taskId.endsWith(b.id) || b.id.endsWith(taskId)) return true;
+      return false;
+    });
+
+    if (blockIndex === -1) {
+      throw new Error(`Task ${taskId} not found in Task Details section`);
+    }
+
+    const blockStart = sectionStart + blocks[blockIndex].start;
+    const blockEnd =
+      blockIndex + 1 < blocks.length
+        ? sectionStart + blocks[blockIndex + 1].start
+        : sectionEnd;
+
+    // Splice: replace only this block's byte range
+    const before = fileContent.slice(0, blockStart);
+    const after = fileContent.slice(blockEnd);
+    const normalizedNew = newBlock.trimEnd() + "\n\n";
+
+    return before + normalizedNew + after;
+  }
+
+  /**
+   * Update a single task's detail content in a phase file on disk.
+   */
+  async updateTaskDetail(
+    projectPath: string,
+    phaseId: string,
+    taskId: string,
+    newContent: string
+  ): Promise<void> {
+    const phaseFile = await this.resolvePhaseFile(projectPath, phaseId);
+    if (!phaseFile) {
+      throw new Error(`Phase file not found: ${phaseId}`);
+    }
+
+    const content = await readFile(phaseFile, "utf-8");
+    const updated = this.spliceTaskDetail(content, taskId, newContent);
+    await writeFile(phaseFile, updated, "utf-8");
   }
 }
 

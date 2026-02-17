@@ -15,6 +15,7 @@ import {
   Inbox,
   GitCommit,
   History,
+  Pencil,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 import {
@@ -24,6 +25,7 @@ import {
 } from "../../store/projectsStore";
 import {
   usePlanningStore,
+  useTaskDetail,
   type PhaseSummary,
   type PhaseTask,
 } from "../../store/planningStore";
@@ -670,6 +672,8 @@ function PhaseTasksExpanded({
           count={inProgressTasks.length}
           variant="warning"
           tasks={inProgressTasks}
+          projectPath={projectPath}
+          phaseId={phaseId}
         />
       )}
 
@@ -680,6 +684,8 @@ function PhaseTasksExpanded({
           count={readyTasks.length}
           variant="teal"
           tasks={readyTasks}
+          projectPath={projectPath}
+          phaseId={phaseId}
         />
       )}
 
@@ -690,6 +696,8 @@ function PhaseTasksExpanded({
           count={blockedTasks.length}
           variant="destructive"
           tasks={blockedTasks}
+          projectPath={projectPath}
+          phaseId={phaseId}
         />
       )}
 
@@ -717,7 +725,7 @@ function PhaseTasksExpanded({
               {showDone && (
                 <div className="mt-0.5">
                   {doneTasks.map((task) => (
-                    <TaskRow key={task.id} task={task} />
+                    <TaskRow key={task.id} task={task} projectPath={projectPath} phaseId={phaseId} />
                   ))}
                 </div>
               )}
@@ -734,11 +742,15 @@ function TaskGroup({
   count,
   variant,
   tasks,
+  projectPath,
+  phaseId,
 }: {
   label: string;
   count: number;
   variant: "teal" | "warning" | "destructive";
   tasks: PhaseTask[];
+  projectPath: string;
+  phaseId: string;
 }) {
   const badgeClasses = {
     teal: "bg-accent-secondary/10 text-accent-secondary",
@@ -756,34 +768,139 @@ function TaskGroup({
         </span>
       </div>
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} />
+        <TaskRow key={task.id} task={task} projectPath={projectPath} phaseId={phaseId} />
       ))}
     </div>
   );
 }
 
-function TaskRow({ task }: { task: PhaseTask }) {
+function TaskRow({
+  task,
+  projectPath,
+  phaseId,
+}: {
+  task: PhaseTask;
+  projectPath: string;
+  phaseId: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const taskDetail = useTaskDetail(projectPath, phaseId, task.id);
+  const saveTaskDetail = usePlanningStore((s) => s.saveTaskDetail);
+
+  const hasDetail = taskDetail !== null;
+
+  const handleEdit = useCallback(() => {
+    setEditContent(taskDetail || "");
+    setEditing(true);
+  }, [taskDetail]);
+
+  const handleCancel = useCallback(() => {
+    setEditing(false);
+    setEditContent("");
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    const result = await saveTaskDetail(projectPath, phaseId, task.id, editContent);
+    setSaving(false);
+    if (result.success) {
+      setEditing(false);
+    }
+  }, [saveTaskDetail, projectPath, phaseId, task.id, editContent]);
+
   return (
-    <div className="flex items-center gap-2 py-0.5 group rounded -mx-0.5 px-0.5 hover:bg-muted/10 transition-default">
-      <TaskStatusDot status={task.status} />
-      <span
-        className={`text-2xs truncate flex-1 ${
-          task.status === "done"
-            ? "text-foreground-muted line-through"
-            : task.status === "in_progress"
-              ? "text-foreground"
-              : task.status === "blocked"
-                ? "text-foreground-secondary"
-                : "text-foreground-secondary"
+    <div>
+      {/* Title row */}
+      <button
+        onClick={() => hasDetail && setExpanded(!expanded)}
+        className={`flex items-center gap-2 py-0.5 w-full text-left group rounded -mx-0.5 px-0.5 transition-default ${
+          hasDetail ? "hover:bg-muted/10 cursor-pointer" : "cursor-default"
         }`}
       >
-        {task.title}
-      </span>
-      {task.complexity && task.status !== "done" && (
-        <span className="text-2xs text-foreground-muted/60 font-mono shrink-0 opacity-0 group-hover:opacity-100 transition-default">
-          {task.complexity}
+        <TaskStatusDot status={task.status} />
+        <span
+          className={`text-2xs truncate flex-1 ${
+            task.status === "done"
+              ? "text-foreground-muted line-through"
+              : task.status === "in_progress"
+                ? "text-foreground"
+                : task.status === "blocked"
+                  ? "text-foreground-secondary"
+                  : "text-foreground-secondary"
+          }`}
+        >
+          {task.title}
         </span>
-      )}
+        {task.complexity && task.status !== "done" && (
+          <span className="text-2xs text-foreground-muted/60 font-mono shrink-0 opacity-0 group-hover:opacity-100 transition-default">
+            {task.complexity}
+          </span>
+        )}
+        {hasDetail && (
+          <ChevronRight
+            className={`w-3 h-3 text-foreground-muted/50 shrink-0 transition-transform duration-150 ${
+              expanded ? "rotate-90" : ""
+            }`}
+          />
+        )}
+      </button>
+
+      {/* Expandable detail area */}
+      <div
+        className="grid transition-[grid-template-rows] duration-150 ease-out"
+        style={{ gridTemplateRows: expanded && hasDetail ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          {expanded && hasDetail && (
+            <div className="ml-5 pl-2 border-l border-border/50 py-1.5 animate-fade-in">
+              {editing ? (
+                <div className="space-y-1.5">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full text-2xs font-mono bg-background-sunken border border-border rounded-md p-2 text-foreground-secondary resize-y min-h-[80px] focus:ring-1 focus:ring-accent-secondary/50 focus:outline-none"
+                    rows={Math.max(5, editContent.split("\n").length + 1)}
+                    autoFocus
+                  />
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-2 py-0.5 text-2xs rounded bg-accent-secondary/15 text-accent-secondary hover:bg-accent-secondary/25 transition-default disabled:opacity-50"
+                    >
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="px-2 py-0.5 text-2xs rounded text-foreground-muted hover:bg-muted/30 transition-default"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group/detail relative">
+                  <pre className="text-2xs text-foreground-secondary whitespace-pre-wrap font-mono leading-relaxed">
+                    {taskDetail}
+                  </pre>
+                  <button
+                    onClick={handleEdit}
+                    className="absolute top-0 right-0 p-1 rounded text-foreground-muted/40 hover:text-accent-secondary hover:bg-accent-secondary/10 transition-default opacity-0 group-hover/detail:opacity-100"
+                    title="Edit task details"
+                    aria-label="Edit task details"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

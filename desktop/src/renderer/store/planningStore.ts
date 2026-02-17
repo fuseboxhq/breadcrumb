@@ -48,6 +48,7 @@ export interface PhaseDetail {
   tasks: PhaseTask[];
   completionCriteria: CompletionCriterion[];
   decisions: TechnicalDecision[];
+  taskDetails: Record<string, string>;
 }
 
 export interface BeadsTask {
@@ -97,6 +98,12 @@ interface PlanningActions {
   refreshProject: (projectPath: string) => Promise<void>;
   clearProject: (projectPath: string) => void;
   setNavigationState: (view: DashboardView) => void;
+  saveTaskDetail: (
+    projectPath: string,
+    phaseId: string,
+    taskId: string,
+    content: string
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export type PlanningStore = PlanningState & PlanningActions;
@@ -282,8 +289,65 @@ export const usePlanningStore = create<PlanningStore>()(
         state.navigationState = view;
       });
     },
+
+    saveTaskDetail: async (projectPath, phaseId, taskId, content) => {
+      try {
+        const result =
+          await window.breadcrumbAPI?.updatePlanningTaskDetail(
+            projectPath,
+            phaseId,
+            taskId,
+            content
+          );
+        if (result?.success) {
+          // Optimistically update the local cache
+          set((state) => {
+            const detail =
+              state.projects[projectPath]?.phaseDetails[phaseId];
+            if (detail?.taskDetails) {
+              // Update with the key that matches (using same normalization)
+              const matchKey = resolveTaskDetailKey(
+                detail.taskDetails,
+                taskId
+              );
+              if (matchKey) {
+                detail.taskDetails[matchKey] = content;
+              }
+            }
+          });
+          return { success: true };
+        }
+        return {
+          success: false,
+          error: result?.error || "Failed to save",
+        };
+      } catch (error) {
+        return { success: false, error: String(error) };
+      }
+    },
   }))
 );
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Resolve a task ID to its key in the taskDetails record.
+ * Handles ID format mismatches (e.g., `breadcrumb-ahr.1` vs `ahr.1`).
+ */
+function resolveTaskDetailKey(
+  details: Record<string, string>,
+  taskId: string
+): string | null {
+  if (details[taskId]) return taskId;
+  // Try short form: strip prefix (e.g., "breadcrumb-ahr.1" → "ahr.1")
+  const shortMatch = taskId.match(/(?:^|.*-)([\w]+\.\d+)$/);
+  if (shortMatch?.[1] && details[shortMatch[1]]) return shortMatch[1];
+  // Try suffix match
+  for (const key of Object.keys(details)) {
+    if (taskId.endsWith(key) || key.endsWith(taskId)) return key;
+  }
+  return null;
+}
 
 // ── Selectors ────────────────────────────────────────────────────────────────
 
@@ -337,3 +401,17 @@ export const usePlanningNavigation = () =>
 
 export const useSetPlanningNavigation = () =>
   usePlanningStore((s) => s.setNavigationState);
+
+export const useTaskDetail = (
+  projectPath: string | null,
+  phaseId: string | null,
+  taskId: string | null
+): string | null =>
+  usePlanningStore((s) => {
+    if (!projectPath || !phaseId || !taskId) return null;
+    const details =
+      s.projects[projectPath]?.phaseDetails[phaseId]?.taskDetails;
+    if (!details) return null;
+    const key = resolveTaskDetailKey(details, taskId);
+    return key ? details[key] : null;
+  });

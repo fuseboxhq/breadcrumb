@@ -40,6 +40,7 @@ export const IPC_CHANNELS = {
   PLANNING_GET_PHASES: "planning:get-phases",
   PLANNING_GET_PHASE_DETAIL: "planning:get-phase-detail",
   PLANNING_GET_BEADS_TASKS: "planning:get-beads-tasks",
+  PLANNING_UPDATE_TASK_DETAIL: "planning:update-task-detail",
 
   // Extension channels
   EXTENSIONS_LIST: "extensions:list",

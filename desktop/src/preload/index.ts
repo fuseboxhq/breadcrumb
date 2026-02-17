@@ -86,6 +86,7 @@ export interface BreadcrumbAPI {
   getPlanningPhases: (projectPath: string) => Promise<{ success: boolean; data?: Array<{ id: string; title: string; status: string; taskCount: number; completedCount: number; isActive: boolean }>; error?: string }>;
   getPlanningPhaseDetail: (projectPath: string, phaseId: string) => Promise<{ success: boolean; data?: Record<string, unknown> | null; error?: string }>;
   getPlanningBeadsTasks: (projectPath: string, epicId: string) => Promise<{ success: boolean; data?: Array<Record<string, unknown>>; error?: string }>;
+  updatePlanningTaskDetail: (projectPath: string, phaseId: string, taskId: string, content: string) => Promise<{ success: boolean; error?: string }>;
 
   // Extension operations
   getExtensions: () => Promise<ExtensionInfoForRenderer[]>;
@@ -209,6 +210,9 @@ const api: BreadcrumbAPI = {
 
   getPlanningBeadsTasks: (projectPath, epicId) =>
     ipcRenderer.invoke(IPC_CHANNELS.PLANNING_GET_BEADS_TASKS, { projectPath, epicId }),
+
+  updatePlanningTaskDetail: (projectPath, phaseId, taskId, content) =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLANNING_UPDATE_TASK_DETAIL, { projectPath, phaseId, taskId, content }),
 
   // Extension operations
   getExtensions: () => ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_LIST),
