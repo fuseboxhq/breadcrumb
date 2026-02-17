@@ -234,9 +234,10 @@ export interface AppActions {
   // Browser tab in center workspace
   openBrowserTab: (url?: string) => void;
 
-  // Terminal pane management
+  // Pane management
   initializeTabPanes: (tabId: string, workingDirectory?: string) => void;
   addPane: (tabId: string, direction?: "horizontal" | "vertical", initialCommand?: string) => void;
+  addContentPane: (tabId: string, pane: ContentPane, direction?: "horizontal" | "vertical") => void;
   removePane: (tabId: string, paneId: string) => void;
   setActivePane: (tabId: string, paneId: string) => void;
   toggleSplitDirection: (tabId: string) => void;
@@ -553,6 +554,21 @@ export const useAppStore = create<AppStore>()(
           initialCommand,
         });
         tabState.activePane = id;
+      });
+      persistWorkspace();
+    },
+
+    addContentPane: (tabId, pane, direction) => {
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+
+        if (direction) {
+          tabState.splitDirection = direction;
+        }
+
+        tabState.panes.push(pane);
+        tabState.activePane = pane.id;
       });
       persistWorkspace();
     },

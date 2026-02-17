@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane } from "../../store/appStore";
-import type { TerminalPaneData } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles } from "lucide-react";
+import type { TerminalPaneData, ContentPane } from "../../store/appStore";
+import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
+import { PaneContentRenderer } from "../panes/PaneContentRenderer";
 import { folderName } from "../../utils/path";
 
 interface TerminalPanelProps {
@@ -13,10 +14,10 @@ interface TerminalPanelProps {
 }
 
 export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
-  // Read pane state from shared store (filter to terminal panes only)
+  // Read pane state from shared store (all pane types for universal rendering)
   const tabPaneState = useTabPanes(tabId);
-  const allPanes = tabPaneState?.panes || [];
-  const panes = allPanes.filter(isTerminalPane) as TerminalPaneData[];
+  const panes = tabPaneState?.panes || [];
+  const terminalPanes = panes.filter(isTerminalPane);
   const activePane = tabPaneState?.activePane || "pane-1";
   const splitDirection = tabPaneState?.splitDirection || "horizontal";
 
@@ -82,7 +83,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   // When active pane switches, process label changes, or CWD changes → update tab title
   useEffect(() => {
     const pane = panes.find((p) => p.id === activePane);
-    if (pane) {
+    if (pane && pane.type === "terminal") {
       const title = pane.processLabel || (pane.cwd ? folderName(pane.cwd) : "Terminal");
       updateTab(tabId, { title });
     }
@@ -244,8 +245,10 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         <div className="flex items-center gap-0.5">
           {panes.map((pane, index) => {
             const label = resolveLabel(pane, index);
+            const isTerminal = pane.type === "terminal";
+            const termPane = isTerminal ? (pane as TerminalPaneData) : null;
 
-            if (renamingPaneId === pane.id) {
+            if (isTerminal && renamingPaneId === pane.id) {
               return (
                 <input
                   key={pane.id}
@@ -266,7 +269,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
               <button
                 key={pane.id}
                 onClick={() => setActivePane(pane.id)}
-                onDoubleClick={() => startRename(pane.id, pane.customLabel || "")}
+                onDoubleClick={isTerminal ? () => startRename(pane.id, termPane?.customLabel || "") : undefined}
                 className={`
                   group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5 max-w-32
                   ${activePane === pane.id
@@ -274,11 +277,11 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                     : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
                   }
                 `}
-                title={`${label}${pane.customLabel ? " (custom)" : pane.processLabel ? ` — ${pane.processLabel}` : ""}\nDouble-click to rename`}
+                title={`${label}${isTerminal ? (termPane?.customLabel ? " (custom)" : termPane?.processLabel ? ` — ${termPane.processLabel}` : "") : ""}`}
               >
-                <ProcessIcon processName={pane.processName} className="w-3 h-3 shrink-0" />
+                <PaneIcon pane={pane} />
                 <span className="truncate">{label}</span>
-                {pane.customLabel && (
+                {isTerminal && termPane?.customLabel && (
                   <span
                     title="Clear custom name"
                     onClick={(e) => {
@@ -289,7 +292,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                     <X className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-default hover:text-foreground" />
                   </span>
                 )}
-                {!pane.customLabel && panes.length > 1 && (
+                {!(isTerminal && termPane?.customLabel) && panes.length > 1 && (
                   <X
                     className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-default hover:text-destructive"
                     onClick={(e) => {
@@ -350,15 +353,16 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
         </div>
       </div>
 
-      {/* Terminal panes */}
+      {/* Content panes — universal rendering for all pane types */}
       <div className="flex-1 min-h-0">
         {/* Zoomed: render only the zoomed pane at full size */}
         {isZoomed && zoomedPaneData ? (
-          <TerminalInstance
-            sessionId={zoomedPaneData.sessionId}
+          <PaneContentRenderer
+            pane={zoomedPaneData}
+            tabId={tabId}
             isActive={true}
             workingDirectory={workingDirectory}
-            onCwdChange={(cwd) => handleCwdChange(zoomedPaneData.id, cwd)}
+            onCwdChange={handleCwdChange}
             onSplitHorizontal={() => addPane("horizontal")}
             onSplitVertical={() => addPane("vertical")}
             onToggleZoom={() => togglePaneZoom(tabId, zoomedPaneData.id)}
@@ -366,18 +370,17 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
             canZoom={true}
           />
         ) : panes.length === 1 ? (
-          <TerminalInstance
-            sessionId={panes[0].sessionId}
+          <PaneContentRenderer
+            pane={panes[0]}
+            tabId={tabId}
             isActive={true}
             workingDirectory={workingDirectory}
-            onCwdChange={(cwd) => handleCwdChange(panes[0].id, cwd)}
-            initialCommand={initialCommand || panes[0].initialCommand}
-            onInitialCommandSent={() => {
-              clearInitialCommand();
-              clearPaneInitialCommand(panes[0].id);
-            }}
+            tabInitialCommand={initialCommand}
+            onCwdChange={handleCwdChange}
             onSplitHorizontal={() => addPane("horizontal")}
             onSplitVertical={() => addPane("vertical")}
+            onInitialCommandSent={clearInitialCommand}
+            onPaneInitialCommandSent={clearPaneInitialCommand}
           />
         ) : (
           <PanelGroup direction={splitDirection}>
@@ -411,18 +414,18 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
                     }`}
                     onClick={() => setActivePane(pane.id)}
                   >
-                    <TerminalInstance
-                      sessionId={pane.sessionId}
+                    <PaneContentRenderer
+                      pane={pane}
+                      tabId={tabId}
                       isActive={activePane === pane.id}
                       workingDirectory={workingDirectory}
-                      onCwdChange={(cwd) => handleCwdChange(pane.id, cwd)}
-                      initialCommand={pane.initialCommand}
-                      onInitialCommandSent={() => clearPaneInitialCommand(pane.id)}
+                      onCwdChange={handleCwdChange}
                       onSplitHorizontal={() => addPane("horizontal")}
                       onSplitVertical={() => addPane("vertical")}
                       onToggleZoom={() => togglePaneZoom(tabId, pane.id)}
                       isZoomed={false}
                       canZoom={panes.length > 1}
+                      onPaneInitialCommandSent={clearPaneInitialCommand}
                     />
                   </div>
                 </Panel>
@@ -433,4 +436,18 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
       </div>
     </div>
   );
+}
+
+/** Icon for pane tab based on content type */
+function PaneIcon({ pane }: { pane: ContentPane }) {
+  switch (pane.type) {
+    case "terminal":
+      return <ProcessIcon processName={(pane as TerminalPaneData).processName} className="w-3 h-3 shrink-0" />;
+    case "browser":
+      return <Globe className="w-3 h-3 shrink-0 text-dracula-cyan/70" />;
+    case "diff":
+      return <GitCompareArrows className="w-3 h-3 shrink-0 text-dracula-orange/70" />;
+    default:
+      return null;
+  }
 }
