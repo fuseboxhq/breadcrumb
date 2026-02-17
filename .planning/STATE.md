@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-26: Multi-Tab Browser & Universal Split Panes (not_started)
+PHASE-26: Multi-Tab Browser & Universal Split Panes (in_progress) - 7 tasks
 
 ## Completed Phases
 
