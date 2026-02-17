@@ -21,6 +21,10 @@ interface ExtensionContext {
   subscriptions: Disposable[];
   extensionPath: string;
   extensionId: string;
+  workspaceState: {
+    get<T = unknown>(key: string): T | undefined;
+    update(key: string, value: unknown): Promise<void>;
+  };
 }
 
 interface ExtensionModule {
@@ -39,6 +43,8 @@ interface LoadedExtension {
 const extensions = new Map<string, LoadedExtension>();
 const commands = new Map<string, (...args: unknown[]) => unknown>();
 const pendingTerminalRequests = new Map<string, { resolve: (v: { sessionId: string }) => void; reject: (e: Error) => void }>();
+/** Local state cache per extension — enables synchronous get() */
+const stateCache = new Map<string, unknown>();
 
 // ---------- API exposed to extensions ----------
 
@@ -111,7 +117,8 @@ function sendToMain(msg: HostResponse): void {
 async function handleActivate(
   extensionId: string,
   extensionPath: string,
-  main: string
+  main: string,
+  initialState?: Record<string, unknown>
 ): Promise<void> {
   try {
     // Resolve the extension entry point
@@ -124,11 +131,27 @@ async function handleActivate(
       throw new Error(`Extension ${extensionId} has no activate() export`);
     }
 
+    // Pre-load workspace state into cache for synchronous get()
+    if (initialState) {
+      for (const [key, value] of Object.entries(initialState)) {
+        stateCache.set(`${extensionId}.${key}`, value);
+      }
+    }
+
     // Create context
     const context: ExtensionContext = {
       subscriptions: [],
       extensionPath,
       extensionId,
+      workspaceState: {
+        get<T = unknown>(key: string): T | undefined {
+          return stateCache.get(`${extensionId}.${key}`) as T | undefined;
+        },
+        async update(key: string, value: unknown): Promise<void> {
+          stateCache.set(`${extensionId}.${key}`, value);
+          sendToMain({ type: "state-set", extensionId, key, value });
+        },
+      },
     };
 
     // Patch terminal.createTerminal to include extensionId
@@ -273,7 +296,7 @@ async function handleShutdown(): Promise<void> {
 process.on("message", async (msg: HostMessage) => {
   switch (msg.type) {
     case "activate":
-      await handleActivate(msg.extensionId, msg.extensionPath, msg.main);
+      await handleActivate(msg.extensionId, msg.extensionPath, msg.main, msg.initialState);
       break;
     case "deactivate":
       await handleDeactivate(msg.extensionId);

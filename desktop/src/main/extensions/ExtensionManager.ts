@@ -15,6 +15,7 @@ import path from "path";
 import os from "os";
 import { EventEmitter } from "events";
 import { ExtensionHost } from "./ExtensionHost";
+import { ExtensionStateManager } from "./ExtensionStore";
 import { terminalService } from "../terminal/TerminalService";
 import type {
   ExtensionManifest,
@@ -79,6 +80,10 @@ export class ExtensionManager extends EventEmitter {
       } catch (err) {
         this.host.send({ type: "terminal-create-failed", requestId, error: String(err) });
       }
+    });
+
+    this.host.on("state-set", (extensionId: string, key: string, value: unknown) => {
+      ExtensionStateManager.set(extensionId, key, value);
     });
 
     this.host.on("restarted", (attempt: number) => {
@@ -204,7 +209,8 @@ export class ExtensionManager extends EventEmitter {
     }
 
     try {
-      await this.host.activateExtension(id, ext.extensionPath, ext.manifest.main);
+      const initialState = ExtensionStateManager.getAll(id);
+      await this.host.activateExtension(id, ext.extensionPath, ext.manifest.main, initialState);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.setStatus(id, "failed", msg);

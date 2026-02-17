@@ -95,7 +95,8 @@ export class ExtensionHost extends EventEmitter {
   async activateExtension(
     extensionId: string,
     extensionPath: string,
-    main: string
+    main: string,
+    initialState?: Record<string, unknown>
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -119,6 +120,7 @@ export class ExtensionHost extends EventEmitter {
         extensionId,
         extensionPath,
         main,
+        initialState,
       }).catch(reject);
     });
   }
@@ -242,6 +244,10 @@ export class ExtensionHost extends EventEmitter {
       }
       case "terminal-create": {
         this.emit("terminal-create-request", msg.requestId, msg.extensionId, msg.name, msg.workingDirectory, msg.shell);
+        break;
+      }
+      case "state-set": {
+        this.emit("state-set", msg.extensionId, msg.key, msg.value);
         break;
       }
       case "error": {

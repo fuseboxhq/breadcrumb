@@ -103,7 +103,7 @@ export interface ExtensionInfo {
 
 /** Messages sent from main process → Extension Host */
 export type HostMessage =
-  | { type: "activate"; extensionId: string; extensionPath: string; main: string }
+  | { type: "activate"; extensionId: string; extensionPath: string; main: string; initialState?: Record<string, unknown> }
   | { type: "deactivate"; extensionId: string }
   | { type: "execute-command"; commandId: string; args: unknown[] }
   | { type: "terminal-created"; requestId: string; sessionId: string }
@@ -118,7 +118,8 @@ export type HostResponse =
   | { type: "error"; extensionId?: string; message: string; stack?: string }
   | { type: "register-command"; extensionId: string; commandId: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string }
-  | { type: "terminal-create"; requestId: string; extensionId: string; name: string; workingDirectory?: string; shell?: string };
+  | { type: "terminal-create"; requestId: string; extensionId: string; name: string; workingDirectory?: string; shell?: string }
+  | { type: "state-set"; extensionId: string; key: string; value: unknown };
 
 // ---------- Renderer-facing extension info ----------
 
