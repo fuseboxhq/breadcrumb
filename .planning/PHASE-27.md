@@ -1,8 +1,9 @@
 # Phase 27: AI Debug Assistant
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-oyb
 **Created:** 2026-02-14
+**Completed:** 2026-02-17
 
 ## Objective
 
@@ -181,3 +182,9 @@ A bundled extension (`extensions/debug-assistant/`) that:
 **MEDIUM confidence:**
 - `clipboardData.files` empty for screenshot pastes (MDN + multiple implementation reports)
 - Claude Code 5MB image limit (unofficial source)
+
+## Completion Notes
+
+Phase completed on 2026-02-17. All 6 tasks finished.
+
+Added 3 general-purpose extension APIs (terminal spawning, input modals, workspace state persistence), a purpose-built debug modal with clipboard/drag-drop image handling, a fully-packaged debug-assistant extension, and bidirectional skill sync between `.breadcrumb/skills/` and `.claude/commands/`. The extension API additions follow the existing 5-file IPC protocol and are reusable by any future extension — not debug-specific.
