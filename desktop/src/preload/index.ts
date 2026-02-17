@@ -103,6 +103,9 @@ export interface BreadcrumbAPI {
   saveImageTemp: (dataUrl: string, extension: string) => Promise<{ success: boolean; filePath?: string; error?: string }>;
   deleteImageTemp: (filePath: string) => Promise<{ success: boolean; error?: string }>;
 
+  // Skill sync
+  syncSkills: (projectPath: string) => Promise<{ success: boolean; synced?: number; errors?: string[]; error?: string }>;
+
   // Browser operations (embedded WebContentsView)
   browser: {
     create: (browserId: string) => Promise<{ success: boolean; error?: string }>;
@@ -266,6 +269,10 @@ const api: BreadcrumbAPI = {
 
   deleteImageTemp: (filePath) =>
     ipcRenderer.invoke(IPC_CHANNELS.IMAGE_DELETE_TEMP, filePath),
+
+  // Skill sync
+  syncSkills: (projectPath) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SKILLS_SYNC, projectPath),
 
   // Browser operations
   browser: {

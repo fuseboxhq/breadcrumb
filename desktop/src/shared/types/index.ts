@@ -70,6 +70,9 @@ export const IPC_CHANNELS = {
   IMAGE_SAVE_TEMP: "image:save-temp",
   IMAGE_DELETE_TEMP: "image:delete-temp",
 
+  // Skill sync
+  SKILLS_SYNC: "skills:sync",
+
   // Browser events (main → renderer)
   BROWSER_NAVIGATE_EVENT: "browser:navigate-event",
   BROWSER_LOADING_CHANGE: "browser:loading-change",

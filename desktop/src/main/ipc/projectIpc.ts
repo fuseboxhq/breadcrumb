@@ -5,6 +5,7 @@
 import { ipcMain } from "electron";
 import Store from "electron-store";
 import { IPC_CHANNELS, RecentProject } from "../../shared/types";
+import { syncAllSkills } from "../extensions/SkillSync";
 
 interface ProjectStoreSchema {
   recentProjects: RecentProject[];
@@ -62,6 +63,14 @@ export function registerProjectIPCHandlers(): () => void {
         // Keep at most 20 recent projects
         const trimmed = projects.slice(0, 20);
         projectStore.set("recentProjects", trimmed);
+
+        // Sync skills when a project is opened
+        try {
+          syncAllSkills(project.path);
+        } catch {
+          // Non-fatal — don't block project open
+        }
+
         return { success: true };
       } catch (error) {
         return { success: false, error: String(error) };
@@ -84,10 +93,24 @@ export function registerProjectIPCHandlers(): () => void {
     }
   );
 
+  // Manual skill sync (called after creating a skill or from renderer)
+  ipcMain.handle(
+    IPC_CHANNELS.SKILLS_SYNC,
+    async (_, projectPath: string) => {
+      try {
+        const result = syncAllSkills(projectPath);
+        return { success: true, synced: result.synced, errors: result.errors };
+      } catch (error) {
+        return { success: false, error: String(error) };
+      }
+    }
+  );
+
   return () => {
     ipcMain.removeHandler(IPC_CHANNELS.PROJECT_GET_RECENT);
     ipcMain.removeHandler(IPC_CHANNELS.PROJECT_ADD_RECENT);
     ipcMain.removeHandler(IPC_CHANNELS.PROJECT_REMOVE_RECENT);
+    ipcMain.removeHandler(IPC_CHANNELS.SKILLS_SYNC);
     handlersRegistered = false;
   };
 }
