@@ -86,6 +86,11 @@ export class ExtensionManager extends EventEmitter {
       ExtensionStateManager.set(extensionId, key, value);
     });
 
+    this.host.on("show-input-modal", (requestId: string, _extensionId: string, schema: unknown) => {
+      // Forward to the renderer — the renderer will show the modal and send the result back
+      this.emit("show-input-modal", requestId, schema);
+    });
+
     this.host.on("restarted", (attempt: number) => {
       console.log(`[ExtensionManager] host restarted (attempt ${attempt})`);
       // Re-activate all previously active extensions
@@ -248,6 +253,11 @@ export class ExtensionManager extends EventEmitter {
   /** Get all registered command ids */
   getCommands(): string[] {
     return [...this.registeredCommands.keys()];
+  }
+
+  /** Resolve a modal result from the renderer back to the extension worker */
+  resolveModal(requestId: string, result: Record<string, unknown> | null): void {
+    this.host.send({ type: "modal-result", requestId, result });
   }
 
   /** Get renderer-safe extension list */

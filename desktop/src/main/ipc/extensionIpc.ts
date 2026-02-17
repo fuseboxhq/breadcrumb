@@ -76,6 +76,28 @@ export function registerExtensionIPCHandlers(
   ipcMain.handle(IPC_CHANNELS.EXTENSIONS_COMMANDS, handleCommands);
   ipcMain.handle(IPC_CHANNELS.EXTENSIONS_EXECUTE_COMMAND, handleExecuteCommand);
 
+  // Forward modal requests to renderer
+  const onShowInputModal = (requestId: string, schema: unknown) => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(
+        IPC_CHANNELS.EXTENSIONS_SHOW_MODAL,
+        { requestId, schema }
+      );
+    }
+  };
+  extensionManager.on("show-input-modal", onShowInputModal);
+
+  // Receive modal results from renderer
+  const handleModalResult = async (
+    _event: Electron.IpcMainInvokeEvent,
+    requestId: string,
+    result: Record<string, unknown> | null
+  ) => {
+    extensionManager.resolveModal(requestId, result);
+    return { success: true };
+  };
+  ipcMain.handle(IPC_CHANNELS.EXTENSIONS_MODAL_RESULT, handleModalResult);
+
   // Forward terminal creation to renderer so it opens a pane
   const onTerminalCreated = (sessionId: string, name: string, extensionId: string, workingDirectory?: string) => {
     if (!mainWindow.isDestroyed()) {
@@ -117,5 +139,7 @@ export function registerExtensionIPCHandlers(
     extensionManager.removeListener("extensions-changed", onExtensionsChanged);
     extensionManager.removeListener("extension-status-changed", onStatusChanged);
     extensionManager.removeListener("terminal-created", onTerminalCreated);
+    extensionManager.removeListener("show-input-modal", onShowInputModal);
+    ipcMain.removeHandler(IPC_CHANNELS.EXTENSIONS_MODAL_RESULT);
   };
 }

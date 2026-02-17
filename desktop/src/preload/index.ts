@@ -96,6 +96,8 @@ export interface BreadcrumbAPI {
   executeExtensionCommand: (commandId: string, ...args: unknown[]) => Promise<{ success: boolean; result?: unknown; error?: string }>;
   onExtensionsChanged: (callback: (extensions: ExtensionInfoForRenderer[]) => void) => () => void;
   onExtensionTerminalCreated: (callback: (data: { sessionId: string; name: string; extensionId: string; workingDirectory?: string }) => void) => () => void;
+  onExtensionShowModal: (callback: (data: { requestId: string; schema: unknown }) => void) => () => void;
+  resolveExtensionModal: (requestId: string, result: Record<string, unknown> | null) => Promise<{ success: boolean }>;
 
   // Browser operations (embedded WebContentsView)
   browser: {
@@ -243,6 +245,16 @@ const api: BreadcrumbAPI = {
     ipcRenderer.on(IPC_CHANNELS.EXTENSIONS_TERMINAL_CREATED, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.EXTENSIONS_TERMINAL_CREATED, handler);
   },
+
+  onExtensionShowModal: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, data: { requestId: string; schema: unknown }) =>
+      callback(data);
+    ipcRenderer.on(IPC_CHANNELS.EXTENSIONS_SHOW_MODAL, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.EXTENSIONS_SHOW_MODAL, handler);
+  },
+
+  resolveExtensionModal: (requestId, result) =>
+    ipcRenderer.invoke(IPC_CHANNELS.EXTENSIONS_MODAL_RESULT, requestId, result),
 
   // Browser operations
   browser: {

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import { CommandPalette } from "./components/command-palette/CommandPalette";
+import { ExtensionModal } from "./components/extensions/ExtensionModal";
 import { useSettingsStore } from "./store/settingsStore";
 import { useAppStore, flushWorkspacePersist } from "./store/appStore";
 import { useProjectsStore } from "./store/projectsStore";
@@ -90,6 +91,7 @@ function App() {
     <>
       <AppShell />
       <CommandPalette />
+      <ExtensionModal />
       <Toaster
         theme="dark"
         position="bottom-right"

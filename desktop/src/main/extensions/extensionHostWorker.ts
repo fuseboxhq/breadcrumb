@@ -45,6 +45,7 @@ const commands = new Map<string, (...args: unknown[]) => unknown>();
 const pendingTerminalRequests = new Map<string, { resolve: (v: { sessionId: string }) => void; reject: (e: Error) => void }>();
 /** Local state cache per extension — enables synchronous get() */
 const stateCache = new Map<string, unknown>();
+const pendingModalRequests = new Map<string, { resolve: (v: Record<string, unknown> | null) => void }>();
 
 // ---------- API exposed to extensions ----------
 
@@ -104,6 +105,31 @@ const breadcrumb = {
     },
     showErrorMessage(message: string): void {
       sendToMain({ type: "log", level: "error", message });
+    },
+    showInputModal(schema: {
+      title: string;
+      description?: string;
+      fields: Array<{
+        id: string;
+        type: "text" | "textarea" | "select" | "images";
+        label: string;
+        placeholder?: string;
+        required?: boolean;
+        options?: { label: string; value: string }[];
+      }>;
+      submitLabel?: string;
+      cancelLabel?: string;
+    }): Promise<Record<string, unknown> | null> {
+      const requestId = Math.random().toString(36).slice(2);
+      return new Promise((resolve) => {
+        pendingModalRequests.set(requestId, { resolve });
+        sendToMain({
+          type: "show-input-modal",
+          requestId,
+          extensionId: "", // filled in by activate wrapper
+          schema,
+        });
+      });
     },
   },
 };
@@ -171,6 +197,21 @@ async function handleActivate(
       });
     };
 
+    // Patch showInputModal to include extensionId
+    const origShowInputModal = breadcrumb.window.showInputModal;
+    breadcrumb.window.showInputModal = (schema) => {
+      const requestId = Math.random().toString(36).slice(2);
+      return new Promise((resolve) => {
+        pendingModalRequests.set(requestId, { resolve });
+        sendToMain({
+          type: "show-input-modal",
+          requestId,
+          extensionId,
+          schema,
+        });
+      });
+    };
+
     // Patch command registration to include extensionId
     const origRegister = breadcrumb.commands.registerCommand;
     breadcrumb.commands.registerCommand = (commandId, handler) => {
@@ -200,6 +241,7 @@ async function handleActivate(
     // Restore originals
     breadcrumb.commands.registerCommand = origRegister;
     breadcrumb.terminal.createTerminal = origCreateTerminal;
+    breadcrumb.window.showInputModal = origShowInputModal;
 
     extensions.set(extensionId, { id: extensionId, module: mod, context });
     sendToMain({ type: "activated", extensionId });
@@ -317,6 +359,14 @@ process.on("message", async (msg: HostMessage) => {
       if (pending) {
         pending.reject(new Error(msg.error));
         pendingTerminalRequests.delete(msg.requestId);
+      }
+      break;
+    }
+    case "modal-result": {
+      const pending = pendingModalRequests.get(msg.requestId);
+      if (pending) {
+        pending.resolve(msg.result);
+        pendingModalRequests.delete(msg.requestId);
       }
       break;
     }

@@ -108,6 +108,7 @@ export type HostMessage =
   | { type: "execute-command"; commandId: string; args: unknown[] }
   | { type: "terminal-created"; requestId: string; sessionId: string }
   | { type: "terminal-create-failed"; requestId: string; error: string }
+  | { type: "modal-result"; requestId: string; result: Record<string, unknown> | null }
   | { type: "shutdown" };
 
 /** Messages sent from Extension Host → main process */
@@ -119,7 +120,27 @@ export type HostResponse =
   | { type: "register-command"; extensionId: string; commandId: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string }
   | { type: "terminal-create"; requestId: string; extensionId: string; name: string; workingDirectory?: string; shell?: string }
-  | { type: "state-set"; extensionId: string; key: string; value: unknown };
+  | { type: "state-set"; extensionId: string; key: string; value: unknown }
+  | { type: "show-input-modal"; requestId: string; extensionId: string; schema: ExtensionModalSchema };
+
+// ---------- Extension Modal Schema ----------
+
+export interface ExtensionModalField {
+  id: string;
+  type: "text" | "textarea" | "select" | "images";
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: { label: string; value: string }[]; // for select type
+}
+
+export interface ExtensionModalSchema {
+  title: string;
+  description?: string;
+  fields: ExtensionModalField[];
+  submitLabel?: string;
+  cancelLabel?: string;
+}
 
 // ---------- Renderer-facing extension info ----------
 

@@ -250,6 +250,10 @@ export class ExtensionHost extends EventEmitter {
         this.emit("state-set", msg.extensionId, msg.key, msg.value);
         break;
       }
+      case "show-input-modal": {
+        this.emit("show-input-modal", msg.requestId, msg.extensionId, msg.schema);
+        break;
+      }
       case "error": {
         const key = msg.extensionId
           ? `activate:${msg.extensionId}`
