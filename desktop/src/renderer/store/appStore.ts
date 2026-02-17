@@ -117,10 +117,20 @@ export interface RightPanelPane {
   type: RightPanelPaneType;
 }
 
+// Right panel browser tabs
+export interface RightPanelBrowserTab {
+  id: string;
+  browserId: string;
+  url: string;
+  title: string;
+}
+
 export interface LayoutState {
   rightPanel: {
     isOpen: boolean;
     panes: RightPanelPane[];
+    browserTabs: RightPanelBrowserTab[];
+    activeBrowserTabId: string | null;
   };
   panelSizes: {
     sidebar: number;
@@ -134,6 +144,8 @@ export const DEFAULT_LAYOUT: LayoutState = {
   rightPanel: {
     isOpen: false,
     panes: [],
+    browserTabs: [],
+    activeBrowserTabId: null,
   },
   panelSizes: {
     sidebar: 18,
@@ -242,6 +254,12 @@ export interface AppActions {
   setPanelSizes: (sizes: { sidebar: number; center: number; rightPanel: number }) => void;
   restoreLayout: (layout: LayoutState) => void;
   toggleDevToolsDock: () => void;
+
+  // Right panel browser tabs
+  addBrowserTab: (url?: string) => string;
+  removeBrowserTab: (tabId: string) => void;
+  setActiveBrowserTab: (tabId: string) => void;
+  updateBrowserTab: (tabId: string, updates: Partial<Pick<RightPanelBrowserTab, "url" | "title">>) => void;
 
   // Project
   setCurrentProjectPath: (path: string | null) => void;
@@ -686,6 +704,18 @@ export const useAppStore = create<AppStore>()(
         if (state.layout.panelSizes.rightPanel === 0) {
           state.layout.panelSizes = { sidebar: 18, center: 42, rightPanel: 40 };
         }
+        // Auto-create a browser tab when opening browser pane for the first time
+        if (type === "browser" && state.layout.rightPanel.browserTabs.length === 0) {
+          const tabId = `browser-${Date.now()}`;
+          const browserId = `rp-${tabId}`;
+          state.layout.rightPanel.browserTabs.push({
+            id: tabId,
+            browserId,
+            url: "http://localhost:3000",
+            title: "localhost",
+          });
+          state.layout.rightPanel.activeBrowserTabId = tabId;
+        }
         persistLayout(() => get().layout);
       }),
 
@@ -715,6 +745,51 @@ export const useAppStore = create<AppStore>()(
     toggleDevToolsDock: () =>
       set((state) => {
         state.layout.devToolsDockOpen = !state.layout.devToolsDockOpen;
+      }),
+
+    // Right panel browser tabs
+    addBrowserTab: (url) => {
+      const tabId = `browser-${Date.now()}`;
+      const browserId = `rp-${tabId}`;
+      set((state) => {
+        state.layout.rightPanel.browserTabs.push({
+          id: tabId,
+          browserId,
+          url: url || "http://localhost:3000",
+          title: "New Tab",
+        });
+        state.layout.rightPanel.activeBrowserTabId = tabId;
+      });
+      return browserId;
+    },
+
+    removeBrowserTab: (tabId) =>
+      set((state) => {
+        const tabs = state.layout.rightPanel.browserTabs;
+        const index = tabs.findIndex((t) => t.id === tabId);
+        if (index === -1) return;
+
+        tabs.splice(index, 1);
+
+        // If removed tab was active, activate adjacent
+        if (state.layout.rightPanel.activeBrowserTabId === tabId) {
+          const next = tabs[Math.min(index, tabs.length - 1)];
+          state.layout.rightPanel.activeBrowserTabId = next?.id || null;
+        }
+      }),
+
+    setActiveBrowserTab: (tabId) =>
+      set((state) => {
+        state.layout.rightPanel.activeBrowserTabId = tabId;
+      }),
+
+    updateBrowserTab: (tabId, updates) =>
+      set((state) => {
+        const tab = state.layout.rightPanel.browserTabs.find((t) => t.id === tabId);
+        if (tab) {
+          if (updates.url !== undefined) tab.url = updates.url;
+          if (updates.title !== undefined) tab.title = updates.title;
+        }
       }),
 
     // Project
@@ -834,3 +909,7 @@ export const useRightPanelOpen = () => useAppStore((s) => s.layout.rightPanel.is
 export const useRightPanelPanes = () => useAppStore((s) => s.layout.rightPanel.panes);
 export const usePanelSizes = () => useAppStore((s) => s.layout.panelSizes);
 export const useDevToolsDockOpen = () => useAppStore((s) => s.layout.devToolsDockOpen);
+
+// Browser tab selector hooks
+export const useBrowserTabs = () => useAppStore((s) => s.layout.rightPanel.browserTabs);
+export const useActiveBrowserTabId = () => useAppStore((s) => s.layout.rightPanel.activeBrowserTabId);

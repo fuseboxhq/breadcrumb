@@ -95,6 +95,8 @@ export function AppShell() {
       rightPanel: {
         isOpen: layoutSettings.rightPanel.isOpen,
         panes: savedPanes,
+        browserTabs: [],
+        activeBrowserTabId: null,
       },
       panelSizes: savedPanelSizes,
       devToolsDockOpen: false, // Always start with DevTools closed

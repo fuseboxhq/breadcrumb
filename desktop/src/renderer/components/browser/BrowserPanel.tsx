@@ -15,9 +15,14 @@ import { useBoundsSync } from "../../hooks/useBoundsSync";
 interface BrowserPanelProps {
   browserId: string;
   initialUrl?: string;
+  isVisible?: boolean;
+  /** Callback when URL changes (for parent to track) */
+  onUrlChange?: (url: string) => void;
+  /** Callback when title changes (for parent to track) */
+  onTitleChange?: (title: string) => void;
 }
 
-export function BrowserPanel({ browserId, initialUrl }: BrowserPanelProps) {
+export function BrowserPanel({ browserId, initialUrl, isVisible = true, onUrlChange, onTitleChange }: BrowserPanelProps) {
   const browserSettings = useBrowserSettings();
   const startUrl = initialUrl || browserSettings.lastUrl || "http://localhost:3000";
   const [url, setUrl] = useState(startUrl);
@@ -85,14 +90,41 @@ export function BrowserPanel({ browserId, initialUrl }: BrowserPanelProps) {
     };
   }, [browserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Bounds syncing: ResizeObserver + rAF throttled IPC
+  // Bounds syncing: ResizeObserver + rAF throttled IPC (only when visible)
   const setBrowserBounds = useCallback(
     (bounds: { x: number; y: number; width: number; height: number }) => {
+      if (!isVisible) return;
       window.breadcrumbAPI?.browser?.setBounds(browserId, bounds);
     },
-    [browserId]
+    [browserId, isVisible]
   );
   useBoundsSync(contentRef, setBrowserBounds);
+
+  // Hide/show WebContentsView when visibility changes
+  useEffect(() => {
+    const api = window.breadcrumbAPI?.browser;
+    if (!api || !createdRef.current) return;
+
+    if (!isVisible) {
+      api.setBounds(browserId, { x: -10000, y: -10000, width: 1, height: 1 });
+    } else {
+      // Restore bounds from content ref
+      const el = contentRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+        if (width >= 10 && height >= 10) {
+          api.setBounds(browserId, {
+            x: Math.round(rect.x),
+            y: Math.round(rect.y),
+            width,
+            height,
+          });
+        }
+      }
+    }
+  }, [browserId, isVisible]);
 
   // Subscribe to navigation events from main process (scoped to this browserId)
   useEffect(() => {
@@ -105,6 +137,7 @@ export function BrowserPanel({ browserId, initialUrl }: BrowserPanelProps) {
       setCanGoBack(data.canGoBack);
       setCanGoForward(data.canGoForward);
       setError(null); // Clear error on successful navigation
+      onUrlChange?.(data.url);
 
       // Persist last URL for next session
       window.breadcrumbAPI?.setSetting("browser.lastUrl", data.url);
@@ -116,6 +149,7 @@ export function BrowserPanel({ browserId, initialUrl }: BrowserPanelProps) {
 
     const unsubTitle = api.onTitleChange(browserId, (data) => {
       setPageTitle(data.title);
+      onTitleChange?.(data.title);
     });
 
     const unsubError = api.onError(browserId, (data) => {

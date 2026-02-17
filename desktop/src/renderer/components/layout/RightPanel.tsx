@@ -1,8 +1,15 @@
+import { useCallback } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { useAppStore, useRightPanelPanes, type RightPanelPaneType } from "../../store/appStore";
+import {
+  useAppStore,
+  useRightPanelPanes,
+  useBrowserTabs,
+  useActiveBrowserTabId,
+  type RightPanelPaneType,
+} from "../../store/appStore";
 import { BrowserPanel } from "../browser/BrowserPanel";
 import { PlanningPanel } from "../breadcrumb/PlanningPanel";
-import { Globe, LayoutGrid, X, PanelRight } from "lucide-react";
+import { Globe, LayoutGrid, X, PanelRight, Plus } from "lucide-react";
 
 const PANE_META: Record<RightPanelPaneType, { label: string; icon: typeof Globe; color: string }> = {
   browser: { label: "Browser", icon: Globe, color: "text-dracula-cyan" },
@@ -127,10 +134,108 @@ function PaneHeader({ type, onClose }: { type: RightPanelPaneType; onClose: () =
 function PaneContent({ type }: { type: RightPanelPaneType }) {
   switch (type) {
     case "browser":
-      return <BrowserPanel browserId="right-panel-default" initialUrl="https://localhost:3000" />;
+      return <BrowserTabPane />;
     case "planning":
       return <PlanningPanel />;
     default:
       return null;
   }
+}
+
+/**
+ * Multi-tab browser pane for the right panel.
+ * Renders a tab bar + all BrowserPanel instances (only active one is visible).
+ */
+function BrowserTabPane() {
+  const browserTabs = useBrowserTabs();
+  const activeBrowserTabId = useActiveBrowserTabId();
+  const { addBrowserTab, removeBrowserTab, setActiveBrowserTab, updateBrowserTab } = useAppStore();
+
+  const handleAddTab = useCallback(() => {
+    addBrowserTab();
+  }, [addBrowserTab]);
+
+  const handleCloseTab = useCallback((e: React.MouseEvent, tabId: string) => {
+    e.stopPropagation();
+    removeBrowserTab(tabId);
+  }, [removeBrowserTab]);
+
+  if (browserTabs.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <button
+          onClick={handleAddTab}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+        >
+          <Plus className="w-4 h-4" />
+          Open browser tab
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Browser tab bar */}
+      <div className="flex items-center bg-background border-b border-border shrink-0 min-h-[28px]">
+        <div className="flex-1 flex items-center overflow-x-auto scrollbar-none">
+          {browserTabs.map((tab) => {
+            const isActive = tab.id === activeBrowserTabId;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveBrowserTab(tab.id)}
+                className={`
+                  group flex items-center gap-1.5 px-2.5 py-1 text-2xs whitespace-nowrap border-r border-border/50 max-w-[160px] shrink-0 transition-default
+                  ${isActive
+                    ? "bg-background-raised text-foreground-secondary"
+                    : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30"
+                  }
+                `}
+                title={tab.url}
+              >
+                <Globe className="w-3 h-3 shrink-0 text-dracula-cyan/70" />
+                <span className="truncate">{tab.title || "New Tab"}</span>
+                {browserTabs.length > 1 && (
+                  <X
+                    className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-default hover:text-destructive"
+                    onClick={(e) => handleCloseTab(e, tab.id)}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={handleAddTab}
+          className="p-1.5 mx-0.5 rounded text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default shrink-0"
+          title="New browser tab"
+          aria-label="New browser tab"
+        >
+          <Plus className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* Browser panels — all mounted, only active visible */}
+      <div className="flex-1 relative">
+        {browserTabs.map((tab) => {
+          const isActive = tab.id === activeBrowserTabId;
+          return (
+            <div
+              key={tab.id}
+              className={isActive ? "h-full" : "hidden"}
+            >
+              <BrowserPanel
+                browserId={tab.browserId}
+                initialUrl={tab.url}
+                isVisible={isActive}
+                onUrlChange={(url) => updateBrowserTab(tab.id, { url })}
+                onTitleChange={(title) => updateBrowserTab(tab.id, { title })}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
