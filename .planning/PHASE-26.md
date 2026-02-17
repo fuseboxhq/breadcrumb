@@ -1,8 +1,9 @@
 # Phase 26: Multi-Tab Browser & Universal Split Panes
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-gpr
 **Created:** 2026-02-14
+**Completed:** 2026-02-14
 
 ## Objective
 
@@ -96,13 +97,13 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-gpr.1 | Refactor BrowserViewManager for multi-instance support | open | High | - |
-| breadcrumb-gpr.2 | Build generic ContentPane system in appStore | open | High | - |
-| breadcrumb-gpr.3 | Multi-tab browser in right panel | open | Medium | breadcrumb-gpr.1 |
-| breadcrumb-gpr.4 | Browser as center workspace tab with promote button | open | Medium | breadcrumb-gpr.1, breadcrumb-gpr.2 |
-| breadcrumb-gpr.5 | Universal pane splitting for all content types | open | High | breadcrumb-gpr.2 |
-| breadcrumb-gpr.6 | Drag-and-drop tab promotion from right panel to center | open | Medium | breadcrumb-gpr.4 |
-| breadcrumb-gpr.7 | Persistence and cleanup for browser tabs and universal panes | open | Medium | breadcrumb-gpr.3, breadcrumb-gpr.4, breadcrumb-gpr.5 |
+| breadcrumb-gpr.1 | Refactor BrowserViewManager for multi-instance support | done | High | - |
+| breadcrumb-gpr.2 | Build generic ContentPane system in appStore | done | High | - |
+| breadcrumb-gpr.3 | Multi-tab browser in right panel | done | Medium | breadcrumb-gpr.1 |
+| breadcrumb-gpr.4 | Browser as center workspace tab with promote button | done | Medium | breadcrumb-gpr.1, breadcrumb-gpr.2 |
+| breadcrumb-gpr.5 | Universal pane splitting for all content types | done | High | breadcrumb-gpr.2 |
+| breadcrumb-gpr.6 | Drag-and-drop tab promotion from right panel to center | done | Medium | breadcrumb-gpr.4 |
+| breadcrumb-gpr.7 | Persistence and cleanup for browser tabs and universal panes | done | Medium | breadcrumb-gpr.3, breadcrumb-gpr.4, breadcrumb-gpr.5 |
 
 ### Task Details
 
@@ -190,13 +191,26 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 ## Completion Criteria
 
-- [ ] Right panel browser has a tab bar supporting multiple concurrent browser tabs
-- [ ] Browser tabs can be opened as center workspace tabs (full-width browsing)
-- [ ] "Open in main area" button promotes a right-panel browser tab to center workspace
-- [ ] Drag-and-drop from right panel browser tab to center tab bar works
-- [ ] Any content type (terminal, diff, browser) can be split horizontally/vertically within a tab
-- [ ] Multiple browser WebContentsViews render simultaneously without bounds conflicts
-- [ ] Browser tab and pane state persists across app restart
+- [x] Right panel browser has a tab bar supporting multiple concurrent browser tabs
+- [x] Browser tabs can be opened as center workspace tabs (full-width browsing)
+- [x] "Open in main area" button promotes a right-panel browser tab to center workspace
+- [x] Drag-and-drop from right panel browser tab to center tab bar works
+- [x] Any content type (terminal, diff, browser) can be split horizontally/vertically within a tab
+- [x] Multiple browser WebContentsViews render simultaneously without bounds conflicts
+- [x] Browser tab and pane state persists across app restart
+
+## Completion Notes
+
+Phase completed on 2026-02-14. All 7 tasks finished.
+
+Key implementation details:
+- BrowserViewManager refactored to per-instance class with registry `Map<string, BrowserViewManager>` in browserIpc.ts
+- All IPC channels accept `browserId` as first parameter; event listeners filter by browserId
+- ContentPane discriminated union (`TerminalPaneData | BrowserPaneData | DiffPaneData`) replaces terminal-only pane system
+- Inactive browser views hidden off-screen (`setBounds(-10000, ...)`) instead of destroy/recreate
+- PaneContentRenderer handles universal rendering of all content types in split panes
+- HTML5 Drag API used for cross-panel tab promotion (no library needed)
+- Browser state persisted via both workspace snapshot and layout settings with fresh browserIds on restore
 
 ## Sources
 
