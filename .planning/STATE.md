@@ -1,11 +1,11 @@
 # Project State
 
-**Current Phase:** None
+**Current Phase:** PHASE-26
 **Last Updated:** 2026-02-14
 
 ## Active Work
 
-
+PHASE-26: Multi-Tab Browser & Universal Split Panes (not_started)
 
 ## Completed Phases
 
