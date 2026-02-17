@@ -1,8 +1,9 @@
 # Phase 25: Git Integration Audit & Fix
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-6sn
 **Created:** 2026-02-14
+**Completed:** 2026-02-14
 
 ## Objective
 
@@ -99,11 +100,16 @@ The root cause is well-understood and the fix is straightforward. Phase files al
 
 ## Completion Criteria
 
-- [ ] Implementation commits (e.g. `breadcrumb-c9v.5`) correctly appear under their parent phase in the planning panel
-- [ ] New commits created via `/bc:execute` include `PHASE-XX` in the message
-- [ ] An "All Commits" view exists showing full project git history
-- [ ] Existing commit history is retroactively linked (no re-commit needed)
-- [ ] Phase commit counts in the pipeline view reflect actual implementation commits
+- [x] Implementation commits (e.g. `breadcrumb-c9v.5`) correctly appear under their parent phase in the planning panel
+- [x] New commits created via `/bc:execute` include `PHASE-XX` in the message
+- [x] An "All Commits" view exists showing full project git history
+- [x] Existing commit history is retroactively linked (no re-commit needed)
+- [x] Phase commit counts in the pipeline view reflect actual implementation commits
+
+## Completion Notes
+
+Phase completed on 2026-02-14. All 5 tasks finished.
+Fixed the broken git commit→phase linking by building an epicPrefix→phaseId map from planning files and resolving task IDs at query time. Enriched future commit messages with `[PHASE-XX]` suffix. Added a collapsible All Commits chronological view to the planning panel.
 
 ## Sources
 
