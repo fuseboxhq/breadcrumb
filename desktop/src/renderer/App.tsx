@@ -37,7 +37,9 @@ function App() {
 
       // Find the tab+pane that owns this sessionId
       for (const [tabId, tabPaneState] of Object.entries(state.terminalPanes)) {
-        const pane = tabPaneState.panes.find((p) => p.sessionId === sessionId);
+        const pane = tabPaneState.panes.find(
+          (p) => p.type === "terminal" && p.sessionId === sessionId
+        );
         if (pane) {
           state.updatePaneProcess(tabId, pane.id, processName, processLabel);
           break;

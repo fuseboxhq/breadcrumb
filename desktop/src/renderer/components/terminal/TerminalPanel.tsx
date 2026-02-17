@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { useAppStore, useTabPanes, useZoomedPane, resolveLabel } from "../../store/appStore";
+import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane } from "../../store/appStore";
+import type { TerminalPaneData } from "../../store/appStore";
 import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 import { folderName } from "../../utils/path";
@@ -12,9 +13,10 @@ interface TerminalPanelProps {
 }
 
 export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
-  // Read pane state from shared store
+  // Read pane state from shared store (filter to terminal panes only)
   const tabPaneState = useTabPanes(tabId);
-  const panes = tabPaneState?.panes || [];
+  const allPanes = tabPaneState?.panes || [];
+  const panes = allPanes.filter(isTerminalPane) as TerminalPaneData[];
   const activePane = tabPaneState?.activePane || "pane-1";
   const splitDirection = tabPaneState?.splitDirection || "horizontal";
 
@@ -55,7 +57,9 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   useEffect(() => {
     const cleanup = window.breadcrumbAPI?.onTerminalProcessChange((event) => {
       const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
-      const pane = currentPanes.find((p) => p.sessionId === event.sessionId);
+      const pane = currentPanes.find(
+        (p) => p.type === "terminal" && p.sessionId === event.sessionId
+      );
       if (pane) {
         updatePaneProcess(tabId, pane.id, event.processName, event.processLabel);
       }
@@ -151,7 +155,7 @@ export function TerminalPanel({ tabId, workingDirectory }: TerminalPanelProps) {
   const clearPaneInitialCommand = useCallback((paneId: string) => {
     useAppStore.setState((state) => {
       const p = state.terminalPanes[tabId]?.panes.find((pp) => pp.id === paneId);
-      if (p) p.initialCommand = undefined;
+      if (p && p.type === "terminal") p.initialCommand = undefined;
     });
   }, [tabId]);
 

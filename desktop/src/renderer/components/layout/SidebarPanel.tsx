@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useAppStore, resolveLabel, type SidebarView } from "../../store/appStore";
+import { useAppStore, resolveLabel, isTerminalPane, type SidebarView } from "../../store/appStore";
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
@@ -421,10 +421,11 @@ function TerminalsView() {
         const paneChildren: TreeNodeType[] = hasMultiplePanes
           ? panes.map((pane, i) => {
               const isPaneZoomed = zoomedPane?.tabId === tab.id && zoomedPane?.paneId === pane.id;
+              const processName = isTerminalPane(pane) ? pane.processName : undefined;
               return {
                 id: `${tab.id}:${pane.id}`,
                 label: resolveLabel(pane, i),
-                icon: <ProcessIcon processName={pane.processName} className="w-3 h-3" />,
+                icon: <ProcessIcon processName={processName} className="w-3 h-3" />,
                 isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
                 badge: isPaneZoomed ? (
                   <Maximize2 className="w-2.5 h-2.5 text-accent-secondary" />
@@ -435,7 +436,8 @@ function TerminalsView() {
 
         // When single pane, reflect its process icon on the tab node
         const singlePane = !hasMultiplePanes && panes.length === 1 ? panes[0] : null;
-        const tabIcon = <ProcessIcon processName={singlePane?.processName} className="w-3.5 h-3.5" />;
+        const singleProcessName = singlePane && isTerminalPane(singlePane) ? singlePane.processName : undefined;
+        const tabIcon = <ProcessIcon processName={singleProcessName} className="w-3.5 h-3.5" />;
 
         return {
           id: tab.id,
@@ -573,7 +575,7 @@ function TerminalsView() {
                           onSelect={() => togglePaneZoom(tabId, paneId)}
                         />
                       )}
-                      {pane?.cwd && (
+                      {pane && pane.type === "terminal" && pane.cwd && (
                         <MenuItem
                           icon={<Copy className="w-3.5 h-3.5" />}
                           label="Copy CWD"

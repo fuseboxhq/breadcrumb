@@ -5,7 +5,7 @@ import { immer } from "zustand/middleware/immer";
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
 
 // Workspace tab types
-export type TabType = "terminal" | "welcome" | "diff";
+export type TabType = "terminal" | "welcome" | "diff" | "browser";
 
 export interface WorkspaceTab {
   id: string;
@@ -22,10 +22,15 @@ export interface WorkspaceTab {
   pinned?: boolean;
   /** Command to run once after the terminal shell starts (e.g. "claude\n") */
   initialCommand?: string;
+  // Browser-specific
+  browserId?: string;
+  initialUrl?: string;
 }
 
-// Terminal pane state (shared between TerminalPanel and sidebar)
-export interface TerminalPane {
+// ─── Content Pane Types (discriminated union) ────────────────────────────────
+
+export interface TerminalPaneData {
+  type: "terminal";
   id: string;
   sessionId: string;
   cwd: string;
@@ -42,27 +47,64 @@ export interface TerminalPane {
   initialCommand?: string;
 }
 
+export interface BrowserPaneData {
+  type: "browser";
+  id: string;
+  browserId: string;
+  url: string;
+}
+
+export interface DiffPaneData {
+  type: "diff";
+  id: string;
+  diffHash: string;
+  diffProjectPath: string;
+  pinned?: boolean;
+}
+
+export type ContentPane = TerminalPaneData | BrowserPaneData | DiffPaneData;
+
+/** Backwards-compatible alias */
+export type TerminalPane = TerminalPaneData;
+
 /** Extract folder name from an absolute path */
 function folderFromCwd(cwd: string): string {
   const parts = cwd.replace(/\/+$/, "").split("/");
   return parts[parts.length - 1] || cwd;
 }
 
-/** Resolve the display label for a pane: customLabel > processLabel > "shell - folder" > shell > folder > "Pane N" */
-export function resolveLabel(pane: TerminalPane, index: number): string {
-  if (pane.customLabel) return pane.customLabel;
-  if (pane.processLabel) return pane.processLabel;
-  // Shell with CWD → "zsh - foldername"
-  if (pane.processName && pane.cwd) {
-    return `${pane.processName} — ${folderFromCwd(pane.cwd)}`;
+/** Resolve the display label for any content pane */
+export function resolveLabel(pane: ContentPane, index: number): string {
+  if (pane.type === "terminal") {
+    if (pane.customLabel) return pane.customLabel;
+    if (pane.processLabel) return pane.processLabel;
+    if (pane.processName && pane.cwd) {
+      return `${pane.processName} — ${folderFromCwd(pane.cwd)}`;
+    }
+    if (pane.processName) return pane.processName;
+    if (pane.cwd) return folderFromCwd(pane.cwd);
+    return `Pane ${index + 1}`;
   }
-  if (pane.processName) return pane.processName;
-  if (pane.cwd) return folderFromCwd(pane.cwd);
+  if (pane.type === "browser") {
+    try {
+      return new URL(pane.url).hostname || pane.url;
+    } catch {
+      return pane.url || "Browser";
+    }
+  }
+  if (pane.type === "diff") {
+    return `Diff ${pane.diffHash.slice(0, 7)}`;
+  }
   return `Pane ${index + 1}`;
 }
 
+/** Type guard: narrows ContentPane to TerminalPaneData */
+export function isTerminalPane(pane: ContentPane): pane is TerminalPaneData {
+  return pane.type === "terminal";
+}
+
 export interface TabPaneState {
-  panes: TerminalPane[];
+  panes: ContentPane[];
   activePane: string;
   splitDirection: "horizontal" | "vertical";
 }
@@ -261,11 +303,13 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
       Object.entries(state.terminalPanes).map(([tabId, tabState]) => [
         tabId,
         {
-          panes: tabState.panes.map((p) => ({
-            id: p.id,
-            cwd: p.cwd,
-            customLabel: p.customLabel,
-          })),
+          panes: tabState.panes
+            .filter((p): p is TerminalPaneData => p.type === "terminal")
+            .map((p) => ({
+              id: p.id,
+              cwd: p.cwd,
+              customLabel: p.customLabel,
+            })),
           activePane: tabState.activePane,
           splitDirection: tabState.splitDirection,
         },
@@ -431,6 +475,7 @@ export const useAppStore = create<AppStore>()(
           state.terminalPanes[tabId] = {
             panes: [
               {
+                type: "terminal",
                 id: "pane-1",
                 sessionId: `${tabId}-1`,
                 cwd: workingDirectory || "",
@@ -454,15 +499,15 @@ export const useAppStore = create<AppStore>()(
           tabState.splitDirection = direction;
         }
 
-        // Inherit CWD from the currently active pane so the new pane
-        // immediately shows a useful label instead of "Pane N"
+        // Inherit CWD from the currently active terminal pane
         const activeP = tabState.panes.find((p) => p.id === tabState.activePane);
-        const inheritCwd = activeP?.cwd || "";
+        const inheritCwd = (activeP && activeP.type === "terminal") ? activeP.cwd : "";
 
         const id = `pane-${Date.now()}`;
         const sessionId = `${tabId}-${Date.now()}`;
 
         tabState.panes.push({
+          type: "terminal",
           id,
           sessionId,
           cwd: inheritCwd,
@@ -519,7 +564,7 @@ export const useAppStore = create<AppStore>()(
         if (!tabState) return;
 
         const pane = tabState.panes.find((p) => p.id === paneId);
-        if (pane) {
+        if (pane && pane.type === "terminal") {
           pane.cwd = cwd;
           pane.lastActivity = Date.now();
         }
@@ -530,7 +575,7 @@ export const useAppStore = create<AppStore>()(
     updatePaneProcess: (tabId, paneId, processName, processLabel) =>
       set((state) => {
         const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
-        if (!pane) return;
+        if (!pane || pane.type !== "terminal") return;
 
         const wasClaude = pane.processName === "claude";
         const isClaude = processName === "claude";
@@ -552,8 +597,7 @@ export const useAppStore = create<AppStore>()(
               if (tab?.projectId !== thisProjectId) continue;
 
               for (const p of tabState.panes) {
-                // Use object identity — pane IDs are NOT globally unique
-                if (p.claudeInstanceNumber && p !== pane) {
+                if (p.type === "terminal" && p.claudeInstanceNumber && p !== pane) {
                   usedNumbers.add(p.claudeInstanceNumber);
                 }
               }
@@ -577,7 +621,7 @@ export const useAppStore = create<AppStore>()(
     setPaneCustomLabel: (tabId, paneId, label) => {
       set((state) => {
         const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
-        if (pane) {
+        if (pane && pane.type === "terminal") {
           pane.customLabel = label || undefined;
         }
       });
@@ -705,7 +749,7 @@ export const useAppStore = create<AppStore>()(
           }
         }
 
-        const validTabTypes: TabType[] = ["terminal", "welcome", "diff"];
+        const validTabTypes: TabType[] = ["terminal", "welcome", "diff", "browser"];
 
         // Restore tabs, filtering out any with invalid types
         state.tabs = snapshot.tabs
@@ -745,6 +789,7 @@ export const useAppStore = create<AppStore>()(
             panes: savedPaneState.panes
               .filter((p) => p.id) // Skip panes without an ID
               .map((p, i) => ({
+                type: "terminal" as const,
                 id: p.id,
                 // Generate fresh sessionId — old PTY sessions don't survive restart
                 sessionId: `${tabId}-${Date.now()}-${i}`,
