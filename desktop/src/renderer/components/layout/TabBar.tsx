@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
@@ -6,6 +7,8 @@ import {
   MenuItem,
   MenuSeparator,
 } from "../shared/ContextMenu";
+
+const BROWSER_TAB_MIME = "application/breadcrumb-browser-tab";
 
 const TAB_ICONS: Record<TabType, typeof Terminal> = {
   terminal: Terminal,
@@ -17,10 +20,11 @@ const TAB_ICONS: Record<TabType, typeof Terminal> = {
 export function TabBar() {
   const tabs = useAppStore((s) => s.tabs);
   const activeTabId = useAppStore((s) => s.activeTabId);
-  const { setActiveTab, removeTab, addTab, pinDiffTab } = useAppStore();
+  const { setActiveTab, removeTab, addTab, pinDiffTab, openBrowserTab } = useAppStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const handleNewTerminal = () => {
     const id = `terminal-${Date.now()}`;
@@ -32,8 +36,41 @@ export function TabBar() {
     });
   };
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes(BROWSER_TAB_MIME)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only reset when leaving the container, not when entering children
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const raw = e.dataTransfer.getData(BROWSER_TAB_MIME);
+    if (!raw) return;
+    try {
+      const { url } = JSON.parse(raw) as { url: string; title: string };
+      if (url) openBrowserTab(url);
+    } catch {
+      // ignore malformed data
+    }
+  }, [openBrowserTab]);
+
   return (
-    <div className="h-9 bg-background flex items-end shrink-0 overflow-x-auto scrollbar-thin">
+    <div
+      className="h-9 bg-background flex items-end shrink-0 overflow-x-auto scrollbar-thin"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab.type];
         const isActive = tab.id === activeTabId;
@@ -125,8 +162,14 @@ export function TabBar() {
         <Plus className="w-3.5 h-3.5" />
       </button>
 
-      {/* Fill remaining space */}
-      <div className="flex-1 h-full border-b border-border/50" />
+      {/* Fill remaining space — also serves as drop zone */}
+      <div className={`flex-1 h-full border-b transition-default ${isDragOver ? "border-accent-secondary bg-accent-secondary/10 border-dashed" : "border-border/50"}`}>
+        {isDragOver && (
+          <div className="h-full flex items-center justify-center">
+            <span className="text-2xs text-accent-secondary font-medium">Drop to open tab</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

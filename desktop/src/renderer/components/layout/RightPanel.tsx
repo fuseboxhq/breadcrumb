@@ -190,15 +190,23 @@ function BrowserTabPane() {
             return (
               <button
                 key={tab.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/breadcrumb-browser-tab", JSON.stringify({
+                    url: tab.url,
+                    title: tab.title,
+                  }));
+                  e.dataTransfer.effectAllowed = "copy";
+                }}
                 onClick={() => setActiveBrowserTab(tab.id)}
                 className={`
-                  group flex items-center gap-1.5 px-2.5 py-1 text-2xs whitespace-nowrap border-r border-border/50 max-w-[160px] shrink-0 transition-default
+                  group flex items-center gap-1.5 px-2.5 py-1 text-2xs whitespace-nowrap border-r border-border/50 max-w-[160px] shrink-0 transition-default cursor-grab active:cursor-grabbing
                   ${isActive
                     ? "bg-background-raised text-foreground-secondary"
                     : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30"
                   }
                 `}
-                title={tab.url}
+                title={`${tab.url}\nDrag to center tab bar to promote`}
               >
                 <Globe className="w-3 h-3 shrink-0 text-dracula-cyan/70" />
                 <span className="truncate">{tab.title || "New Tab"}</span>
