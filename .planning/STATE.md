@@ -1,10 +1,11 @@
 # Project State
 
-**Current Phase:** None
+**Current Phase:** PHASE-27
 **Last Updated:** 2026-02-14
 
 ## Active Work
 
+PHASE-27: AI Debug Assistant (not_started)
 
 
 ## Completed Phases
