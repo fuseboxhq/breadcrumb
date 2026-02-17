@@ -127,7 +127,7 @@ function PaneHeader({ type, onClose }: { type: RightPanelPaneType; onClose: () =
 function PaneContent({ type }: { type: RightPanelPaneType }) {
   switch (type) {
     case "browser":
-      return <BrowserPanel initialUrl="https://localhost:3000" />;
+      return <BrowserPanel browserId="right-panel-default" initialUrl="https://localhost:3000" />;
     case "planning":
       return <PlanningPanel />;
     default:

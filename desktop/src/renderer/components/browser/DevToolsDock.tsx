@@ -3,21 +3,25 @@ import { X, Terminal } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { useBoundsSync } from "../../hooks/useBoundsSync";
 
+interface DevToolsDockProps {
+  browserId?: string;
+}
+
 /**
  * Bottom dock panel for Chrome DevTools.
  * Contains a header bar and a content area where the DevTools WebContentsView
  * will be positioned via bounds syncing (similar to BrowserPanel pattern).
  */
-export function DevToolsDock() {
+export function DevToolsDock({ browserId = "right-panel-default" }: DevToolsDockProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const toggleDevToolsDock = useAppStore((s) => s.toggleDevToolsDock);
 
   // Bounds syncing for DevTools WebContentsView
   const setDevToolsBounds = useCallback(
-    (bounds: Parameters<typeof window.breadcrumbAPI.browser.setDevToolsBounds>[0]) => {
-      window.breadcrumbAPI?.browser?.setDevToolsBounds(bounds);
+    (bounds: { x: number; y: number; width: number; height: number }) => {
+      window.breadcrumbAPI?.browser?.setDevToolsBounds(browserId, bounds);
     },
-    []
+    [browserId]
   );
   useBoundsSync(contentRef, setDevToolsBounds);
 
@@ -25,9 +29,9 @@ export function DevToolsDock() {
   useEffect(() => {
     const api = window.breadcrumbAPI?.browser;
     if (!api) return;
-    api.openDevTools();
-    return () => { api.closeDevTools(); };
-  }, []);
+    api.openDevTools(browserId);
+    return () => { api.closeDevTools(browserId); };
+  }, [browserId]);
 
   return (
     <div className="flex flex-col h-full bg-background">

@@ -9,12 +9,11 @@ import {
 } from "../../shared/types";
 
 /**
- * Manages a single embedded browser WebContentsView.
+ * Manages a single embedded browser WebContentsView instance.
  *
- * The WebContentsView is a main-process overlay positioned on top of the
- * BrowserWindow. The renderer sends bounds via IPC (from ResizeObserver)
- * and this class applies them with setBounds(). Navigation events are
- * forwarded back to the renderer via IPC.
+ * Each instance is identified by a `browserId` and owns one WebContentsView.
+ * Multiple instances can coexist in the same BrowserWindow — the
+ * BrowserRegistry (in browserIpc.ts) manages the collection.
  */
 export class BrowserViewManager {
   private view: WebContentsView | null = null;
@@ -24,8 +23,11 @@ export class BrowserViewManager {
   private initialized = false;
   private lastBounds: BrowserBounds | null = null;
 
-  constructor(mainWindow: BrowserWindow) {
+  readonly browserId: string;
+
+  constructor(mainWindow: BrowserWindow, browserId: string) {
     this.mainWindow = mainWindow;
+    this.browserId = browserId;
   }
 
   /**
@@ -105,7 +107,6 @@ export class BrowserViewManager {
 
   /**
    * Navigate to a URL. Normalizes bare URLs with https:// prefix.
-   * Catches loadURL errors gracefully — errors are reported via did-fail-load event.
    */
   async navigate(url: string): Promise<void> {
     if (!this.view) return;
@@ -113,7 +114,6 @@ export class BrowserViewManager {
     // Normalize URL
     let normalizedUrl = url.trim();
     if (!/^https?:\/\//i.test(normalizedUrl)) {
-      // Check if it looks like a localhost URL
       if (/^localhost/i.test(normalizedUrl) || /^127\.0\.0\.1/i.test(normalizedUrl)) {
         normalizedUrl = `http://${normalizedUrl}`;
       } else {
@@ -126,13 +126,9 @@ export class BrowserViewManager {
     } catch {
       // loadURL rejects on network errors. The did-fail-load event
       // also fires and sends the error to the renderer via IPC.
-      // We don't re-throw so the IPC handler always returns success.
     }
   }
 
-  /**
-   * Go back in navigation history.
-   */
   goBack(): void {
     if (!this.view) return;
     if (this.view.webContents.navigationHistory.canGoBack()) {
@@ -140,9 +136,6 @@ export class BrowserViewManager {
     }
   }
 
-  /**
-   * Go forward in navigation history.
-   */
   goForward(): void {
     if (!this.view) return;
     if (this.view.webContents.navigationHistory.canGoForward()) {
@@ -150,21 +143,16 @@ export class BrowserViewManager {
     }
   }
 
-  /**
-   * Reload the current page.
-   */
   reload(): void {
     if (!this.view) return;
     this.view.webContents.reload();
   }
 
   /**
-   * Set the bounds (position and size) of the WebContentsView.
-   * Stores as pending if the view hasn't been created or initialized yet.
+   * Set the bounds of the WebContentsView.
+   * Stores as pending if the view hasn't been initialized yet.
    */
   setBounds(bounds: BrowserBounds): void {
-    // Store bounds even when view doesn't exist yet — they'll be applied
-    // when the initialization timer fires after create().
     if (!this.view || !this.initialized) {
       this.pendingBounds = bounds;
       return;
@@ -174,7 +162,6 @@ export class BrowserViewManager {
 
   /**
    * Hide the WebContentsView by moving it off-screen.
-   * Preserves page state (no destroy/reload).
    */
   hide(): void {
     if (!this.view) return;
@@ -182,7 +169,7 @@ export class BrowserViewManager {
   }
 
   /**
-   * Show the WebContentsView at last known bounds (after hiding).
+   * Show the WebContentsView at last known bounds.
    */
   show(): void {
     if (!this.view || !this.lastBounds) return;
@@ -190,41 +177,40 @@ export class BrowserViewManager {
   }
 
   /**
+   * Bring this view to the top of the z-stack by re-adding it.
+   */
+  bringToFront(): void {
+    if (!this.view) return;
+    try {
+      this.mainWindow.contentView.removeChildView(this.view);
+      this.mainWindow.contentView.addChildView(this.view);
+    } catch {
+      // View may have been destroyed
+    }
+  }
+
+  /**
    * Open DevTools in a dedicated WebContentsView.
-   * Lazily creates a pristine (never-navigated) view, sets it as the DevTools
-   * target via setDevToolsWebContents(), then opens in detach mode so Electron
-   * doesn't manage positioning (we handle it via setBounds from renderer).
    */
   openDevTools(): void {
     if (!this.view) return;
-
-    // Already open
     if (this.devToolsView && this.view.webContents.isDevToolsOpened()) return;
 
-    // Must create a fresh pristine view each time — DevTools WebContents
-    // cannot have navigated before setDevToolsWebContents()
     this.destroyDevToolsView();
 
     this.devToolsView = new WebContentsView({
       webPreferences: {
-        devTools: false, // DevTools of DevTools not needed
+        devTools: false,
       },
     });
 
-    // Add to window (on top of browser view)
     this.mainWindow.contentView.addChildView(this.devToolsView);
-
-    // Start off-screen until renderer sends bounds
     this.devToolsView.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
 
-    // Point browser's DevTools to render in our dedicated view
     this.view.webContents.setDevToolsWebContents(this.devToolsView.webContents);
     this.view.webContents.openDevTools({ mode: "detach" });
   }
 
-  /**
-   * Close DevTools and destroy the DevTools WebContentsView.
-   */
   closeDevTools(): void {
     if (this.view?.webContents.isDevToolsOpened()) {
       this.view.webContents.closeDevTools();
@@ -232,9 +218,6 @@ export class BrowserViewManager {
     this.destroyDevToolsView();
   }
 
-  /**
-   * Set the bounds for the DevTools WebContentsView.
-   */
   setDevToolsBounds(bounds: BrowserBounds): void {
     if (!this.devToolsView) return;
 
@@ -246,16 +229,26 @@ export class BrowserViewManager {
     });
   }
 
-  /**
-   * Check whether the view exists.
-   */
   isActive(): boolean {
     return this.view !== null;
   }
 
   /**
-   * Actually apply bounds to the view. Stores as lastBounds for show().
+   * Get the current URL of the browser view.
    */
+  getCurrentUrl(): string {
+    if (!this.view) return "";
+    return this.view.webContents.getURL();
+  }
+
+  /**
+   * Get the current page title.
+   */
+  getTitle(): string {
+    if (!this.view) return "";
+    return this.view.webContents.getTitle();
+  }
+
   private applyBounds(bounds: BrowserBounds): void {
     if (!this.view) return;
 
@@ -270,9 +263,6 @@ export class BrowserViewManager {
     this.view.setBounds(rounded);
   }
 
-  /**
-   * Destroy the DevTools WebContentsView and clean up.
-   */
   private destroyDevToolsView(): void {
     if (!this.devToolsView) return;
 
@@ -292,16 +282,17 @@ export class BrowserViewManager {
   }
 
   /**
-   * Wire up webContents navigation events to forward to the renderer via IPC.
+   * Wire up webContents navigation events to forward to the renderer.
+   * All events include this instance's `browserId` for routing.
    */
   private setupNavigationEvents(): void {
     if (!this.view) return;
     const wc = this.view.webContents;
     const sender = this.mainWindow.webContents;
 
-    // Navigation completed
     wc.on("did-navigate", (_event, url) => {
       const data: BrowserNavigateEvent = {
+        browserId: this.browserId,
         url,
         canGoBack: wc.navigationHistory.canGoBack(),
         canGoForward: wc.navigationHistory.canGoForward(),
@@ -309,9 +300,9 @@ export class BrowserViewManager {
       sender.send(IPC_CHANNELS.BROWSER_NAVIGATE_EVENT, data);
     });
 
-    // In-page navigation (hash changes, pushState)
     wc.on("did-navigate-in-page", (_event, url) => {
       const data: BrowserNavigateEvent = {
+        browserId: this.browserId,
         url,
         canGoBack: wc.navigationHistory.canGoBack(),
         canGoForward: wc.navigationHistory.canGoForward(),
@@ -319,27 +310,25 @@ export class BrowserViewManager {
       sender.send(IPC_CHANNELS.BROWSER_NAVIGATE_EVENT, data);
     });
 
-    // Loading states
     wc.on("did-start-loading", () => {
-      const data: BrowserLoadingChangeEvent = { isLoading: true };
+      const data: BrowserLoadingChangeEvent = { browserId: this.browserId, isLoading: true };
       sender.send(IPC_CHANNELS.BROWSER_LOADING_CHANGE, data);
     });
 
     wc.on("did-stop-loading", () => {
-      const data: BrowserLoadingChangeEvent = { isLoading: false };
+      const data: BrowserLoadingChangeEvent = { browserId: this.browserId, isLoading: false };
       sender.send(IPC_CHANNELS.BROWSER_LOADING_CHANGE, data);
     });
 
-    // Page title
     wc.on("page-title-updated", (_event, title) => {
-      const data: BrowserTitleChangeEvent = { title };
+      const data: BrowserTitleChangeEvent = { browserId: this.browserId, title };
       sender.send(IPC_CHANNELS.BROWSER_TITLE_CHANGE, data);
     });
 
-    // Load failures
     wc.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
       if (!isMainFrame) return;
       const data: BrowserErrorEvent = {
+        browserId: this.browserId,
         errorCode,
         errorDescription,
         validatedURL,

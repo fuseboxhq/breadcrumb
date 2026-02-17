@@ -87,20 +87,24 @@ export interface BrowserBounds {
 }
 
 export interface BrowserNavigateEvent {
+  browserId: string;
   url: string;
   canGoBack: boolean;
   canGoForward: boolean;
 }
 
 export interface BrowserLoadingChangeEvent {
+  browserId: string;
   isLoading: boolean;
 }
 
 export interface BrowserTitleChangeEvent {
+  browserId: string;
   title: string;
 }
 
 export interface BrowserErrorEvent {
+  browserId: string;
   errorCode: number;
   errorDescription: string;
   validatedURL: string;

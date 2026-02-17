@@ -4,30 +4,42 @@ import { BrowserViewManager } from "../browser/BrowserViewManager";
 import { validateExternalUrl } from "../utils/pathValidation";
 
 let handlersRegistered = false;
-let browserManager: BrowserViewManager | null = null;
 
-/** Get the browser manager or throw a descriptive error */
-function requireManager(): BrowserViewManager {
-  if (!browserManager) {
-    throw new Error("Browser manager not initialized");
+/**
+ * Registry of browser instances keyed by browserId.
+ * Each browserId maps to its own BrowserViewManager (and thus its own WebContentsView).
+ */
+const browsers = new Map<string, BrowserViewManager>();
+let mainWindowRef: BrowserWindow | null = null;
+
+/** Get or throw for a specific browser instance */
+function requireBrowser(browserId: string): BrowserViewManager {
+  const manager = browsers.get(browserId);
+  if (!manager) {
+    throw new Error(`Browser instance not found: ${browserId}`);
   }
-  return browserManager;
+  return manager;
 }
 
 /**
  * Register browser IPC handlers for the embedded WebContentsView browser.
- * Returns a cleanup function to remove all listeners and destroy the view.
+ * All browser commands accept a `browserId` to route to the correct instance.
+ * Returns a cleanup function to remove all listeners and destroy all views.
  */
 export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => void {
   if (handlersRegistered) return () => {};
   handlersRegistered = true;
+  mainWindowRef = mainWindow;
 
-  browserManager = new BrowserViewManager(mainWindow);
-
-  // Create the browser WebContentsView
-  ipcMain.handle(IPC_CHANNELS.BROWSER_CREATE, async () => {
+  // Create a browser instance
+  ipcMain.handle(IPC_CHANNELS.BROWSER_CREATE, async (_, browserId: string) => {
     try {
-      await requireManager().create();
+      if (browsers.has(browserId)) {
+        return { success: true };
+      }
+      const manager = new BrowserViewManager(mainWindow, browserId);
+      browsers.set(browserId, manager);
+      await manager.create();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -35,69 +47,73 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   });
 
   // Navigate to URL
-  ipcMain.handle(IPC_CHANNELS.BROWSER_NAVIGATE, async (_, url: string) => {
+  ipcMain.handle(IPC_CHANNELS.BROWSER_NAVIGATE, async (_, browserId: string, url: string) => {
     try {
-      await requireManager().navigate(url);
+      await requireBrowser(browserId).navigate(url);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Go back in navigation history
-  ipcMain.handle(IPC_CHANNELS.BROWSER_GO_BACK, async () => {
+  // Go back
+  ipcMain.handle(IPC_CHANNELS.BROWSER_GO_BACK, async (_, browserId: string) => {
     try {
-      requireManager().goBack();
+      requireBrowser(browserId).goBack();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Go forward in navigation history
-  ipcMain.handle(IPC_CHANNELS.BROWSER_GO_FORWARD, async () => {
+  // Go forward
+  ipcMain.handle(IPC_CHANNELS.BROWSER_GO_FORWARD, async (_, browserId: string) => {
     try {
-      requireManager().goForward();
+      requireBrowser(browserId).goForward();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Reload current page
-  ipcMain.handle(IPC_CHANNELS.BROWSER_RELOAD, async () => {
+  // Reload
+  ipcMain.handle(IPC_CHANNELS.BROWSER_RELOAD, async (_, browserId: string) => {
     try {
-      requireManager().reload();
+      requireBrowser(browserId).reload();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Set browser WebContentsView bounds (called from ResizeObserver in renderer)
-  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_BOUNDS, async (_, bounds: BrowserBounds) => {
+  // Set bounds
+  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_BOUNDS, async (_, browserId: string, bounds: BrowserBounds) => {
     try {
-      requireManager().setBounds(bounds);
+      requireBrowser(browserId).setBounds(bounds);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Destroy the browser WebContentsView
-  ipcMain.handle(IPC_CHANNELS.BROWSER_DESTROY, async () => {
+  // Destroy a browser instance
+  ipcMain.handle(IPC_CHANNELS.BROWSER_DESTROY, async (_, browserId: string) => {
     try {
-      requireManager().destroy();
+      const manager = browsers.get(browserId);
+      if (manager) {
+        manager.destroy();
+        browsers.delete(browserId);
+      }
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Open DevTools for the browser WebContentsView
-  ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS, async () => {
+  // Open DevTools
+  ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS, async (_, browserId: string) => {
     try {
-      requireManager().openDevTools();
+      requireBrowser(browserId).openDevTools();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -105,16 +121,16 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   });
 
   // Close DevTools
-  ipcMain.handle(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS, async () => {
+  ipcMain.handle(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS, async (_, browserId: string) => {
     try {
-      requireManager().closeDevTools();
+      requireBrowser(browserId).closeDevTools();
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
     }
   });
 
-  // Open URL in system's default browser (http/https only)
+  // Open URL in system's default browser (no browserId needed)
   ipcMain.handle(IPC_CHANNELS.BROWSER_OPEN_EXTERNAL, async (_, url: string) => {
     try {
       const validated = validateExternalUrl(url);
@@ -125,10 +141,10 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
     }
   });
 
-  // Set DevTools WebContentsView bounds
-  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, bounds: BrowserBounds) => {
+  // Set DevTools bounds
+  ipcMain.handle(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, async (_, browserId: string, bounds: BrowserBounds) => {
     try {
-      requireManager().setDevToolsBounds(bounds);
+      requireBrowser(browserId).setDevToolsBounds(bounds);
       return { success: true };
     } catch (error) {
       return { success: false, error: String(error) };
@@ -136,11 +152,12 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
   });
 
   return () => {
-    // Destroy the browser view on cleanup
-    if (browserManager) {
-      browserManager.destroy();
-      browserManager = null;
+    // Destroy all browser views on cleanup
+    for (const [, manager] of browsers) {
+      manager.destroy();
     }
+    browsers.clear();
+    mainWindowRef = null;
 
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_CREATE);
     ipcMain.removeHandler(IPC_CHANNELS.BROWSER_NAVIGATE);
@@ -158,8 +175,15 @@ export function registerBrowserIPCHandlers(mainWindow: BrowserWindow): () => voi
 }
 
 /**
- * Get the current BrowserViewManager instance (for use by other modules).
+ * Get a specific browser instance by ID.
  */
-export function getBrowserManager(): BrowserViewManager | null {
-  return browserManager;
+export function getBrowser(browserId: string): BrowserViewManager | undefined {
+  return browsers.get(browserId);
+}
+
+/**
+ * Get all active browser IDs.
+ */
+export function getAllBrowserIds(): string[] {
+  return [...browsers.keys()];
 }

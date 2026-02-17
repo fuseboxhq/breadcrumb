@@ -97,21 +97,21 @@ export interface BreadcrumbAPI {
 
   // Browser operations (embedded WebContentsView)
   browser: {
-    create: () => Promise<{ success: boolean; error?: string }>;
-    navigate: (url: string) => Promise<{ success: boolean; error?: string }>;
-    goBack: () => Promise<{ success: boolean; error?: string }>;
-    goForward: () => Promise<{ success: boolean; error?: string }>;
-    reload: () => Promise<{ success: boolean; error?: string }>;
-    setBounds: (bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
-    destroy: () => Promise<{ success: boolean; error?: string }>;
-    openDevTools: () => Promise<{ success: boolean; error?: string }>;
-    closeDevTools: () => Promise<{ success: boolean; error?: string }>;
-    setDevToolsBounds: (bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
+    create: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    navigate: (browserId: string, url: string) => Promise<{ success: boolean; error?: string }>;
+    goBack: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    goForward: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    reload: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    setBounds: (browserId: string, bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
+    destroy: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    openDevTools: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    closeDevTools: (browserId: string) => Promise<{ success: boolean; error?: string }>;
+    setDevToolsBounds: (browserId: string, bounds: BrowserBounds) => Promise<{ success: boolean; error?: string }>;
     openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
-    onNavigate: (callback: (data: BrowserNavigateEvent) => void) => () => void;
-    onLoadingChange: (callback: (data: BrowserLoadingChangeEvent) => void) => () => void;
-    onTitleChange: (callback: (data: BrowserTitleChangeEvent) => void) => () => void;
-    onError: (callback: (data: BrowserErrorEvent) => void) => () => void;
+    onNavigate: (browserId: string, callback: (data: BrowserNavigateEvent) => void) => () => void;
+    onLoadingChange: (browserId: string, callback: (data: BrowserLoadingChangeEvent) => void) => () => void;
+    onTitleChange: (browserId: string, callback: (data: BrowserTitleChangeEvent) => void) => () => void;
+    onError: (browserId: string, callback: (data: BrowserErrorEvent) => void) => () => void;
   };
 }
 
@@ -234,63 +234,67 @@ const api: BreadcrumbAPI = {
 
   // Browser operations
   browser: {
-    create: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CREATE),
+    create: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CREATE, browserId),
 
-    navigate: (url: string) =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_NAVIGATE, url),
+    navigate: (browserId: string, url: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_NAVIGATE, browserId, url),
 
-    goBack: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GO_BACK),
+    goBack: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GO_BACK, browserId),
 
-    goForward: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GO_FORWARD),
+    goForward: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_GO_FORWARD, browserId),
 
-    reload: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_RELOAD),
+    reload: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_RELOAD, browserId),
 
-    setBounds: (bounds: BrowserBounds) =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_BOUNDS, bounds),
+    setBounds: (browserId: string, bounds: BrowserBounds) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_BOUNDS, browserId, bounds),
 
-    destroy: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_DESTROY),
+    destroy: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_DESTROY, browserId),
 
-    openDevTools: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS),
+    openDevTools: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_OPEN_DEVTOOLS, browserId),
 
-    closeDevTools: () =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS),
+    closeDevTools: (browserId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_CLOSE_DEVTOOLS, browserId),
 
-    setDevToolsBounds: (bounds: BrowserBounds) =>
-      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, bounds),
+    setDevToolsBounds: (browserId: string, bounds: BrowserBounds) =>
+      ipcRenderer.invoke(IPC_CHANNELS.BROWSER_SET_DEVTOOLS_BOUNDS, browserId, bounds),
 
     openExternal: (url: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.BROWSER_OPEN_EXTERNAL, url),
 
-    onNavigate: (callback) => {
-      const handler = (_: Electron.IpcRendererEvent, data: BrowserNavigateEvent) =>
-        callback(data);
+    onNavigate: (browserId: string, callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserNavigateEvent) => {
+        if (data.browserId === browserId) callback(data);
+      };
       ipcRenderer.on(IPC_CHANNELS.BROWSER_NAVIGATE_EVENT, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_NAVIGATE_EVENT, handler);
     },
 
-    onLoadingChange: (callback) => {
-      const handler = (_: Electron.IpcRendererEvent, data: BrowserLoadingChangeEvent) =>
-        callback(data);
+    onLoadingChange: (browserId: string, callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserLoadingChangeEvent) => {
+        if (data.browserId === browserId) callback(data);
+      };
       ipcRenderer.on(IPC_CHANNELS.BROWSER_LOADING_CHANGE, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_LOADING_CHANGE, handler);
     },
 
-    onTitleChange: (callback) => {
-      const handler = (_: Electron.IpcRendererEvent, data: BrowserTitleChangeEvent) =>
-        callback(data);
+    onTitleChange: (browserId: string, callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserTitleChangeEvent) => {
+        if (data.browserId === browserId) callback(data);
+      };
       ipcRenderer.on(IPC_CHANNELS.BROWSER_TITLE_CHANGE, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_TITLE_CHANGE, handler);
     },
 
-    onError: (callback) => {
-      const handler = (_: Electron.IpcRendererEvent, data: BrowserErrorEvent) =>
-        callback(data);
+    onError: (browserId: string, callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: BrowserErrorEvent) => {
+        if (data.browserId === browserId) callback(data);
+      };
       ipcRenderer.on(IPC_CHANNELS.BROWSER_ERROR, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.BROWSER_ERROR, handler);
     },

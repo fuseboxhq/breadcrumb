@@ -13,10 +13,11 @@ import { useBrowserSettings } from "../../store/settingsStore";
 import { useBoundsSync } from "../../hooks/useBoundsSync";
 
 interface BrowserPanelProps {
+  browserId: string;
   initialUrl?: string;
 }
 
-export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
+export function BrowserPanel({ browserId, initialUrl }: BrowserPanelProps) {
   const browserSettings = useBrowserSettings();
   const startUrl = initialUrl || browserSettings.lastUrl || "http://localhost:3000";
   const [url, setUrl] = useState(startUrl);
@@ -33,7 +34,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   // Create/destroy browser WebContentsView on mount/unmount.
   // Uses a generation counter to handle React Strict Mode double-mount:
   // mount #1 → cleanup → mount #2. Without this, mount #1's async init()
-  // would destroy the singleton view after mount #2 starts using it.
+  // would destroy the view after mount #2 starts using it.
   useEffect(() => {
     const api = window.breadcrumbAPI?.browser;
     if (!api) return;
@@ -42,15 +43,12 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
     let destroyed = false;
 
     const init = async () => {
-      await api.create();
+      await api.create(browserId);
 
       // Cleanup ran before create() IPC completed.
       if (destroyed) {
-        // Only destroy if no newer mount has started (real unmount).
-        // In Strict Mode, a newer mount already incremented generationRef,
-        // so we skip destroy to avoid killing the view it's using.
         if (myGeneration === generationRef.current) {
-          await api.destroy();
+          await api.destroy(browserId);
         }
         return;
       }
@@ -63,7 +61,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
         const width = Math.round(rect.width);
         const height = Math.round(rect.height);
         if (width >= 10 && height >= 10) {
-          api.setBounds({
+          api.setBounds(browserId, {
             x: Math.round(rect.x),
             y: Math.round(rect.y),
             width,
@@ -73,7 +71,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       }
 
       // Navigate to persisted or initial URL after creation
-      await api.navigate(startUrl);
+      await api.navigate(browserId, startUrl);
     };
 
     init();
@@ -81,27 +79,27 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
     return () => {
       destroyed = true;
       if (createdRef.current) {
-        api.destroy();
+        api.destroy(browserId);
         createdRef.current = false;
       }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [browserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Bounds syncing: ResizeObserver + rAF throttled IPC
   const setBrowserBounds = useCallback(
-    (bounds: Parameters<typeof window.breadcrumbAPI.browser.setBounds>[0]) => {
-      window.breadcrumbAPI?.browser?.setBounds(bounds);
+    (bounds: { x: number; y: number; width: number; height: number }) => {
+      window.breadcrumbAPI?.browser?.setBounds(browserId, bounds);
     },
-    []
+    [browserId]
   );
   useBoundsSync(contentRef, setBrowserBounds);
 
-  // Subscribe to navigation events from main process
+  // Subscribe to navigation events from main process (scoped to this browserId)
   useEffect(() => {
     const api = window.breadcrumbAPI?.browser;
     if (!api) return;
 
-    const unsubNavigate = api.onNavigate((data) => {
+    const unsubNavigate = api.onNavigate(browserId, (data) => {
       setUrl(data.url);
       setInputUrl(data.url);
       setCanGoBack(data.canGoBack);
@@ -112,15 +110,15 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       window.breadcrumbAPI?.setSetting("browser.lastUrl", data.url);
     });
 
-    const unsubLoading = api.onLoadingChange((data) => {
+    const unsubLoading = api.onLoadingChange(browserId, (data) => {
       setLoading(data.isLoading);
     });
 
-    const unsubTitle = api.onTitleChange((data) => {
+    const unsubTitle = api.onTitleChange(browserId, (data) => {
       setPageTitle(data.title);
     });
 
-    const unsubError = api.onError((data) => {
+    const unsubError = api.onError(browserId, (data) => {
       setError({
         code: data.errorCode,
         description: data.errorDescription,
@@ -134,7 +132,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
       unsubTitle();
       unsubError();
     };
-  }, []);
+  }, [browserId]);
 
   // Hide WebContentsView when error overlay is showing.
   // The native view sits on top of all DOM content, so we must move it
@@ -144,7 +142,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
     if (!api || !createdRef.current) return;
 
     if (error) {
-      api.setBounds({ x: -10000, y: -10000, width: 1, height: 1 });
+      api.setBounds(browserId, { x: -10000, y: -10000, width: 1, height: 1 });
     } else {
       // Restore bounds when error clears
       const el = contentRef.current;
@@ -153,7 +151,7 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
         const width = Math.round(rect.width);
         const height = Math.round(rect.height);
         if (width >= 10 && height >= 10) {
-          api.setBounds({
+          api.setBounds(browserId, {
             x: Math.round(rect.x),
             y: Math.round(rect.y),
             width,
@@ -162,14 +160,14 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
         }
       }
     }
-  }, [error]);
+  }, [browserId, error]);
 
   // Navigation handlers
   const handleNavigate = useCallback((newUrl: string) => {
     const api = window.breadcrumbAPI?.browser;
     if (!api) return;
-    api.navigate(newUrl);
-  }, []);
+    api.navigate(browserId, newUrl);
+  }, [browserId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,16 +184,16 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
   };
 
   const handleBack = useCallback(() => {
-    window.breadcrumbAPI?.browser?.goBack();
-  }, []);
+    window.breadcrumbAPI?.browser?.goBack(browserId);
+  }, [browserId]);
 
   const handleForward = useCallback(() => {
-    window.breadcrumbAPI?.browser?.goForward();
-  }, []);
+    window.breadcrumbAPI?.browser?.goForward(browserId);
+  }, [browserId]);
 
   const handleReload = useCallback(() => {
-    window.breadcrumbAPI?.browser?.reload();
-  }, []);
+    window.breadcrumbAPI?.browser?.reload(browserId);
+  }, [browserId]);
 
   const handleOpenExternal = useCallback(() => {
     window.breadcrumbAPI?.browser?.openExternal(url);
@@ -203,8 +201,8 @@ export function BrowserPanel({ initialUrl }: BrowserPanelProps) {
 
   const handleRetry = useCallback(() => {
     setError(null);
-    window.breadcrumbAPI?.browser?.reload();
-  }, []);
+    window.breadcrumbAPI?.browser?.reload(browserId);
+  }, [browserId]);
 
   const isSecure = url.startsWith("https://");
 
