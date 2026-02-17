@@ -4,6 +4,7 @@ import { matchSorter } from "match-sorter";
 import { Search, Zap, Command as CommandIcon } from "lucide-react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
+import { useDebugStore } from "../../store/debugStore";
 import { buildCommands, type CommandItem } from "./commands";
 
 export function CommandPalette() {
@@ -16,6 +17,7 @@ export function CommandPalette() {
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
   const { addProject } = useProjectsStore();
+  const openDebugModal = useDebugStore((s) => s.openDebugModal);
 
   // Register Cmd+K / Ctrl+K global listener
   useEffect(() => {
@@ -69,15 +71,17 @@ export function CommandPalette() {
       buildCommands({
         activeProjectName: activeProject?.name ?? null,
         activeProjectId: activeProject?.id ?? null,
+        activeProjectPath: activeProject?.path ?? null,
         addTab,
         addRightPanelPane,
         toggleRightPanel,
         navigateToView,
         addProject,
+        openDebugModal,
         dispatchKey,
         close,
       }),
-    [activeProject, addTab, addRightPanelPane, toggleRightPanel, navigateToView, addProject, dispatchKey, close]
+    [activeProject, addTab, addRightPanelPane, toggleRightPanel, navigateToView, addProject, openDebugModal, dispatchKey, close]
   );
 
   const filtered = search

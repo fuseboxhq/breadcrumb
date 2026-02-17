@@ -1,0 +1,34 @@
+{
+  "name": "debug-assistant",
+  "displayName": "AI Debug Assistant",
+  "version": "1.0.0",
+  "description": "Per-project AI debug assistant — describe a bug with screenshots and console logs, spawn Claude Code with project-specific debug context",
+  "publisher": "breadcrumb",
+  "main": "./src/index.js",
+  "engines": {
+    "breadcrumb": "^1.0.0",
+    "node": ">=18.0.0"
+  },
+  "activationEvents": ["*"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "debug-assistant.start",
+        "title": "Start Debug Session",
+        "category": "Debug"
+      },
+      {
+        "command": "debug-assistant.createSkill",
+        "title": "Create Debug Skill",
+        "category": "Debug"
+      }
+    ]
+  },
+  "breadcrumb": {
+    "apiVersion": "1.0.0",
+    "capabilities": {
+      "fileSystem": "readonly",
+      "terminal": true
+    }
+  }
+}

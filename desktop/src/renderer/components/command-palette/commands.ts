@@ -11,6 +11,7 @@ import {
   Rows3,
   Trash2,
   ArrowRightLeft,
+  Bug,
 } from "lucide-react";
 import type { SidebarView } from "../../store/appStore";
 
@@ -27,11 +28,13 @@ export interface CommandItem {
 interface CommandContext {
   activeProjectName: string | null;
   activeProjectId: string | null;
+  activeProjectPath: string | null;
   addTab: (tab: { id: string; type: "terminal"; title: string; projectId?: string }) => void;
   addRightPanelPane: (type: "browser" | "planning") => void;
   toggleRightPanel: () => void;
   navigateToView: (view: SidebarView) => void;
   addProject: (path: string) => void;
+  openDebugModal: (projectPath: string) => void;
   dispatchKey: (key: string, opts?: { meta?: boolean; shift?: boolean; alt?: boolean }) => void;
   close: () => void;
 }
@@ -140,6 +143,23 @@ export function buildCommands(ctx: CommandContext): CommandItem[] {
       action: async () => {
         const dir = await window.breadcrumbAPI?.selectDirectory();
         if (dir) ctx.addProject(dir);
+        close();
+      },
+    },
+    // Debug
+    {
+      id: "debug-start",
+      label: "Start Debug Session",
+      description: activeProjectName ? `Debug in ${activeProjectName}` : "Open AI debug assistant",
+      icon: Bug,
+      category: "Debug",
+      action: () => {
+        if (ctx.activeProjectPath) {
+          ctx.openDebugModal(ctx.activeProjectPath);
+        } else {
+          // No project — still open with cwd
+          ctx.openDebugModal(process.cwd?.() || "");
+        }
         close();
       },
     },
