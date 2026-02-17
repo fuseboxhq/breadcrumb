@@ -9,7 +9,7 @@ import {
 } from "../../store/appStore";
 import { BrowserPanel } from "../browser/BrowserPanel";
 import { PlanningPanel } from "../breadcrumb/PlanningPanel";
-import { Globe, LayoutGrid, X, PanelRight, Plus } from "lucide-react";
+import { Globe, LayoutGrid, X, PanelRight, Plus, Maximize2 } from "lucide-react";
 
 const PANE_META: Record<RightPanelPaneType, { label: string; icon: typeof Globe; color: string }> = {
   browser: { label: "Browser", icon: Globe, color: "text-dracula-cyan" },
@@ -149,7 +149,7 @@ function PaneContent({ type }: { type: RightPanelPaneType }) {
 function BrowserTabPane() {
   const browserTabs = useBrowserTabs();
   const activeBrowserTabId = useActiveBrowserTabId();
-  const { addBrowserTab, removeBrowserTab, setActiveBrowserTab, updateBrowserTab } = useAppStore();
+  const { addBrowserTab, removeBrowserTab, setActiveBrowserTab, updateBrowserTab, openBrowserTab } = useAppStore();
 
   const handleAddTab = useCallback(() => {
     addBrowserTab();
@@ -159,6 +159,12 @@ function BrowserTabPane() {
     e.stopPropagation();
     removeBrowserTab(tabId);
   }, [removeBrowserTab]);
+
+  const handlePromoteTab = useCallback(() => {
+    const activeTab = browserTabs.find((t) => t.id === activeBrowserTabId);
+    if (!activeTab) return;
+    openBrowserTab(activeTab.url);
+  }, [browserTabs, activeBrowserTabId, openBrowserTab]);
 
   if (browserTabs.length === 0) {
     return (
@@ -206,14 +212,24 @@ function BrowserTabPane() {
             );
           })}
         </div>
-        <button
-          onClick={handleAddTab}
-          className="p-1.5 mx-0.5 rounded text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default shrink-0"
-          title="New browser tab"
-          aria-label="New browser tab"
-        >
-          <Plus className="w-3 h-3" />
-        </button>
+        <div className="flex items-center shrink-0">
+          <button
+            onClick={handlePromoteTab}
+            className="p-1.5 rounded text-foreground-muted hover:text-accent-secondary hover:bg-accent-secondary/10 transition-default"
+            title="Open in main area"
+            aria-label="Open current tab in main area"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
+          <button
+            onClick={handleAddTab}
+            className="p-1.5 rounded text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+            title="New browser tab"
+            aria-label="New browser tab"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        </div>
       </div>
 
       {/* Browser panels — all mounted, only active visible */}

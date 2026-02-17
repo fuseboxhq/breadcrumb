@@ -2,6 +2,7 @@ import { useAppStore } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
 import { DiffViewer } from "../breadcrumb/DiffViewer";
+import { BrowserPanel } from "../browser/BrowserPanel";
 import {
   Terminal,
   Zap,
@@ -30,6 +31,18 @@ export function WorkspaceContent() {
       return <WelcomeView />;
     case "terminal":
       return <TerminalPanel tabId={activeTab.id} workingDirectory={projectDir} />;
+    case "browser":
+      return activeTab.browserId ? (
+        <BrowserPanel
+          browserId={activeTab.browserId}
+          initialUrl={activeTab.initialUrl}
+          onTitleChange={(title) => {
+            useAppStore.getState().updateTab(activeTab.id, { title });
+          }}
+        />
+      ) : (
+        <EmptyWorkspace />
+      );
     case "diff":
       return activeTab.diffHash && activeTab.diffProjectPath ? (
         <DiffViewer

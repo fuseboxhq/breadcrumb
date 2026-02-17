@@ -231,6 +231,9 @@ export interface AppActions {
   openDiffTab: (projectPath: string, hash: string, commitSubject?: string) => void;
   pinDiffTab: (tabId: string) => void;
 
+  // Browser tab in center workspace
+  openBrowserTab: (url?: string) => void;
+
   // Terminal pane management
   initializeTabPanes: (tabId: string, workingDirectory?: string) => void;
   addPane: (tabId: string, direction?: "horizontal" | "vertical", initialCommand?: string) => void;
@@ -482,6 +485,23 @@ export const useAppStore = create<AppStore>()(
         if (tab && tab.type === "diff") {
           tab.pinned = true;
         }
+      });
+      persistWorkspace();
+    },
+
+    // Browser tab in center workspace
+    openBrowserTab: (url) => {
+      const id = `browser-${Date.now()}`;
+      const browserId = `center-${id}`;
+      set((state) => {
+        state.tabs.push({
+          id,
+          type: "browser",
+          title: url ? new URL(url).hostname : "Browser",
+          browserId,
+          initialUrl: url || "http://localhost:3000",
+        });
+        state.activeTabId = id;
       });
       persistWorkspace();
     },
