@@ -285,7 +285,7 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
                 className={`
                   group px-2 py-0.5 text-2xs rounded-md transition-default flex items-center gap-1.5 max-w-32
                   ${activePane === pane.id
-                    ? "bg-accent-secondary/10 text-accent-secondary"
+                    ? "bg-accent/10 text-accent"
                     : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
                   }
                 `}
@@ -324,7 +324,7 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
               onClick={() => togglePaneZoom(tabId, activePane)}
               className={`p-1 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none ${
                 isZoomed
-                  ? "text-accent-secondary hover:text-accent-secondary/80 hover:bg-accent-secondary/10"
+                  ? "text-accent hover:text-accent/80 hover:bg-accent/10"
                   : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50"
               }`}
               title={isZoomed ? "Restore panes (⇧⌘↵)" : "Maximize pane (⇧⌘↵)"}
@@ -395,16 +395,16 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
                     className={`
                       group relative transition-default
                       ${splitDirection === "horizontal"
-                        ? "w-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50"
-                        : "h-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50"
+                        ? "w-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50"
+                        : "h-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50"
                       }
                     `}
                   >
                     <div
                       className={`absolute transition-default ${
                         splitDirection === "horizontal"
-                          ? "inset-y-0 left-[1px] w-px bg-border group-hover:bg-accent-secondary/40"
-                          : "inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent-secondary/40"
+                          ? "inset-y-0 left-[1px] w-px bg-border group-hover:bg-accent/40"
+                          : "inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent/40"
                       }`}
                     />
                   </PanelResizeHandle>
@@ -414,7 +414,7 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
                     className={`h-full ${
                       panes.length > 1
                         ? activePane === pane.id
-                          ? "ring-1 ring-accent-secondary/20 rounded-sm transition-default"
+                          ? "ring-1 ring-accent/20 rounded-sm transition-default"
                           : "opacity-90 hover:opacity-100 transition-default"
                         : ""
                     }`}
@@ -454,9 +454,9 @@ function PaneIcon({ pane }: { pane: ContentPane }) {
     case "terminal":
       return <ProcessIcon processName={(pane as TerminalPaneData).processName} className="w-3 h-3 shrink-0" />;
     case "browser":
-      return <Globe className="w-3 h-3 shrink-0 text-dracula-cyan/70" />;
+      return <Globe className="w-3 h-3 shrink-0 text-info/70" />;
     case "diff":
-      return <GitCompareArrows className="w-3 h-3 shrink-0 text-dracula-orange/70" />;
+      return <GitCompareArrows className="w-3 h-3 shrink-0 text-warning/70" />;
     default:
       return null;
   }

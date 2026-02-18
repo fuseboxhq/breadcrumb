@@ -36,27 +36,27 @@ interface TerminalInstanceProps {
 
 // Fallback Dracula theme — used if CSS custom properties aren't available
 const FALLBACK_THEME = {
-  background: "#101014",
-  foreground: "#f2f2f2",
-  cursor: "#f2f2f2",
-  cursorAccent: "#101014",
-  selectionBackground: "#44475a80",
-  selectionForeground: "#f2f2f2",
-  black: "#1e1e22",
-  red: "#ff5555",
-  green: "#50fa7b",
-  yellow: "#f1fa8c",
-  blue: "#8be9fd",
-  magenta: "#bd93f9",
-  cyan: "#8be9fd",
-  white: "#f2f2f2",
-  brightBlack: "#6272a4",
-  brightRed: "#ff6e6e",
-  brightGreen: "#69ff94",
-  brightYellow: "#ffffa5",
-  brightBlue: "#a4ffff",
-  brightMagenta: "#d6acff",
-  brightCyan: "#a4ffff",
+  background: "#0f0f0f",
+  foreground: "#eeeff1",
+  cursor: "#eeeff1",
+  cursorAccent: "#0f0f0f",
+  selectionBackground: "#26262680",
+  selectionForeground: "#eeeff1",
+  black: "#262626",
+  red: "#ef4444",
+  green: "#22c55e",
+  yellow: "#eab308",
+  blue: "#3b82f6",
+  magenta: "#8b5cf6",
+  cyan: "#06b6d4",
+  white: "#eeeff1",
+  brightBlack: "#8c8c8c",
+  brightRed: "#f87171",
+  brightGreen: "#4ade80",
+  brightYellow: "#facc15",
+  brightBlue: "#60a5fa",
+  brightMagenta: "#a78bfa",
+  brightCyan: "#22d3ee",
   brightWhite: "#ffffff",
 };
 
@@ -94,12 +94,12 @@ function getTerminalTheme(): typeof FALLBACK_THEME {
     selectionBackground: (getCssColor("--background-overlay") || FALLBACK_THEME.selectionBackground) + "80",
     selectionForeground: fg,
     black: getCssColor("--background-overlay") || FALLBACK_THEME.black,
-    red: getCssColor("--dracula-red") || FALLBACK_THEME.red,
-    green: getCssColor("--dracula-green") || FALLBACK_THEME.green,
-    yellow: getCssColor("--dracula-yellow") || FALLBACK_THEME.yellow,
-    blue: getCssColor("--dracula-cyan") || FALLBACK_THEME.blue,
-    magenta: getCssColor("--dracula-purple") || FALLBACK_THEME.magenta,
-    cyan: getCssColor("--dracula-cyan") || FALLBACK_THEME.cyan,
+    red: getCssColor("--destructive") || FALLBACK_THEME.red,
+    green: getCssColor("--success") || FALLBACK_THEME.green,
+    yellow: getCssColor("--warning") || FALLBACK_THEME.yellow,
+    blue: getCssColor("--info") || FALLBACK_THEME.blue,
+    magenta: getCssColor("--accent") || FALLBACK_THEME.magenta,
+    cyan: getCssColor("--info") || FALLBACK_THEME.cyan,
     white: fg,
     brightBlack: getCssColor("--foreground-muted") || FALLBACK_THEME.brightBlack,
     brightRed: FALLBACK_THEME.brightRed,
@@ -573,11 +573,11 @@ export function TerminalInstance({
         {lastExitCode !== null && !searchVisible && (
           <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-mono animate-fade-in ${
             lastExitCode === 0
-              ? "bg-dracula-green/15 border border-dracula-green/25 text-dracula-green"
+              ? "bg-success/15 border border-success/25 text-success"
               : "bg-destructive/20 border border-destructive/30 text-destructive"
           }`}>
             <span className={`w-1.5 h-1.5 rounded-full ${
-              lastExitCode === 0 ? "bg-dracula-green" : "bg-destructive"
+              lastExitCode === 0 ? "bg-success" : "bg-destructive"
             }`} />
             {lastExitCode === 0 ? "OK" : `Exit ${lastExitCode}`}
           </div>
