@@ -56,7 +56,7 @@ export function StatusBar() {
       <div className="flex items-center gap-3">
         {/* Git branch — only shown when active project is a git repo */}
         {gitBranch && (
-          <StatusItem icon={GitBranch} label={gitBranch} color="text-dracula-purple" />
+          <StatusItem icon={GitBranch} label={gitBranch} color="text-accent" />
         )}
 
         {/* Active project */}
@@ -64,7 +64,7 @@ export function StatusBar() {
           <StatusItem
             icon={FolderOpen}
             label={projectCount > 1 ? `${activeProject.name} (+${projectCount - 1})` : activeProject.name}
-            color="text-dracula-cyan"
+            color="text-foreground-secondary"
           />
         )}
 
@@ -83,7 +83,7 @@ export function StatusBar() {
         <StatusItem
           icon={PanelRight}
           label={rightPanelOpen ? `${rightPanelPanes.length} pane${rightPanelPanes.length !== 1 ? "s" : ""}` : "Panel"}
-          color={rightPanelOpen ? "text-accent-secondary" : undefined}
+          color={rightPanelOpen ? "text-accent" : undefined}
           onClick={toggleRightPanel}
         />
 
@@ -91,7 +91,7 @@ export function StatusBar() {
         <StatusItem
           icon={Bug}
           label="DevTools"
-          color={devToolsDockOpen ? "text-dracula-orange" : undefined}
+          color={devToolsDockOpen ? "text-warning" : undefined}
           onClick={toggleDevToolsDock}
         />
 

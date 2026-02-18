@@ -138,24 +138,24 @@ export function TabBar() {
                 : "text-foreground-muted hover:text-foreground-secondary hover:bg-background-raised/50"
               }
               ${isDragging ? "opacity-40" : ""}
-              ${isDragTarget ? "ring-2 ring-inset ring-accent-secondary bg-accent-secondary/15" : ""}
+              ${isDragTarget ? "ring-2 ring-inset ring-accent bg-accent/15" : ""}
             `}
           >
             {/* Active tab indicator — accent underline at top */}
             {isActive && !isDragTarget && (
-              <div className="absolute top-0 left-1 right-1 h-[2px] rounded-b-full bg-accent-secondary" />
+              <div className="absolute top-0 left-1 right-1 h-[2px] rounded-b-full bg-accent" />
             )}
 
             {/* Merge overlay when dragging a tab onto this one */}
             {isDragTarget && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-2xs text-accent-secondary font-medium bg-background-raised/80 px-1.5 py-0.5 rounded">
+                <span className="text-2xs text-accent font-medium bg-background-raised/80 px-1.5 py-0.5 rounded">
                   Merge
                 </span>
               </div>
             )}
 
-            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-accent-secondary" : ""} ${isDragTarget ? "opacity-0" : ""}`} />
+            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-accent" : ""} ${isDragTarget ? "opacity-0" : ""}`} />
             <span className={`truncate ${isUnpinned ? "italic text-foreground-muted" : ""} ${isDragTarget ? "opacity-0" : ""}`}>
               {tab.title}
             </span>
@@ -239,10 +239,10 @@ export function TabBar() {
       </button>
 
       {/* Fill remaining space — also serves as drop zone */}
-      <div className={`flex-1 h-full border-b transition-default ${isDragOver ? "border-accent-secondary bg-accent-secondary/10 border-dashed" : "border-border/50"}`}>
+      <div className={`flex-1 h-full border-b transition-default ${isDragOver ? "border-accent bg-accent/10 border-dashed" : "border-border/50"}`}>
         {isDragOver && (
           <div className="h-full flex items-center justify-center">
-            <span className="text-2xs text-accent-secondary font-medium">Drop to open tab</span>
+            <span className="text-2xs text-accent font-medium">Drop to open tab</span>
           </div>
         )}
       </div>
