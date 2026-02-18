@@ -231,7 +231,7 @@ function ExplorerView() {
                   }}
                   className={`group w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-default ${
                     isActive
-                      ? "bg-accent-secondary/10 border border-accent-secondary/20"
+                      ? "bg-accent/10 border border-accent/20"
                       : "text-foreground-secondary hover:bg-muted/50 border border-transparent"
                   }`}
                 >
@@ -242,11 +242,11 @@ function ExplorerView() {
                   />
                   <FolderOpen
                     className={`w-4 h-4 shrink-0 ${
-                      isActive ? "text-accent-secondary" : "text-foreground-muted"
+                      isActive ? "text-accent" : "text-foreground-muted"
                     }`}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium truncate ${isActive ? "text-accent-secondary" : ""}`}>
+                    <div className={`text-sm font-medium truncate ${isActive ? "text-accent" : ""}`}>
                       {project.name}
                     </div>
                     <div className="text-2xs text-foreground-muted truncate">
@@ -289,7 +289,7 @@ function ExplorerView() {
                         initialCommand: "claude\n",
                       })
                     }
-                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-[#D97757] hover:bg-[#D97757]/10 transition-default"
+                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-warning hover:bg-warning/10 transition-default"
                   >
                     <Sparkles className="w-3 h-3" />
                     <span>Claude Code</span>
@@ -428,7 +428,7 @@ function TerminalsView() {
                 icon: <ProcessIcon processName={processName} className="w-3 h-3" />,
                 isActive: tab.id === activeTabId && paneState?.activePane === pane.id,
                 badge: isPaneZoomed ? (
-                  <Maximize2 className="w-2.5 h-2.5 text-accent-secondary" />
+                  <Maximize2 className="w-2.5 h-2.5 text-accent" />
                 ) : undefined,
               };
             })
@@ -755,7 +755,7 @@ function SettingsView() {
                   onClick={() => updateTerminalSetting("cursorStyle", style)}
                   className={`px-3 py-1.5 text-sm rounded-md transition-default capitalize ${
                     terminal.cursorStyle === style
-                      ? "bg-accent-secondary/20 text-accent-secondary border border-accent-secondary/30"
+                      ? "bg-accent/20 text-accent border border-accent/30"
                       : "bg-background border border-border text-foreground-secondary hover:bg-muted/50"
                   }`}
                 >

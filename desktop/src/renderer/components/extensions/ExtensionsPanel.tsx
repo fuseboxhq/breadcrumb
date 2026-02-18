@@ -131,7 +131,7 @@ function ExtensionCard({
     <div
       className={`rounded-lg border transition-default ${
         isSelected
-          ? "border-accent-secondary/20 bg-accent-secondary/5"
+          ? "border-accent/20 bg-accent/5"
           : "border-transparent hover:bg-background-raised"
       }`}
     >
@@ -229,7 +229,7 @@ function ExtensionCard({
                     className="w-full text-left text-2xs flex items-center gap-1.5 px-1.5 py-0.5 rounded-md hover:bg-muted/50 transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
                     title={`Run ${cmd.command}`}
                   >
-                    <code className="font-mono text-dracula-cyan/80">
+                    <code className="font-mono text-accent/80">
                       {cmd.command}
                     </code>
                     <span className="text-foreground-muted">
