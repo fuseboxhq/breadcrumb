@@ -45,6 +45,20 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
     }
   });
 
+  // List directory entries (safe: validates path, returns empty on error)
+  ipcMain.handle(IPC_CHANNELS.SYSTEM_LIST_DIR, async (_, dirPath: string) => {
+    try {
+      const resolved = validatePath(dirPath);
+      const entries = await fs.readdir(resolved, { withFileTypes: true });
+      return {
+        success: true,
+        entries: entries.map((e) => ({ name: e.name, isDirectory: e.isDirectory() })),
+      };
+    } catch {
+      return { success: false, entries: [] };
+    }
+  });
+
   // Git
   ipcMain.handle(
     IPC_CHANNELS.GIT_INFO,
@@ -143,6 +157,7 @@ export function registerIPCHandlers(mainWindow: BrowserWindow): () => void {
     ipcMain.removeHandler(IPC_CHANNELS.DIALOG_SELECT_DIRECTORY);
     ipcMain.removeHandler(IPC_CHANNELS.SYSTEM_GET_WORKING_DIR);
     ipcMain.removeHandler(IPC_CHANNELS.SYSTEM_READ_FILE);
+    ipcMain.removeHandler(IPC_CHANNELS.SYSTEM_LIST_DIR);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_INFO);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_LOG);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_DIFF);

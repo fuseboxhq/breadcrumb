@@ -14,6 +14,7 @@ export const IPC_CHANNELS = {
   // System
   SYSTEM_GET_WORKING_DIR: "system:get-working-dir",
   SYSTEM_READ_FILE: "system:read-file",
+  SYSTEM_LIST_DIR: "system:list-dir",
 
   // Terminal channels (PTY-based interactive terminals)
   TERMINAL_CREATE: "terminal:create",

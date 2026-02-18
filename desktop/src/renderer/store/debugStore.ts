@@ -37,14 +37,11 @@ export async function startDebugSession(projectPath: string): Promise<void> {
     return;
   }
 
-  // Check both skill locations
-  const [breadcrumbSkill, claudeSkill] = await Promise.all([
-    window.breadcrumbAPI?.readFile(`${projectPath}/.breadcrumb/skills/debug.md`),
-    window.breadcrumbAPI?.readFile(`${projectPath}/.claude/commands/debug.md`),
-  ]);
+  // Check for debug skill in Claude Code skills directory (.claude/skills/debug*/SKILL.md)
+  // and legacy Breadcrumb location (.breadcrumb/skills/debug.md)
+  const hasSkill = await detectDebugSkill(projectPath);
 
-  if (breadcrumbSkill?.success || claudeSkill?.success) {
-    // Skill exists — open the debug modal
+  if (hasSkill) {
     useDebugStore.getState().openDebugModal(projectPath);
     return;
   }
@@ -58,6 +55,36 @@ export async function startDebugSession(projectPath: string): Promise<void> {
     },
     duration: 10000,
   });
+}
+
+/**
+ * Detect a debug skill by scanning .claude/skills/ for any directory
+ * whose name starts with "debug" and contains a SKILL.md file.
+ * Also checks the legacy .breadcrumb/skills/debug.md location.
+ */
+async function detectDebugSkill(projectPath: string): Promise<boolean> {
+  const api = window.breadcrumbAPI;
+  if (!api) return false;
+
+  // Check Claude Code skills directory for debug-* skill folders
+  const skillsResult = await api.listDir(`${projectPath}/.claude/skills`);
+  if (skillsResult?.success) {
+    const debugDirs = skillsResult.entries.filter(
+      (e) => e.isDirectory && e.name.toLowerCase().startsWith("debug")
+    );
+    for (const dir of debugDirs) {
+      const skillFile = await api.readFile(
+        `${projectPath}/.claude/skills/${dir.name}/SKILL.md`
+      );
+      if (skillFile?.success) return true;
+    }
+  }
+
+  // Legacy: check .breadcrumb/skills/debug.md
+  const legacy = await api.readFile(`${projectPath}/.breadcrumb/skills/debug.md`);
+  if (legacy?.success) return true;
+
+  return false;
 }
 
 /**
@@ -78,14 +105,11 @@ function spawnSkillCreation(projectPath: string): void {
     "5. Where documentation about the architecture lives",
     "6. Any project-specific debugging tips or gotchas",
     "",
-    "After gathering this information, create a debug skill file at:",
-    `  ${projectPath}/.breadcrumb/skills/debug.md`,
+    "After gathering this information, create a debug skill at:",
+    `  ${projectPath}/.claude/skills/debug/SKILL.md`,
     "",
-    "The skill should be a markdown file with YAML frontmatter in Claude Code skill format.",
+    "The skill should be a markdown file in Claude Code skill format.",
     "It should include instructions for Claude on how to debug issues in this specific project.",
-    "",
-    `Also create a copy at: ${projectPath}/.claude/commands/debug.md`,
-    "so Claude Code natively picks up the skill.",
   ].join("\\n");
 
   store.addTab({

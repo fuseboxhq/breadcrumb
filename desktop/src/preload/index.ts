@@ -32,6 +32,7 @@ export interface BreadcrumbAPI {
   // System
   getWorkingDirectory: () => Promise<string>;
   readFile: (filePath: string) => Promise<{ success: boolean; content: string | null }>;
+  listDir: (dirPath: string) => Promise<{ success: boolean; entries: { name: string; isDirectory: boolean }[] }>;
 
   // File operations
   selectDirectory: () => Promise<string | null>;
@@ -132,6 +133,7 @@ const api: BreadcrumbAPI = {
   // System
   getWorkingDirectory: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_WORKING_DIR),
   readFile: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_READ_FILE, filePath),
+  listDir: (dirPath: string) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_LIST_DIR, dirPath),
 
   // File operations
   selectDirectory: () => ipcRenderer.invoke(IPC_CHANNELS.DIALOG_SELECT_DIRECTORY),
