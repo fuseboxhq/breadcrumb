@@ -38,7 +38,7 @@ export function DevToolsDock({ browserId = "right-panel-default" }: DevToolsDock
       {/* Dock header */}
       <div className="h-8 flex items-center justify-between px-3 bg-background-raised border-t border-border shrink-0">
         <div className="flex items-center gap-1.5">
-          <Terminal className="w-3.5 h-3.5 text-dracula-orange" />
+          <Terminal className="w-3.5 h-3.5 text-warning" />
           <span className="text-2xs font-medium text-foreground-secondary">DevTools</span>
           <span className="text-2xs text-foreground-muted/50 ml-1">Cmd+Option+I</span>
         </div>

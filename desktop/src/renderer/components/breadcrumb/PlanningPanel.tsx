@@ -122,7 +122,7 @@ export function PlanningPanel() {
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0 bg-background-raised">
         <div className="flex items-center gap-2 min-w-0">
-          <LayoutGrid className="w-4 h-4 text-accent-secondary shrink-0" />
+          <LayoutGrid className="w-4 h-4 text-accent shrink-0" />
           <span className="text-sm font-medium text-foreground truncate">
             Dashboard
           </span>
@@ -201,9 +201,9 @@ function PortfolioHeader({
             <button
               key={project.id}
               onClick={() => onSelectProject(project.path)}
-              className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none ${
+              className={`group w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-default focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:outline-none ${
                 isSelected
-                  ? "bg-accent-secondary/8 text-foreground"
+                  ? "bg-accent/8 text-foreground"
                   : "text-foreground-secondary hover:bg-muted/30 hover:text-foreground"
               }`}
               aria-label={`Select ${project.name}`}
@@ -212,7 +212,7 @@ function PortfolioHeader({
               {/* Selection indicator */}
               <div
                 className={`w-0.5 h-6 rounded-full shrink-0 transition-default ${
-                  isSelected ? "bg-accent-secondary" : "bg-transparent"
+                  isSelected ? "bg-accent" : "bg-transparent"
                 }`}
               />
 
@@ -250,7 +250,7 @@ function PortfolioHeader({
                         backgroundColor:
                           completedPhases === totalPhases
                             ? "hsl(var(--success))"
-                            : "hsl(var(--accent-secondary))",
+                            : "hsl(var(--accent))",
                       }}
                     />
                   </div>
@@ -381,7 +381,7 @@ function DashboardBody({
                 backgroundColor:
                   completedTasks === totalTasks && totalTasks > 0
                     ? "hsl(var(--success))"
-                    : "hsl(var(--accent-secondary))",
+                    : "hsl(var(--accent))",
               }}
             />
           </div>
@@ -473,7 +473,7 @@ function PhasePipeline({
                 <div
                   className={`absolute left-[7px] top-[28px] w-px transition-colors ${
                     isActive
-                      ? "bg-accent-secondary/40"
+                      ? "bg-accent/40"
                       : isComplete
                         ? "bg-success/30"
                         : "bg-border"
@@ -487,9 +487,9 @@ function PhasePipeline({
               {/* Phase row */}
               <button
                 onClick={() => toggleExpand(phase.id)}
-                className={`group relative w-full flex items-center gap-2.5 py-2 text-left transition-default rounded-md -mx-1 px-1 focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none ${
+                className={`group relative w-full flex items-center gap-2.5 py-2 text-left transition-default rounded-md -mx-1 px-1 focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:outline-none ${
                   isActive
-                    ? "hover:bg-accent-secondary/5"
+                    ? "hover:bg-accent/5"
                     : "hover:bg-muted/20"
                 }`}
                 aria-expanded={isExpanded}
@@ -530,7 +530,7 @@ function PhasePipeline({
                             width: `${progress}%`,
                             backgroundColor: isComplete
                               ? "hsl(var(--success))"
-                              : "hsl(var(--accent-secondary))",
+                              : "hsl(var(--accent))",
                           }}
                         />
                       </div>
@@ -770,7 +770,7 @@ function TaskGroup({
   getTaskDetail: (taskId: string) => string | null;
 }) {
   const badgeClasses = {
-    teal: "bg-accent-secondary/10 text-accent-secondary",
+    teal: "bg-accent/10 text-accent",
     warning: "bg-warning/10 text-warning",
     destructive: "bg-destructive/10 text-destructive",
   };
@@ -880,7 +880,7 @@ function TaskRow({
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full text-2xs font-mono bg-background-sunken border border-border rounded-md p-2 text-foreground-secondary resize-y min-h-[80px] focus:ring-1 focus:ring-accent-secondary/50 focus:outline-none"
+                    className="w-full text-2xs font-mono bg-background-sunken border border-border rounded-md p-2 text-foreground-secondary resize-y min-h-[80px] focus:ring-1 focus:ring-accent/50 focus:outline-none"
                     rows={Math.max(5, editContent.split("\n").length + 1)}
                     autoFocus
                   />
@@ -888,7 +888,7 @@ function TaskRow({
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="px-2 py-0.5 text-2xs rounded bg-accent-secondary/15 text-accent-secondary hover:bg-accent-secondary/25 transition-default disabled:opacity-50"
+                      className="px-2 py-0.5 text-2xs rounded bg-accent/15 text-accent hover:bg-accent/25 transition-default disabled:opacity-50"
                     >
                       {saving ? "Saving..." : "Save"}
                     </button>
@@ -907,7 +907,7 @@ function TaskRow({
                   </pre>
                   <button
                     onClick={handleEdit}
-                    className="absolute top-0 right-0 p-1 rounded text-foreground-muted/40 hover:text-accent-secondary hover:bg-accent-secondary/10 transition-default opacity-0 group-hover/detail:opacity-100"
+                    className="absolute top-0 right-0 p-1 rounded text-foreground-muted/40 hover:text-accent hover:bg-accent/10 transition-default opacity-0 group-hover/detail:opacity-100"
                     title="Edit task details"
                     aria-label="Edit task details"
                   >
@@ -932,7 +932,7 @@ function TaskStatusDot({ status }: { status: PhaseTask["status"] }) {
     case "blocked":
       return <AlertCircle className="w-3 h-3 text-destructive shrink-0" />;
     default:
-      return <Circle className="w-3 h-3 text-accent-secondary shrink-0" />;
+      return <Circle className="w-3 h-3 text-accent shrink-0" />;
   }
 }
 
@@ -1116,7 +1116,7 @@ function AllCommitsSection({
             <button
               onClick={() => fetchMoreCommits(projectPath)}
               disabled={loading}
-              className="flex items-center gap-1.5 text-2xs text-accent-secondary hover:text-accent-secondary/80 transition-default mt-1.5 ml-5 disabled:opacity-50"
+              className="flex items-center gap-1.5 text-2xs text-accent hover:text-accent/80 transition-default mt-1.5 ml-5 disabled:opacity-50"
             >
               {loading ? (
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -1145,7 +1145,7 @@ function PhaseStatusIcon({
   if (status === "in_progress" || isActive) {
     return (
       <div className="w-4 h-4 shrink-0 flex items-center justify-center">
-        <div className="w-2.5 h-2.5 rounded-full bg-accent-secondary shadow-glow-teal" />
+        <div className="w-2.5 h-2.5 rounded-full bg-accent" />
       </div>
     );
   }
@@ -1172,7 +1172,7 @@ export function StatusBadge({
       );
     case "in_progress":
       return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-secondary/10 text-accent-secondary text-2xs">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-2xs">
           <Clock className="w-3 h-3" />
           Active
         </span>
@@ -1212,7 +1212,7 @@ export function TaskStatusBadge({ status }: { status: PhaseTask["status"] }) {
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent-secondary/10 text-accent-secondary text-2xs">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-accent/10 text-accent text-2xs">
           <Circle className="w-3 h-3" />
           Ready
         </span>
@@ -1241,7 +1241,7 @@ function EmptyDashboard() {
       </p>
       <button
         onClick={handleAdd}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-secondary/10 text-accent-secondary text-sm font-medium hover:bg-accent-secondary/15 transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/15 transition-default focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:outline-none"
       >
         <FolderOpen className="w-4 h-4" />
         Add Project
@@ -1306,11 +1306,11 @@ function CommitRow({
   return (
     <button
       onClick={() => onSelect?.(commit.hash)}
-      className="w-full flex items-center gap-2 py-1 px-0.5 rounded -mx-0.5 group hover:bg-muted/15 transition-default text-left focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
+      className="w-full flex items-center gap-2 py-1 px-0.5 rounded -mx-0.5 group hover:bg-muted/15 transition-default text-left focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:outline-none"
       tabIndex={0}
     >
       <GitCommit className="w-3 h-3 text-foreground-muted/50 shrink-0" />
-      <span className="text-2xs font-mono text-accent-secondary shrink-0">
+      <span className="text-2xs font-mono text-accent shrink-0">
         {commit.hash.slice(0, 7)}
       </span>
       <span className="text-2xs text-foreground-secondary truncate flex-1">
@@ -1360,7 +1360,7 @@ function PhaseCommitsSection({
       {hasMore && !showAll && (
         <button
           onClick={() => setShowAll(true)}
-          className="text-2xs text-accent-secondary hover:text-accent-secondary/80 transition-default mt-0.5 ml-5"
+          className="text-2xs text-accent hover:text-accent/80 transition-default mt-0.5 ml-5"
         >
           Show {commits.length - INITIAL_SHOW} more
         </button>

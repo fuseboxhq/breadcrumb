@@ -275,7 +275,7 @@ export function BrowserPanel({ browserId, initialUrl, isVisible = true, onUrlCha
         <form onSubmit={handleSubmit} className="flex-1">
           <div className="flex items-center gap-2 bg-background border border-border hover:border-border-strong focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20 rounded-lg px-3 py-1.5 transition-default">
             {isSecure ? (
-              <Lock className="w-3 h-3 text-dracula-green shrink-0" />
+              <Lock className="w-3 h-3 text-success shrink-0" />
             ) : (
               <Globe className="w-3 h-3 text-foreground-muted shrink-0" />
             )}

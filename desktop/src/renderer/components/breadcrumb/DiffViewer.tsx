@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useResolvedTheme } from "../../store/settingsStore";
 import { DiffView, DiffModeEnum, DiffFile } from "@git-diff-view/react";
 import "@git-diff-view/react/styles/diff-view.css";
 import {
@@ -146,6 +147,7 @@ export function DiffViewer({
   ) as CommitInfo[];
   const commit = commits.find((c) => c.hash === hash);
 
+  const resolvedTheme = useResolvedTheme();
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [showAllFiles, setShowAllFiles] = useState(false);
   const fileRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -225,14 +227,14 @@ export function DiffViewer({
               onBack();
             }
           }}
-          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:outline-none"
+          className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30 transition-default focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:outline-none"
           aria-label={expandedFile ? "Back to file list" : "Close diff"}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-2xs font-mono text-accent-secondary shrink-0">
+            <span className="text-2xs font-mono text-accent shrink-0">
               {hash.slice(0, 7)}
             </span>
             {commit && (
@@ -303,7 +305,7 @@ export function DiffViewer({
                     {/* File header row */}
                     <button
                       onClick={() => !file.isBinary && handleFileClick(fileName)}
-                      className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-default focus-visible:ring-1 focus-visible:ring-accent-secondary/50 focus-visible:ring-inset focus-visible:outline-none ${
+                      className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-default focus-visible:ring-1 focus-visible:ring-accent/50 focus-visible:ring-inset focus-visible:outline-none ${
                         file.isBinary
                           ? "opacity-50 cursor-default"
                           : isExpanded
@@ -326,7 +328,7 @@ export function DiffViewer({
                       )}
 
                       {file.isRenamed && (
-                        <span className="text-2xs px-1.5 py-0.5 rounded bg-accent-secondary/10 text-accent-secondary shrink-0">
+                        <span className="text-2xs px-1.5 py-0.5 rounded bg-accent/10 text-accent shrink-0">
                           Renamed
                         </span>
                       )}
@@ -370,6 +372,7 @@ export function DiffViewer({
                           fileName={fileName}
                           hunks={file.hunks}
                           isTooLarge={isTooLarge}
+                          theme={resolvedTheme}
                         />
                       </div>
                     )}
@@ -383,7 +386,7 @@ export function DiffViewer({
               <div className="px-4 py-3 border-t border-border/50">
                 <button
                   onClick={() => setShowAllFiles(true)}
-                  className="text-2xs text-accent-secondary hover:text-accent-secondary/80 transition-default"
+                  className="text-2xs text-accent hover:text-accent/80 transition-default"
                 >
                   Show {hiddenFileCount} more file{hiddenFileCount !== 1 ? "s" : ""}
                 </button>
@@ -447,10 +450,12 @@ function FileDiffView({
   fileName,
   hunks,
   isTooLarge,
+  theme,
 }: {
   fileName: string;
   hunks: string;
   isTooLarge: boolean;
+  theme: "light" | "dark";
 }) {
   const [diffFile, setDiffFile] = useState<InstanceType<typeof DiffFile> | null>(null);
   const [parseError, setParseError] = useState(false);
@@ -512,7 +517,7 @@ function FileDiffView({
       <DiffView
         diffFile={diffFile}
         diffViewMode={DiffModeEnum.Unified}
-        diffViewTheme="dark"
+        diffViewTheme={theme}
         diffViewHighlight={false}
         diffViewWrap
       />

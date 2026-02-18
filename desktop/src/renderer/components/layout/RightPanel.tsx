@@ -12,8 +12,8 @@ import { PlanningPanel } from "../breadcrumb/PlanningPanel";
 import { Globe, LayoutGrid, X, PanelRight, Plus, Maximize2 } from "lucide-react";
 
 const PANE_META: Record<RightPanelPaneType, { label: string; icon: typeof Globe; color: string }> = {
-  browser: { label: "Browser", icon: Globe, color: "text-dracula-cyan" },
-  planning: { label: "Planning", icon: LayoutGrid, color: "text-dracula-purple" },
+  browser: { label: "Browser", icon: Globe, color: "text-info" },
+  planning: { label: "Planning", icon: LayoutGrid, color: "text-accent" },
 };
 
 export function RightPanel() {
@@ -91,10 +91,10 @@ function RightPanelPaneSlot({
     <>
       {index > 0 && (
         <PanelResizeHandle
-          className="h-[3px] bg-transparent hover:bg-accent-secondary/30 active:bg-accent-secondary/50 transition-default group relative"
+          className="h-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50 transition-default group relative"
           aria-label="Resize right panel panes"
         >
-          <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent-secondary/40 transition-default" />
+          <div className="absolute inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent/40 transition-default" />
         </PanelResizeHandle>
       )}
       <Panel
@@ -208,7 +208,7 @@ function BrowserTabPane() {
                 `}
                 title={`${tab.url}\nDrag to center tab bar to promote`}
               >
-                <Globe className="w-3 h-3 shrink-0 text-dracula-cyan/70" />
+                <Globe className="w-3 h-3 shrink-0 text-info/70" />
                 <span className="truncate">{tab.title || "New Tab"}</span>
                 {browserTabs.length > 1 && (
                   <X
@@ -223,7 +223,7 @@ function BrowserTabPane() {
         <div className="flex items-center shrink-0">
           <button
             onClick={handlePromoteTab}
-            className="p-1.5 rounded text-foreground-muted hover:text-accent-secondary hover:bg-accent-secondary/10 transition-default"
+            className="p-1.5 rounded text-foreground-muted hover:text-accent hover:bg-accent/10 transition-default"
             title="Open in main area"
             aria-label="Open current tab in main area"
           >
