@@ -53,11 +53,14 @@ export interface WorkspaceSettings {
   projectPaths?: Record<string, string>;
 }
 
+export type ThemePreference = "light" | "dark" | "system";
+
 export interface AppSettings {
   terminal: TerminalSettings;
   layout: LayoutSettings;
   browser: BrowserSettings;
   workspace: WorkspaceSettings;
+  theme: ThemePreference;
 }
 
 const schema = {
@@ -130,6 +133,11 @@ const schema = {
       activeProjectId: { default: null },
     },
     default: {},
+  },
+  theme: {
+    type: "string" as const,
+    enum: ["light", "dark", "system"],
+    default: "light",
   },
 };
 

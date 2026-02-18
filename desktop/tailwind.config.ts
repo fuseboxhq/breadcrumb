@@ -53,6 +53,7 @@ const config: Config = {
           foreground: "hsl(var(--accent-foreground))",
           secondary: "hsl(var(--accent-secondary))",
           "secondary-foreground": "hsl(var(--accent-secondary-foreground))",
+          error: "hsl(var(--destructive))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -62,7 +63,7 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Dracula palette for direct use
+        // Legacy palette (backward compat — will be removed)
         dracula: {
           purple: "hsl(var(--dracula-purple))",
           pink: "hsl(var(--dracula-pink))",
@@ -74,15 +75,16 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius-lg)",
+        md: "var(--radius)",
+        sm: "calc(var(--radius) - 2px)",
         xl: "var(--radius-xl)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
+        // Legacy glow shadows (backward compat)
         glow: "var(--shadow-glow)",
         "glow-strong": "var(--shadow-glow-strong)",
         "glow-teal": "var(--shadow-glow-teal)",
@@ -93,13 +95,13 @@ const config: Config = {
         mono: ["var(--font-mono)"],
       },
       fontSize: {
-        "2xs": ["0.6875rem", { lineHeight: "1rem" }],                              // 11px — status text
-        xs: ["0.75rem", { lineHeight: "1rem" }],                                    // 12px
-        sm: ["0.8125rem", { lineHeight: "1.25rem" }],                               // 13px — base body
-        base: ["0.9375rem", { lineHeight: "1.375rem", letterSpacing: "-0.01em" }],  // 15px — headings
-        lg: ["1.125rem", { lineHeight: "1.5rem", letterSpacing: "-0.015em" }],      // 18px — hero
-        xl: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em" }],           // 24px
-        "2xl": ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.025em" }],       // 32px — display
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],                              // 11px — caption/meta
+        xs: ["0.75rem", { lineHeight: "1rem" }],                                    // 12px — small labels
+        sm: ["0.8125rem", { lineHeight: "1.25rem" }],                               // 13px — body default
+        base: ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "-0.01em" }],    // 14px — UI labels
+        lg: ["1rem", { lineHeight: "1.5rem", letterSpacing: "-0.01em" }],           // 16px — heading medium
+        xl: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.015em" }],      // 20px — heading large
+        "2xl": ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em" }],        // 24px — display
       },
       transitionDuration: {
         fast: "var(--duration-fast)",

@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+export type ThemePreference = "light" | "dark" | "system";
+
 export interface TerminalSettings {
   fontFamily: string;
   fontSize: number;
@@ -62,6 +64,7 @@ export interface AppSettings {
   layout: LayoutSettings;
   browser: BrowserSettings;
   workspace: WorkspaceSettings;
+  theme: ThemePreference;
 }
 
 const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
@@ -82,6 +85,7 @@ const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {};
 interface SettingsState {
   settings: AppSettings;
   loaded: boolean;
+  theme: ThemePreference;
 }
 
 const DEFAULT_LAYOUT_SETTINGS: LayoutSettings = {
@@ -91,6 +95,7 @@ const DEFAULT_LAYOUT_SETTINGS: LayoutSettings = {
 
 interface SettingsActions {
   loadSettings: () => Promise<void>;
+  setTheme: (theme: ThemePreference) => void;
   updateTerminalSetting: <K extends keyof TerminalSettings>(key: K, value: TerminalSettings[K]) => Promise<void>;
   updateLayoutSetting: (layout: LayoutSettings) => Promise<void>;
   resetSettings: () => Promise<void>;
@@ -98,17 +103,53 @@ interface SettingsActions {
 
 export type SettingsStore = SettingsState & SettingsActions;
 
+/** Resolve a theme preference to 'light' or 'dark' */
+function resolveTheme(pref: ThemePreference): "light" | "dark" {
+  if (pref === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return pref;
+}
+
+/** Apply a theme to the DOM immediately */
+function applyThemeToDOM(pref: ThemePreference): void {
+  const resolved = resolveTheme(pref);
+  document.documentElement.classList.toggle("dark", resolved === "dark");
+}
+
+/** Read initial theme from localStorage (set by inline FOUC-prevention script) */
+function getInitialTheme(): ThemePreference {
+  try {
+    const stored = localStorage.getItem("breadcrumb-theme") as ThemePreference | null;
+    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  } catch { /* ignore */ }
+  return "light";
+}
+
 export const useSettingsStore = create<SettingsStore>((set) => ({
   settings: {
     terminal: DEFAULT_TERMINAL_SETTINGS,
     layout: DEFAULT_LAYOUT_SETTINGS,
     browser: DEFAULT_BROWSER_SETTINGS,
     workspace: DEFAULT_WORKSPACE_SETTINGS,
+    theme: "light",
   },
   loaded: false,
+  theme: getInitialTheme(),
 
   loadSettings: async () => {
     const all = await window.breadcrumbAPI?.getSettings() as unknown as AppSettings | undefined;
+    const canonicalTheme = (all?.theme as ThemePreference) || "light";
+
+    // Reconcile: electron-store is canonical — update localStorage if they disagree
+    try {
+      const localTheme = localStorage.getItem("breadcrumb-theme");
+      if (localTheme !== canonicalTheme) {
+        localStorage.setItem("breadcrumb-theme", canonicalTheme);
+        applyThemeToDOM(canonicalTheme);
+      }
+    } catch { /* ignore */ }
+
     set({
       settings: {
         terminal: { ...DEFAULT_TERMINAL_SETTINGS, ...(all?.terminal as Partial<TerminalSettings> || {}) },
@@ -124,9 +165,28 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         },
         browser: { ...DEFAULT_BROWSER_SETTINGS, ...(all?.browser as Partial<BrowserSettings> || {}) },
         workspace: { ...DEFAULT_WORKSPACE_SETTINGS, ...(all?.workspace || {}) },
+        theme: canonicalTheme,
       },
       loaded: true,
+      theme: canonicalTheme,
     });
+  },
+
+  setTheme: (theme: ThemePreference) => {
+    // 1. Apply immediately to DOM (instant visual change)
+    applyThemeToDOM(theme);
+
+    // 2. Persist to localStorage (for FOUC prevention on next load)
+    try { localStorage.setItem("breadcrumb-theme", theme); } catch { /* ignore */ }
+
+    // 3. Persist to electron-store (canonical — also triggers nativeTheme sync via main process)
+    window.breadcrumbAPI?.setSetting("theme", theme);
+
+    // 4. Update store
+    set((state) => ({
+      theme,
+      settings: { ...state.settings, theme },
+    }));
   },
 
   updateTerminalSetting: async (key, value) => {
@@ -149,11 +209,13 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   resetSettings: async () => {
     await window.breadcrumbAPI?.resetSettings();
     set({
+      theme: "light",
       settings: {
         terminal: DEFAULT_TERMINAL_SETTINGS,
         layout: DEFAULT_LAYOUT_SETTINGS,
         browser: DEFAULT_BROWSER_SETTINGS,
         workspace: DEFAULT_WORKSPACE_SETTINGS,
+        theme: "light",
       },
     });
   },
@@ -165,3 +227,9 @@ export const useLayoutSettings = () => useSettingsStore((s) => s.settings.layout
 export const useBrowserSettings = () => useSettingsStore((s) => s.settings.browser);
 export const useWorkspaceSettings = () => useSettingsStore((s) => s.settings.workspace);
 export const useSettingsLoaded = () => useSettingsStore((s) => s.loaded);
+export const useTheme = () => useSettingsStore((s) => s.theme);
+export const useSetTheme = () => useSettingsStore((s) => s.setTheme);
+export const useResolvedTheme = (): "light" | "dark" => {
+  const theme = useSettingsStore((s) => s.theme);
+  return resolveTheme(theme);
+};

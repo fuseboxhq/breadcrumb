@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, nativeTheme } from "electron";
 import { IPC_CHANNELS } from "../../shared/types";
 import { SettingsManager, settingsStore, type AppSettings } from "../settings/SettingsStore";
 
@@ -43,10 +43,14 @@ export function registerSettingsIPCHandlers(mainWindow: BrowserWindow): () => vo
     return { success: true };
   });
 
-  // Watch for changes and broadcast to renderer
+  // Watch for changes and broadcast to renderer + sync native theme
   const unsubscribe = settingsStore.onDidAnyChange((newValue) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send(IPC_CHANNELS.SETTINGS_CHANGED, newValue);
+    }
+    // Sync macOS chrome (scroll bars, title bar, system dialogs) with app theme
+    if (newValue?.theme) {
+      nativeTheme.themeSource = newValue.theme;
     }
   });
 

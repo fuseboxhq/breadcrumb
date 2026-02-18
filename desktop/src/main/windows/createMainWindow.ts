@@ -1,10 +1,18 @@
-import { BrowserWindow, shell } from "electron";
+import { BrowserWindow, nativeTheme, shell } from "electron";
 import path from "path";
+import { settingsStore } from "../settings/SettingsStore";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 export function createMainWindow(): BrowserWindow {
+  // Read persisted theme preference and sync native chrome before window is created
+  const theme = settingsStore.get("theme") || "light";
+  nativeTheme.themeSource = theme;
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" && nativeTheme.shouldUseDarkColors);
+
   const mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -12,7 +20,7 @@ export function createMainWindow(): BrowserWindow {
     minHeight: 600,
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 15, y: 15 },
-    backgroundColor: "#101014",
+    backgroundColor: isDark ? "#0f0f0f" : "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

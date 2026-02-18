@@ -3,7 +3,7 @@ import { AppShell } from "./components/layout/AppShell";
 import { CommandPalette } from "./components/command-palette/CommandPalette";
 import { ExtensionModal } from "./components/extensions/ExtensionModal";
 import { DebugModal, type DebugSubmitData } from "./components/debug/DebugModal";
-import { useSettingsStore } from "./store/settingsStore";
+import { useSettingsStore, useResolvedTheme } from "./store/settingsStore";
 import { useAppStore, flushWorkspacePersist } from "./store/appStore";
 import { useProjectsStore } from "./store/projectsStore";
 import { useDebugStore } from "./store/debugStore";
@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 function App() {
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const loadProjects = useProjectsStore((s) => s.loadProjects);
+  const resolvedTheme = useResolvedTheme();
   const debugIsOpen = useDebugStore((s) => s.isOpen);
   const debugProjectPath = useDebugStore((s) => s.projectPath);
   const closeDebugModal = useDebugStore((s) => s.closeDebugModal);
@@ -172,13 +173,13 @@ function App() {
         onSubmit={handleDebugSubmit}
       />
       <Toaster
-        theme="dark"
+        theme={resolvedTheme}
         position="bottom-right"
         toastOptions={{
           style: {
-            background: "var(--background-overlay)",
-            border: "1px solid var(--border-strong)",
-            color: "var(--foreground)",
+            background: `hsl(var(--background-overlay))`,
+            border: "1px solid hsl(var(--border-strong))",
+            color: `hsl(var(--foreground))`,
             fontSize: "13px",
           },
         }}

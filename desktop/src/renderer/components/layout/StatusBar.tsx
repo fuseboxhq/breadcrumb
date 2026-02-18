@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { GitBranch, Terminal, Puzzle, FolderOpen, PanelRight, Bug } from "lucide-react";
+import { GitBranch, Terminal, Puzzle, FolderOpen, PanelRight, Bug, Sun, Moon } from "lucide-react";
 import { useAppStore, useRightPanelOpen, useRightPanelPanes, useDevToolsDockOpen } from "../../store/appStore";
 import { useActiveProject, useProjectsStore } from "../../store/projectsStore";
+import { useTheme, useSetTheme, type ThemePreference } from "../../store/settingsStore";
 
 export function StatusBar() {
   const tabs = useAppStore((s) => s.tabs);
@@ -13,6 +14,8 @@ export function StatusBar() {
   const toggleRightPanel = useAppStore((s) => s.toggleRightPanel);
   const devToolsDockOpen = useDevToolsDockOpen();
   const toggleDevToolsDock = useAppStore((s) => s.toggleDevToolsDock);
+  const theme = useTheme();
+  const setTheme = useSetTheme();
 
   // Fetch real git branch for active project
   const [gitBranch, setGitBranch] = useState<string | null>(null);
@@ -90,6 +93,16 @@ export function StatusBar() {
           label="DevTools"
           color={devToolsDockOpen ? "text-dracula-orange" : undefined}
           onClick={toggleDevToolsDock}
+        />
+
+        {/* Theme toggle */}
+        <StatusItem
+          icon={theme === "dark" ? Moon : Sun}
+          label={theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light"}
+          onClick={() => {
+            const next: ThemePreference = theme === "light" ? "dark" : theme === "dark" ? "system" : "light";
+            setTheme(next);
+          }}
         />
 
         {/* Extensions — real count */}

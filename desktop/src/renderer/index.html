@@ -1,17 +1,48 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com;"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com;"
     />
     <title>Breadcrumb</title>
     <style>
-      /* Prevent white flash on load */
-      html { background-color: #101014; color-scheme: dark; }
+      /* Theme-aware background before CSS loads */
+      html { background-color: #ffffff; }
+      html.dark { background-color: #0f0f0f; }
     </style>
+    <script>
+      // FOUC prevention: read theme preference synchronously before any paint.
+      // This runs before Vite's module bundle, so the correct class is on <html>
+      // before CSS or React load.
+      (function() {
+        try {
+          var theme = localStorage.getItem('breadcrumb-theme');
+          // Suppress transitions during initial class application
+          document.documentElement.classList.add('no-transitions');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else {
+            // 'system' or no preference — check OS
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              document.documentElement.classList.add('dark');
+            }
+          }
+          // Remove transition suppression after first paint
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+              document.documentElement.classList.remove('no-transitions');
+            });
+          });
+        } catch (e) {
+          // localStorage unavailable — default to light (no class)
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
