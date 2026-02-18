@@ -28,8 +28,10 @@ import {
   Maximize2,
   Minimize2,
   Sparkles,
+  Bug,
 } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
+import { startDebugSession } from "../../store/debugStore";
 
 const VIEW_TITLES: Partial<Record<SidebarView, { label: string; icon: typeof Terminal }>> = {
   explorer: { label: "Explorer", icon: FolderTree },
@@ -124,9 +126,7 @@ function ExplorerView() {
     if (dir) addProject(dir);
   };
 
-  const handleCopyPath = useCallback((path: string) => {
-    navigator.clipboard.writeText(path);
-  }, []);
+
 
   // Auto-expand when a NEW project becomes active (not on re-click)
   const prevActiveIdRef = useRef<string | null>(null);
@@ -203,9 +203,9 @@ function ExplorerView() {
                       }
                     />
                     <MenuItem
-                      icon={<Copy className="w-3.5 h-3.5" />}
-                      label="Copy Path"
-                      onSelect={() => handleCopyPath(project.path)}
+                      icon={<Bug className="w-3.5 h-3.5" />}
+                      label="Debug with Claude"
+                      onSelect={() => startDebugSession(project.path)}
                     />
                     <MenuSeparator />
                     <MenuItem
@@ -295,11 +295,11 @@ function ExplorerView() {
                     <span>Claude Code</span>
                   </button>
                   <button
-                    onClick={() => handleCopyPath(project.path)}
-                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default"
+                    onClick={() => startDebugSession(project.path)}
+                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-destructive hover:bg-destructive/10 transition-default"
                   >
-                    <Copy className="w-3 h-3" />
-                    <span>Copy Path</span>
+                    <Bug className="w-3 h-3" />
+                    <span>Debug with Claude</span>
                   </button>
                   <button
                     onClick={() => removeProject(project.id)}
