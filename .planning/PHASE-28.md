@@ -1,8 +1,9 @@
 # Phase 28: Premium UI Overhaul & Theme System
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-ejz
 **Created:** 2026-02-18
+**Completed:** 2026-02-18
 
 ## Objective
 
@@ -93,12 +94,12 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-ejz.1 | Design tokens & theme infrastructure | open | High | - |
-| breadcrumb-ejz.2 | Shell chrome restyling (TitleBar, TabBar, StatusBar) | open | High | breadcrumb-ejz.1 |
-| breadcrumb-ejz.3 | Sidebar & navigation restyling | open | Medium | breadcrumb-ejz.1 |
-| breadcrumb-ejz.4 | Terminal chrome & xterm theme | open | Medium | breadcrumb-ejz.1 |
-| breadcrumb-ejz.5 | Right panel, planning & diff viewer restyling | open | Medium | breadcrumb-ejz.1 |
-| breadcrumb-ejz.6 | Modals, overlays, welcome view & final polish | open | High | breadcrumb-ejz.1 |
+| breadcrumb-ejz.1 | Design tokens & theme infrastructure | done | High | - |
+| breadcrumb-ejz.2 | Shell chrome restyling (TitleBar, TabBar, StatusBar) | done | High | breadcrumb-ejz.1 |
+| breadcrumb-ejz.3 | Sidebar & navigation restyling | done | Medium | breadcrumb-ejz.1 |
+| breadcrumb-ejz.4 | Terminal chrome & xterm theme | done | Medium | breadcrumb-ejz.1 |
+| breadcrumb-ejz.5 | Right panel, planning & diff viewer restyling | done | Medium | breadcrumb-ejz.1 |
+| breadcrumb-ejz.6 | Modals, overlays, welcome view & final polish | done | High | breadcrumb-ejz.1 |
 
 ### Task Details
 
@@ -137,14 +138,29 @@ Restyle CommandPalette (search input, results list, keyboard hints), DebugModal,
 
 ## Completion Criteria
 
-- [ ] Light theme is the default and looks premium/professional
-- [ ] Dark theme is available via toggle and looks equally polished
-- [ ] Theme preference persists across app restarts
-- [ ] Every visible surface (sidebar, tabs, panels, modals, toasts, toolbar) is restyled
-- [ ] No component looks "AI generated" — everything feels intentionally designed
-- [ ] Terminal chrome matches the new design language
-- [ ] Git diff viewer works in both themes
-- [ ] No functionality regressions
+- [x] Light theme is the default and looks premium/professional
+- [x] Dark theme is available via toggle and looks equally polished
+- [x] Theme preference persists across app restarts
+- [x] Every visible surface (sidebar, tabs, panels, modals, toasts, toolbar) is restyled
+- [x] No component looks "AI generated" — everything feels intentionally designed
+- [x] Terminal chrome matches the new design language
+- [x] Git diff viewer works in both themes
+- [x] No functionality regressions
+
+## Completion Notes
+
+Phase completed on 2026-02-18. All 6 tasks finished.
+
+Key outcomes:
+- Dual light/dark theme system with CSS variable swap (`:root` = light, `.dark` = dark)
+- FOUC prevention via inline `<script>` in `<head>` reading localStorage
+- Theme toggle in StatusBar cycling light → dark → system
+- All 20+ components migrated from Dracula/dual-accent to single `#5E6AD2` indigo accent
+- Achromatic grays (no blue hue) across both themes
+- Backward-compat `--dracula-*` CSS variable aliases retained in globals.css for safety
+- `nativeTheme.themeSource` synced for macOS chrome matching
+- Git diff viewer dynamically switches between light/dark themes
+- Zero `accent-secondary` or `dracula-*` references remain in any component file
 
 ## Sources
 
