@@ -123,7 +123,7 @@ export function ExtensionModal() {
                   value={(values[field.id] as string) || ""}
                   onChange={(e) => setValues({ ...values, [field.id]: e.target.value })}
                   placeholder={field.placeholder}
-                  className="w-full px-3 py-2 bg-background-raised border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-muted outline-none focus:border-accent-secondary transition-colors"
+                  className="w-full px-3 py-2 bg-background-raised border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-muted outline-none focus:border-accent transition-colors"
                 />
               )}
               {field.type === "textarea" && (
@@ -133,7 +133,7 @@ export function ExtensionModal() {
                   onChange={(e) => setValues({ ...values, [field.id]: e.target.value })}
                   placeholder={field.placeholder}
                   rows={4}
-                  className="w-full px-3 py-2 bg-background-raised border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-muted outline-none focus:border-accent-secondary transition-colors resize-none"
+                  className="w-full px-3 py-2 bg-background-raised border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-muted outline-none focus:border-accent transition-colors resize-none"
                 />
               )}
               {field.type === "select" && field.options && (
@@ -141,7 +141,7 @@ export function ExtensionModal() {
                   ref={idx === 0 ? (el) => { firstInputRef.current = el; } : undefined}
                   value={(values[field.id] as string) || ""}
                   onChange={(e) => setValues({ ...values, [field.id]: e.target.value })}
-                  className="w-full px-3 py-2 bg-background-raised border border-border rounded-lg text-sm text-foreground outline-none focus:border-accent-secondary transition-colors"
+                  className="w-full px-3 py-2 bg-background-raised border border-border rounded-lg text-sm text-foreground outline-none focus:border-accent transition-colors"
                 >
                   {field.options.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -169,7 +169,7 @@ export function ExtensionModal() {
           </button>
           <button
             onClick={handleSubmit}
-            className="px-3 py-1.5 text-2xs font-medium text-white bg-accent-secondary hover:bg-accent-secondary/90 rounded-md transition-colors"
+            className="px-3 py-1.5 text-2xs font-medium text-white bg-accent hover:bg-accent/90 rounded-md transition-colors"
           >
             {schema.submitLabel || "Submit"}
           </button>

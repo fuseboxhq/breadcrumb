@@ -34,7 +34,7 @@ interface TerminalInstanceProps {
   canZoom?: boolean;
 }
 
-// Fallback Dracula theme — used if CSS custom properties aren't available
+// Fallback theme — used if CSS custom properties aren't available
 const FALLBACK_THEME = {
   background: "#0f0f0f",
   foreground: "#eeeff1",

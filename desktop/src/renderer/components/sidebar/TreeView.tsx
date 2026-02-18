@@ -258,12 +258,12 @@ function TreeNodeItem({
         group flex items-center gap-1 px-2 py-1 text-sm rounded-md cursor-pointer outline-none
         transition-default select-none
         ${node.isActive
-          ? "bg-accent-secondary/15 text-accent-secondary border-l-2 border-accent-secondary -ml-px"
+          ? "bg-accent/15 text-accent border-l-2 border-accent -ml-px"
           : isSelected
-            ? "bg-accent-secondary/10 text-foreground"
+            ? "bg-accent/10 text-foreground"
             : "text-foreground-secondary hover:bg-muted/50"
         }
-        ${isFocused ? "ring-1 ring-accent-secondary/40" : ""}
+        ${isFocused ? "ring-1 ring-accent/40" : ""}
       `}
       style={{ paddingLeft: `${indent + 8}px` }}
     >

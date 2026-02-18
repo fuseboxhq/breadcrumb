@@ -173,8 +173,8 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
         {/* Header */}
         <div className="px-5 pt-5 pb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-accent-secondary/20 flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 text-accent-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-6 h-6 rounded-md bg-accent/20 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -201,7 +201,7 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What's happening? What did you expect instead?"
               rows={4}
-              className="w-full px-3 py-2.5 bg-background-raised border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-muted outline-none focus:border-accent-secondary transition-colors resize-none leading-relaxed"
+              className="w-full px-3 py-2.5 bg-background-raised border border-border rounded-lg text-sm text-foreground placeholder:text-foreground-muted outline-none focus:border-accent transition-colors resize-none leading-relaxed"
             />
           </div>
 
@@ -216,7 +216,7 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                 isDragging
-                  ? "border-accent-secondary bg-accent-secondary/10"
+                  ? "border-accent bg-accent/10"
                   : "border-border hover:border-border-strong"
               }`}
             >
@@ -259,7 +259,7 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
               onChange={(e) => setConsoleLogs(e.target.value)}
               placeholder="Paste any relevant console output, error messages, or stack traces..."
               rows={3}
-              className="w-full px-3 py-2.5 bg-background-raised border border-border rounded-lg text-xs text-foreground placeholder:text-foreground-muted outline-none focus:border-accent-secondary transition-colors resize-none font-mono leading-relaxed"
+              className="w-full px-3 py-2.5 bg-background-raised border border-border rounded-lg text-xs text-foreground placeholder:text-foreground-muted outline-none focus:border-accent transition-colors resize-none font-mono leading-relaxed"
             />
           </div>
 
@@ -273,7 +273,7 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
                 onClick={() => setInstanceChoice("new")}
                 className={`flex-1 px-3 py-2 rounded-lg border text-2xs font-medium transition-colors ${
                   instanceChoice === "new"
-                    ? "border-accent-secondary bg-accent-secondary/10 text-accent-secondary"
+                    ? "border-accent bg-accent/10 text-accent"
                     : "border-border text-foreground-muted hover:border-border-strong hover:text-foreground-secondary"
                 }`}
               >
@@ -283,7 +283,7 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
                 onClick={() => setInstanceChoice("reuse")}
                 className={`flex-1 px-3 py-2 rounded-lg border text-2xs font-medium transition-colors ${
                   instanceChoice === "reuse"
-                    ? "border-accent-secondary bg-accent-secondary/10 text-accent-secondary"
+                    ? "border-accent bg-accent/10 text-accent"
                     : "border-border text-foreground-muted hover:border-border-strong hover:text-foreground-secondary"
                 }`}
               >
@@ -304,7 +304,7 @@ export function DebugModal({ isOpen, onClose, onSubmit }: DebugModalProps) {
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || (!description.trim() && images.length === 0)}
-            className="px-3.5 py-1.5 text-2xs font-medium text-white bg-accent-secondary hover:bg-accent-secondary/90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3.5 py-1.5 text-2xs font-medium text-white bg-accent hover:bg-accent/90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Preparing..." : "Start Debug Session"}
           </button>

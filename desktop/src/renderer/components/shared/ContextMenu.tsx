@@ -1,7 +1,7 @@
 import * as RadixContextMenu from "@radix-ui/react-context-menu";
 import type { ReactNode } from "react";
 
-// --- Shared context menu primitives with Dracula styling ---
+// --- Shared context menu primitives ---
 
 export interface ContextMenuProps {
   children: ReactNode;
@@ -54,7 +54,7 @@ export function MenuItem({
         transition-default select-none
         ${destructive
           ? "text-foreground-secondary data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive"
-          : "text-foreground-secondary data-[highlighted]:bg-accent-secondary/10 data-[highlighted]:text-foreground"
+          : "text-foreground-secondary data-[highlighted]:bg-accent/10 data-[highlighted]:text-foreground"
         }
         data-[disabled]:text-foreground-muted data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none
       `}

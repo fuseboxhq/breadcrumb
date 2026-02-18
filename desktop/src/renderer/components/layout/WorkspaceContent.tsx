@@ -99,7 +99,7 @@ function WelcomeView() {
         {/* Wordmark */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-8 rounded-full bg-accent-secondary" />
+            <div className="w-1 h-8 rounded-full bg-accent" />
             <h1 className="text-xl font-semibold text-foreground tracking-tight">
               Breadcrumb
             </h1>
@@ -169,7 +169,7 @@ function WelcomeAction({
       onClick={onClick}
       className="group w-full flex items-center gap-3 px-3 py-2.5 -mx-3 rounded-lg text-left transition-default hover:bg-background-raised"
     >
-      <Icon className="w-4 h-4 text-foreground-muted shrink-0 group-hover:text-accent-secondary transition-default" />
+      <Icon className="w-4 h-4 text-foreground-muted shrink-0 group-hover:text-accent transition-default" />
       <span className="flex-1 text-sm text-foreground-secondary group-hover:text-foreground transition-default">
         {label}
       </span>
