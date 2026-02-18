@@ -5,7 +5,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { useShellIntegration } from "../../hooks/useShellIntegration";
-import { useTerminalSettings } from "../../store/settingsStore";
+import { useTerminalSettings, useResolvedTheme } from "../../store/settingsStore";
 import { TerminalSearch } from "./TerminalSearch";
 import {
   ContextMenu,
@@ -134,6 +134,7 @@ export function TerminalInstance({
   const [searchVisible, setSearchVisible] = useState(false);
   const [ptyExited, setPtyExited] = useState(false);
   const terminalSettings = useTerminalSettings();
+  const resolvedTheme = useResolvedTheme();
 
   // Refs for initial command — consumed once after PTY creation
   const initialCommandRef = useRef(initialCommand);
@@ -466,6 +467,13 @@ export function TerminalInstance({
     terminal.options.scrollback = terminalSettings.scrollback;
     requestAnimationFrame(() => fit());
   }, [terminalSettings, fit]);
+
+  // Re-apply terminal theme when light/dark mode changes
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    terminal.options.theme = getTerminalTheme();
+  }, [resolvedTheme]);
 
   // Restore terminal focus when context menu closes
   const handleContextMenuOpenChange = useCallback((open: boolean) => {
