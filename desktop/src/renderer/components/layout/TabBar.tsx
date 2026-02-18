@@ -1,8 +1,7 @@
 import { useState, useCallback } from "react";
-import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe, Bug } from "lucide-react";
+import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
-import { startDebugSession } from "../../store/debugStore";
 import {
   ContextMenu,
   MenuItem,
@@ -228,14 +227,6 @@ export function TabBar() {
         title="New Terminal"
       >
         <Plus className="w-3.5 h-3.5" />
-      </button>
-
-      <button
-        onClick={() => startDebugSession(activeProject?.path || "")}
-        className="h-full px-2.5 flex items-center text-foreground-muted hover:text-accent-error hover:bg-background-raised/50 transition-default shrink-0 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
-        title="Debug with Claude"
-      >
-        <Bug className="w-3.5 h-3.5" />
       </button>
 
       {/* Fill remaining space — also serves as drop zone */}

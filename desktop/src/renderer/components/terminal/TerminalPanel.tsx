@@ -3,9 +3,10 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane } from "../../store/appStore";
 import type { TerminalPaneData, ContentPane } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows } from "lucide-react";
+import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 import { PaneContentRenderer } from "../panes/PaneContentRenderer";
+import { startDebugSession } from "../../store/debugStore";
 import { folderName } from "../../utils/path";
 
 interface TerminalPanelProps {
@@ -362,6 +363,15 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
           >
             <Sparkles className="w-3.5 h-3.5" />
           </button>
+          {workingDirectory && (
+            <button
+              onClick={() => startDebugSession(workingDirectory)}
+              className="p-1 text-foreground-muted hover:text-destructive hover:bg-destructive/10 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+              title="Debug with Claude"
+            >
+              <Bug className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
