@@ -9,7 +9,10 @@ import {
   Command,
   FolderOpen,
   LayoutGrid,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme, useSetTheme, useResolvedTheme, type ThemePreference } from "../../store/settingsStore";
 
 export function WorkspaceContent() {
   const tabs = useAppStore((s) => s.tabs);
@@ -142,12 +145,15 @@ function WelcomeView() {
         </div>
 
         {/* Keyboard hint */}
-        <p className="text-2xs text-foreground-muted">
+        <p className="text-2xs text-foreground-muted mb-8">
           <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted/40 text-foreground-muted text-2xs font-mono mr-1.5">
             <Command className="w-2.5 h-2.5" />K
           </kbd>
           Command palette
         </p>
+
+        {/* Theme toggle */}
+        <ThemeToggle />
       </div>
     </div>
   );
@@ -177,5 +183,42 @@ function WelcomeAction({
         {shortcut}
       </kbd>
     </button>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+  { value: "system", label: "System" },
+];
+
+function ThemeToggle() {
+  const theme = useTheme();
+  const setTheme = useSetTheme();
+  const resolved = useResolvedTheme();
+
+  return (
+    <div className="flex items-center gap-3">
+      {resolved === "dark" ? (
+        <Moon className="w-3.5 h-3.5 text-foreground-muted" />
+      ) : (
+        <Sun className="w-3.5 h-3.5 text-foreground-muted" />
+      )}
+      <div className="flex rounded-lg border border-border overflow-hidden">
+        {THEME_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setTheme(opt.value)}
+            className={`px-3 py-1 text-2xs font-medium transition-default ${
+              theme === opt.value
+                ? "bg-accent/10 text-accent"
+                : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/30"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
