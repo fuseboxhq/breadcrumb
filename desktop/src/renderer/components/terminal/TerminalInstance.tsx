@@ -296,9 +296,26 @@ export function TerminalInstance({
       setHasSelection(!!terminal.getSelection());
     });
 
-    terminal.open(containerRef.current);
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
+
+    // Defer terminal.open() until the container has non-zero dimensions.
+    // xterm.js throws "Cannot read properties of undefined (reading
+    // 'dimensions')" if opened into a zero-sized container because the
+    // renderer never initializes its dimensions property.
+    let opened = false;
+    const container = containerRef.current;
+    const tryOpen = () => {
+      if (opened || !container) return false;
+      const { clientWidth, clientHeight } = container;
+      if (clientWidth > 0 && clientHeight > 0) {
+        terminal.open(container);
+        opened = true;
+        return true;
+      }
+      return false;
+    };
+    tryOpen();
 
     // --- PTY lifecycle ---
     // The PTY is created lazily on the first stable resize, NOT eagerly.
@@ -326,7 +343,7 @@ export function TerminalInstance({
     }
 
     const tryCreatePty = () => {
-      if (ptyCreated || destroyed || !resolvedCwd) return;
+      if (ptyCreated || destroyed || !resolvedCwd || !opened) return;
       try {
         const dims = fitAddon.proposeDimensions();
         if (dims && dims.cols > 0 && dims.rows > 0) {
@@ -403,6 +420,9 @@ export function TerminalInstance({
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         if (destroyed) return;
+        // Deferred open: if the terminal hasn't been opened yet (container
+        // was zero-sized on mount), open it now that we have dimensions.
+        tryOpen();
         if (!ptyCreated) {
           tryCreatePty();
           return;
