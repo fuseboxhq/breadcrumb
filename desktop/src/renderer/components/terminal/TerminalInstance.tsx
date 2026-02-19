@@ -393,10 +393,17 @@ export function TerminalInstance({
       window.breadcrumbAPI?.writeTerminal(sessionId, data);
     });
 
-    // Receive PTY output
+    // Receive PTY output — tmux-like auto-scroll: pin to bottom on new
+    // output only if the user hasn't scrolled up. When the user scrolls
+    // back to the bottom, auto-scroll resumes on the next write.
     const cleanupData = window.breadcrumbAPI?.onTerminalData((event) => {
       if (event.sessionId === sessionId) {
+        const buf = terminal.buffer.active;
+        const wasAtBottom = buf.baseY === buf.viewportY;
         terminal.write(event.data);
+        if (wasAtBottom) {
+          terminal.scrollToBottom();
+        }
       }
     });
 
