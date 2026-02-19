@@ -303,28 +303,18 @@ export function TerminalInstance({
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
     let destroyed = false;
 
-    // Defer terminal.open() until the container has non-zero dimensions.
-    // xterm.js throws "Cannot read properties of undefined (reading
-    // 'dimensions')" when syncScrollArea runs before the renderer has
-    // initialized. We catch that and retry on the next animation frame.
     let opened = false;
     const container = containerRef.current;
     const tryOpen = () => {
       if (opened || destroyed || !container) return false;
       const { clientWidth, clientHeight } = container;
       if (clientWidth > 0 && clientHeight > 0) {
-        try {
-          terminal.open(container);
-          opened = true;
-        } catch {
-          // Renderer not ready — retry next frame
-          requestAnimationFrame(() => tryOpen());
-        }
-        return opened;
+        terminal.open(container);
+        opened = true;
+        return true;
       }
       return false;
     };
-    tryOpen();
 
     // Resolve working directory upfront (async but fast)
     let resolvedCwd: string | null = workingDirectory || null;
@@ -386,6 +376,20 @@ export function TerminalInstance({
         }
       } catch { /* ignore — will retry on next resize */ }
     };
+
+    // Defer terminal.open() to next animation frame. This prevents the
+    // xterm Viewport crash ("Cannot read properties of undefined (reading
+    // 'dimensions')") caused by React StrictMode's double-invoke: the first
+    // mount's rAF is cancelled in cleanup before it fires, so the disposed
+    // terminal's Viewport.syncScrollArea setTimeout never gets scheduled.
+    // Also ensures the container's layout pass completes before xterm
+    // initializes its renderer dimensions.
+    const openRafId = requestAnimationFrame(() => {
+      if (destroyed) return;
+      if (tryOpen()) {
+        tryCreatePty();
+      }
+    });
 
     // Forward keystrokes to PTY
     const dataDisposable = terminal.onData((data) => {
@@ -450,6 +454,7 @@ export function TerminalInstance({
 
     return () => {
       destroyed = true;
+      cancelAnimationFrame(openRafId);
       clearTimeout(resizeTimer);
       dataDisposable.dispose();
       selectionDisposable.dispose();
