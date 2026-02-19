@@ -53,17 +53,20 @@ export function AppShell() {
       if (workspaceSettings.tabs && Array.isArray(workspaceSettings.tabs) && workspaceSettings.tabs.length > 0) {
         restoreWorkspace({
           tabs: workspaceSettings.tabs
-            .filter((t) => t.type === "terminal" || t.type === "welcome" || t.type === "browser")
+            // Don't restore terminal tabs — PTY sessions are gone after restart.
+            // Projects and browser tabs are preserved; a fresh welcome tab is
+            // shown when no other tabs remain.
+            .filter((t) => t.type === "welcome" || t.type === "browser")
             .map((t) => ({
               id: t.id,
-              type: t.type as "terminal" | "welcome" | "browser",
+              type: t.type as "welcome" | "browser",
               title: t.title,
               projectId: t.projectId,
               // Restore browser tab fields
               ...(t.type === "browser" ? { browserId: t.browserId, initialUrl: t.initialUrl } : {}),
             })),
           activeTabId: workspaceSettings.activeTabId ?? null,
-          terminalPanes: workspaceSettings.terminalPanes ?? {},
+          terminalPanes: {},
           activeProjectId: workspaceSettings.activeProjectId ?? null,
         });
 
