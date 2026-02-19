@@ -299,33 +299,32 @@ export function TerminalInstance({
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
+    let ptyCreated = false;
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    let destroyed = false;
+
     // Defer terminal.open() until the container has non-zero dimensions.
     // xterm.js throws "Cannot read properties of undefined (reading
-    // 'dimensions')" if opened into a zero-sized container because the
-    // renderer never initializes its dimensions property.
+    // 'dimensions')" when syncScrollArea runs before the renderer has
+    // initialized. We catch that and retry on the next animation frame.
     let opened = false;
     const container = containerRef.current;
     const tryOpen = () => {
-      if (opened || !container) return false;
+      if (opened || destroyed || !container) return false;
       const { clientWidth, clientHeight } = container;
       if (clientWidth > 0 && clientHeight > 0) {
-        terminal.open(container);
-        opened = true;
-        return true;
+        try {
+          terminal.open(container);
+          opened = true;
+        } catch {
+          // Renderer not ready — retry next frame
+          requestAnimationFrame(() => tryOpen());
+        }
+        return opened;
       }
       return false;
     };
     tryOpen();
-
-    // --- PTY lifecycle ---
-    // The PTY is created lazily on the first stable resize, NOT eagerly.
-    // This avoids dimension mismatches (PTY at 120x30 vs actual 20x10)
-    // and resize storms from PanelGroup layout transitions that cause
-    // duplicate prompts and zsh PROMPT_EOL_MARK artifacts.
-
-    let ptyCreated = false;
-    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-    let destroyed = false;
 
     // Resolve working directory upfront (async but fast)
     let resolvedCwd: string | null = workingDirectory || null;
@@ -397,7 +396,7 @@ export function TerminalInstance({
     // output only if the user hasn't scrolled up. When the user scrolls
     // back to the bottom, auto-scroll resumes on the next write.
     const cleanupData = window.breadcrumbAPI?.onTerminalData((event) => {
-      if (event.sessionId === sessionId) {
+      if (event.sessionId === sessionId && opened) {
         const buf = terminal.buffer.active;
         const wasAtBottom = buf.baseY === buf.viewportY;
         terminal.write(event.data);
