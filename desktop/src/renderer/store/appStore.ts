@@ -230,6 +230,7 @@ export interface AppActions {
   // Tabs
   addTab: (tab: WorkspaceTab) => void;
   removeTab: (id: string) => void;
+  closeTabs: (ids: string[]) => void;
   setActiveTab: (id: string) => void;
   updateTab: (id: string, updates: Partial<WorkspaceTab>) => void;
 
@@ -438,6 +439,24 @@ export const useAppStore = create<AppStore>()(
         // Clear zoom if this tab was zoomed
         if (state.zoomedPane?.tabId === id) {
           state.zoomedPane = null;
+        }
+      });
+      persistWorkspace();
+    },
+
+    closeTabs: (ids) => {
+      if (ids.length === 0) return;
+      const idsSet = new Set(ids);
+      set((state) => {
+        state.tabs = state.tabs.filter((t) => !idsSet.has(t.id));
+        if (state.activeTabId && idsSet.has(state.activeTabId)) {
+          state.activeTabId = state.tabs[state.tabs.length - 1]?.id || null;
+        }
+        for (const id of ids) {
+          delete state.terminalPanes[id];
+          if (state.zoomedPane?.tabId === id) {
+            state.zoomedPane = null;
+          }
         }
       });
       persistWorkspace();

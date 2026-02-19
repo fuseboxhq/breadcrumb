@@ -21,7 +21,7 @@ const TAB_ICONS: Record<TabType, typeof Terminal> = {
 export function TabBar() {
   const tabs = useAppStore((s) => s.tabs);
   const activeTabId = useAppStore((s) => s.activeTabId);
-  const { setActiveTab, removeTab, addTab, pinDiffTab, openBrowserTab, mergeTabInto } = useAppStore();
+  const { setActiveTab, removeTab, closeTabs, addTab, pinDiffTab, openBrowserTab, mergeTabInto } = useAppStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
@@ -159,66 +159,91 @@ export function TabBar() {
               {tab.title}
             </span>
 
-            {tab.type !== "welcome" && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeTab(tab.id);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
                   e.stopPropagation();
                   removeTab(tab.id);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                    removeTab(tab.id);
-                  }
-                }}
-                aria-label={`Close ${tab.title}`}
-                className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/50 hover:text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none transition-default"
-              >
-                <X className="w-3 h-3" />
-              </span>
-            )}
+                }
+              }}
+              aria-label={`Close ${tab.title}`}
+              className="ml-auto shrink-0 p-0.5 rounded hover:bg-muted/50 hover:text-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none transition-default"
+            >
+              <X className="w-3 h-3" />
+            </span>
           </button>
         );
 
-        // Wrap diff tabs with context menu
-        if (isDiff) {
-          return (
-            <ContextMenu
-              key={tab.id}
-              content={
-                <>
-                  {!tab.pinned && (
-                    <MenuItem
-                      icon={<Pin className="w-3.5 h-3.5" />}
-                      label="Pin Diff"
-                      onSelect={() => pinDiffTab(tab.id)}
-                    />
-                  )}
-                  {tab.pinned && (
-                    <MenuItem
-                      icon={<Pin className="w-3.5 h-3.5" />}
-                      label="Pinned"
-                      disabled
-                    />
-                  )}
-                  <MenuSeparator />
-                  <MenuItem
-                    icon={<X className="w-3.5 h-3.5" />}
-                    label="Close Diff"
-                    destructive
-                    onSelect={() => removeTab(tab.id)}
-                  />
-                </>
-              }
-            >
-              {tabButton}
-            </ContextMenu>
-          );
-        }
+        const tabIndex = tabs.indexOf(tab);
+        const closableOthers = tabs.filter((t) => t.id !== tab.id);
+        const closableLeft = tabs.slice(0, tabIndex);
+        const closableRight = tabs.slice(tabIndex + 1);
 
-        return tabButton;
+        return (
+          <ContextMenu
+            key={tab.id}
+            content={
+              <>
+                {/* Diff-specific actions */}
+                {isDiff && !tab.pinned && (
+                  <MenuItem
+                    icon={<Pin className="w-3.5 h-3.5" />}
+                    label="Pin Diff"
+                    onSelect={() => pinDiffTab(tab.id)}
+                  />
+                )}
+                {isDiff && tab.pinned && (
+                  <MenuItem
+                    icon={<Pin className="w-3.5 h-3.5" />}
+                    label="Pinned"
+                    disabled
+                  />
+                )}
+                {isDiff && <MenuSeparator />}
+
+                {/* Close actions */}
+                <MenuItem
+                  icon={<X className="w-3.5 h-3.5" />}
+                  label="Close"
+                  onSelect={() => removeTab(tab.id)}
+                />
+                <MenuItem
+                  icon={<X className="w-3.5 h-3.5" />}
+                  label="Close Others"
+                  disabled={closableOthers.length === 0}
+                  onSelect={() => closeTabs(closableOthers.map((t) => t.id))}
+                />
+                <MenuItem
+                  icon={<X className="w-3.5 h-3.5" />}
+                  label="Close to the Left"
+                  disabled={closableLeft.length === 0}
+                  onSelect={() => closeTabs(closableLeft.map((t) => t.id))}
+                />
+                <MenuItem
+                  icon={<X className="w-3.5 h-3.5" />}
+                  label="Close to the Right"
+                  disabled={closableRight.length === 0}
+                  onSelect={() => closeTabs(closableRight.map((t) => t.id))}
+                />
+                <MenuSeparator />
+                <MenuItem
+                  icon={<X className="w-3.5 h-3.5" />}
+                  label="Close All"
+                  destructive
+                  onSelect={() => closeTabs(tabs.map((t) => t.id))}
+                />
+              </>
+            }
+          >
+            {tabButton}
+          </ContextMenu>
+        );
       })}
 
       <button
