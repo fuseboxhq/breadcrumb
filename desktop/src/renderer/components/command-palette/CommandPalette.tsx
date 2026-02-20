@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Command } from "cmdk";
 import { matchSorter } from "match-sorter";
 import { Search, Zap, Command as CommandIcon } from "lucide-react";
+import { Puzzle } from "lucide-react";
 import { useAppStore, type SidebarView } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
-import { startDebugSession } from "../../store/debugStore";
+import { useActiveExtensionCommands, executeExtensionCommand } from "../../store/extensionStore";
 import { buildCommands, type CommandItem } from "./commands";
 
 export function CommandPalette() {
@@ -17,6 +18,7 @@ export function CommandPalette() {
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
   const { addProject } = useProjectsStore();
+  const extensionCommands = useActiveExtensionCommands();
 
   // Register Cmd+K / Ctrl+K global listener
   useEffect(() => {
@@ -65,9 +67,8 @@ export function CommandPalette() {
 
   const close = useCallback(() => setOpen(false), []);
 
-  const commands = useMemo(
-    () =>
-      buildCommands({
+  const commands = useMemo(() => {
+      const core = buildCommands({
         activeProjectName: activeProject?.name ?? null,
         activeProjectId: activeProject?.id ?? null,
         activeProjectPath: activeProject?.path ?? null,
@@ -76,11 +77,26 @@ export function CommandPalette() {
         toggleRightPanel,
         navigateToView,
         addProject,
-        startDebugSession,
         dispatchKey,
         close,
-      }),
-    [activeProject, addTab, addRightPanelPane, toggleRightPanel, navigateToView, addProject, dispatchKey, close]
+      });
+
+      // Merge active extension commands into the palette
+      const extCmds: CommandItem[] = extensionCommands.map((cmd) => ({
+        id: `ext:${cmd.command}`,
+        label: cmd.title,
+        description: cmd.extensionDisplayName,
+        icon: Puzzle,
+        category: cmd.category || "Extensions",
+        action: () => {
+          executeExtensionCommand(cmd.command, activeProject?.path || "");
+          close();
+        },
+      }));
+
+      return [...core, ...extCmds];
+    },
+    [activeProject, addTab, addRightPanelPane, toggleRightPanel, navigateToView, addProject, dispatchKey, close, extensionCommands]
   );
 
   const filtered = search

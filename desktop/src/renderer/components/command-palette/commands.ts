@@ -11,7 +11,6 @@ import {
   Rows3,
   Trash2,
   ArrowRightLeft,
-  Bug,
 } from "lucide-react";
 import type { SidebarView } from "../../store/appStore";
 
@@ -34,7 +33,6 @@ interface CommandContext {
   toggleRightPanel: () => void;
   navigateToView: (view: SidebarView) => void;
   addProject: (path: string) => void;
-  startDebugSession: (projectPath: string) => void;
   dispatchKey: (key: string, opts?: { meta?: boolean; shift?: boolean; alt?: boolean }) => void;
   close: () => void;
 }
@@ -143,18 +141,6 @@ export function buildCommands(ctx: CommandContext): CommandItem[] {
       action: async () => {
         const dir = await window.breadcrumbAPI?.selectDirectory();
         if (dir) ctx.addProject(dir);
-        close();
-      },
-    },
-    // Debug
-    {
-      id: "debug-start",
-      label: "Start Debug Session",
-      description: activeProjectName ? `Debug in ${activeProjectName}` : "Open AI debug assistant",
-      icon: Bug,
-      category: "Debug",
-      action: () => {
-        ctx.startDebugSession(ctx.activeProjectPath || "");
         close();
       },
     },
