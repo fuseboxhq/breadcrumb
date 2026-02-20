@@ -1,9 +1,11 @@
 # Project State
 
-**Current Phase:** None
-**Last Updated:** 2026-02-18
+**Current Phase:** PHASE-29
+**Last Updated:** 2026-02-20
 
 ## Active Work
+
+PHASE-29: Advanced Terminal Windowing (not_started)
 
 
 ## Completed Phases
