@@ -95,7 +95,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
 | breadcrumb-2bn.1 | SplitNode tree data model and store migration | done | High | - |
-| breadcrumb-2bn.2 | Recursive split tree renderer | open | High | .1 |
+| breadcrumb-2bn.2 | Recursive split tree renderer | done | High | .1 |
 | breadcrumb-2bn.3 | Terminal group (tab) renaming | done | Low | - |
 | breadcrumb-2bn.4 | Drag-and-drop pane swap and dock | open | High | .1, .2 |
 | breadcrumb-2bn.5 | Drop zone feedback, animations, and polish | open | Medium | .4 |

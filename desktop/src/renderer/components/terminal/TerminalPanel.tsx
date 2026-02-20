@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane, flattenPanes, getRootDirection, findPaneNode } from "../../store/appStore";
-import type { TerminalPaneData, ContentPane } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug } from "lucide-react";
+import type { TerminalPaneData, ContentPane, SplitNode } from "../../store/appStore";
+import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug, LayoutGrid } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 import { PaneContentRenderer } from "../panes/PaneContentRenderer";
 import { startDebugSession } from "../../store/debugStore";
@@ -43,6 +43,7 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
   const storeUpdatePaneCwd = useAppStore((s) => s.updatePaneCwd);
   const setPaneCustomLabel = useAppStore((s) => s.setPaneCustomLabel);
   const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
+  const create2x2GridLayout = useAppStore((s) => s.create2x2GridLayout);
   const updateTab = useAppStore((s) => s.updateTab);
   const updatePaneProcess = useAppStore((s) => s.updatePaneProcess);
 
@@ -363,6 +364,13 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
+          <button
+            onClick={() => create2x2GridLayout(tabId)}
+            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+            title="2×2 Grid layout"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+          </button>
           <div className="w-px h-3.5 bg-border/50 mx-0.5" />
           <button
             onClick={handleLaunchClaude}
@@ -401,68 +409,164 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
             isZoomed={true}
             canZoom={true}
           />
-        ) : (
-          /* Always render through PanelGroup — even for a single pane.
-             This preserves the component tree when panes are added (e.g. tab merge),
-             so existing TerminalInstances stay mounted and keep their xterm content. */
-          <PanelGroup direction={splitDirection}>
-            {panes.map((pane, index) => (
-              <div key={pane.id} className="contents">
-                {index > 0 && (
-                  <PanelResizeHandle
-                    className={`
-                      group relative transition-default
-                      ${splitDirection === "horizontal"
-                        ? "w-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50"
-                        : "h-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50"
-                      }
-                    `}
-                  >
-                    <div
-                      className={`absolute transition-default ${
-                        splitDirection === "horizontal"
-                          ? "inset-y-0 left-[1px] w-px bg-border group-hover:bg-accent/40"
-                          : "inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent/40"
-                      }`}
-                    />
-                  </PanelResizeHandle>
-                )}
-                <Panel id={pane.id} order={index} minSize={10}>
-                  <div
-                    className={`h-full ${
-                      panes.length > 1
-                        ? activePane === pane.id
-                          ? "ring-1 ring-accent/20 rounded-sm transition-default"
-                          : "opacity-90 hover:opacity-100 transition-default"
-                        : ""
-                    }`}
-                    onClick={() => setActivePane(pane.id)}
-                  >
-                    <PaneContentRenderer
-                      pane={pane}
-                      tabId={tabId}
-                      isActive={panes.length === 1 || activePane === pane.id}
-                      isTabActive={isTabActive}
-                      workingDirectory={workingDirectory}
-                      tabInitialCommand={index === 0 ? initialCommand : undefined}
-                      onCwdChange={handleCwdChange}
-                      onProcessExit={handleProcessExit}
-                      onSplitHorizontal={() => addPane("horizontal")}
-                      onSplitVertical={() => addPane("vertical")}
-                      onToggleZoom={() => togglePaneZoom(tabId, pane.id)}
-                      isZoomed={false}
-                      canZoom={panes.length > 1}
-                      onInitialCommandSent={index === 0 ? clearInitialCommand : undefined}
-                      onPaneInitialCommandSent={clearPaneInitialCommand}
-                    />
-                  </div>
-                </Panel>
-              </div>
-            ))}
-          </PanelGroup>
-        )}
+        ) : tabPaneState ? (
+          /* Recursively render the split tree. Maps SplitNode tree to nested
+             PanelGroup → Panel → PanelGroup structures from react-resizable-panels. */
+          <SplitTreeRenderer
+            node={tabPaneState.splitTree}
+            tabId={tabId}
+            activePane={activePane}
+            isTabActive={isTabActive}
+            totalPaneCount={panes.length}
+            workingDirectory={workingDirectory}
+            initialCommand={initialCommand}
+            onSetActivePane={setActivePane}
+            onCwdChange={handleCwdChange}
+            onProcessExit={handleProcessExit}
+            onAddPane={addPane}
+            onTogglePaneZoom={(paneId) => togglePaneZoom(tabId, paneId)}
+            onClearInitialCommand={clearInitialCommand}
+            onClearPaneInitialCommand={clearPaneInitialCommand}
+          />
+        ) : null}
       </div>
     </div>
+  );
+}
+
+// ─── Recursive Split Tree Renderer ──────────────────────────────────────────────
+
+interface SplitTreeRendererProps {
+  node: SplitNode;
+  tabId: string;
+  activePane: string;
+  isTabActive: boolean;
+  totalPaneCount: number;
+  workingDirectory?: string;
+  initialCommand?: string;
+  onSetActivePane: (paneId: string) => void;
+  onCwdChange: (paneId: string, cwd: string) => void;
+  onProcessExit: (paneId: string, exitCode: number) => void;
+  onAddPane: (direction?: "horizontal" | "vertical") => void;
+  onTogglePaneZoom: (paneId: string) => void;
+  onClearInitialCommand: () => void;
+  onClearPaneInitialCommand: (paneId: string) => void;
+  /** Whether this is the first pane in the overall tree (for tab-level initialCommand) */
+  isFirstPane?: boolean;
+}
+
+/** Recursively renders a SplitNode tree into nested PanelGroup/Panel structures. */
+function SplitTreeRenderer({
+  node,
+  tabId,
+  activePane,
+  isTabActive,
+  totalPaneCount,
+  workingDirectory,
+  initialCommand,
+  onSetActivePane,
+  onCwdChange,
+  onProcessExit,
+  onAddPane,
+  onTogglePaneZoom,
+  onClearInitialCommand,
+  onClearPaneInitialCommand,
+  isFirstPane = true,
+}: SplitTreeRendererProps) {
+  // Leaf node — render a single pane
+  if (node.type === "pane") {
+    const pane = node.pane;
+    const isActive = totalPaneCount === 1 || activePane === pane.id;
+    return (
+      <div
+        className={`h-full w-full ${
+          totalPaneCount > 1
+            ? isActive
+              ? "ring-1 ring-accent/20 rounded-sm transition-default"
+              : "opacity-90 hover:opacity-100 transition-default"
+            : ""
+        }`}
+        onClick={() => onSetActivePane(pane.id)}
+      >
+        <PaneContentRenderer
+          pane={pane}
+          tabId={tabId}
+          isActive={isActive}
+          isTabActive={isTabActive}
+          workingDirectory={workingDirectory}
+          tabInitialCommand={isFirstPane ? initialCommand : undefined}
+          onCwdChange={onCwdChange}
+          onProcessExit={onProcessExit}
+          onSplitHorizontal={() => onAddPane("horizontal")}
+          onSplitVertical={() => onAddPane("vertical")}
+          onToggleZoom={() => onTogglePaneZoom(pane.id)}
+          isZoomed={false}
+          canZoom={totalPaneCount > 1}
+          onInitialCommandSent={isFirstPane ? onClearInitialCommand : undefined}
+          onPaneInitialCommandSent={onClearPaneInitialCommand}
+        />
+      </div>
+    );
+  }
+
+  // Split node — render nested PanelGroup with resize handles
+  const { direction, children, sizes } = node;
+
+  return (
+    <PanelGroup direction={direction}>
+      {children.map((child, index) => {
+        // Track whether this child contains the first pane in the tree
+        const childIsFirst = isFirstPane && index === 0;
+
+        return (
+          <div key={child.type === "pane" ? child.pane.id : `split-${index}`} className="contents">
+            {index > 0 && (
+              <PanelResizeHandle
+                className={`
+                  group relative transition-default
+                  ${direction === "horizontal"
+                    ? "w-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50"
+                    : "h-[3px] bg-transparent hover:bg-accent/30 active:bg-accent/50"
+                  }
+                `}
+              >
+                <div
+                  className={`absolute transition-default ${
+                    direction === "horizontal"
+                      ? "inset-y-0 left-[1px] w-px bg-border group-hover:bg-accent/40"
+                      : "inset-x-0 top-[1px] h-px bg-border group-hover:bg-accent/40"
+                  }`}
+                />
+              </PanelResizeHandle>
+            )}
+            <Panel
+              id={child.type === "pane" ? child.pane.id : undefined}
+              order={index}
+              defaultSize={sizes[index]}
+              minSize={5}
+            >
+              <SplitTreeRenderer
+                node={child}
+                tabId={tabId}
+                activePane={activePane}
+                isTabActive={isTabActive}
+                totalPaneCount={totalPaneCount}
+                workingDirectory={workingDirectory}
+                initialCommand={initialCommand}
+                onSetActivePane={onSetActivePane}
+                onCwdChange={onCwdChange}
+                onProcessExit={onProcessExit}
+                onAddPane={onAddPane}
+                onTogglePaneZoom={onTogglePaneZoom}
+                onClearInitialCommand={onClearInitialCommand}
+                onClearPaneInitialCommand={onClearPaneInitialCommand}
+                isFirstPane={childIsFirst}
+              />
+            </Panel>
+          </div>
+        );
+      })}
+    </PanelGroup>
   );
 }
 
