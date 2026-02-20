@@ -31,7 +31,7 @@ import {
   Bug,
 } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
-import { startDebugSession } from "../../store/debugStore";
+import { useExtensionCommandsByCategory, executeExtensionCommand } from "../../store/extensionStore";
 
 const VIEW_TITLES: Partial<Record<SidebarView, { label: string; icon: typeof Terminal }>> = {
   explorer: { label: "Explorer", icon: FolderTree },
@@ -120,6 +120,7 @@ function ExplorerView() {
   const tabs = useAppStore((s) => s.tabs);
   const addTab = useAppStore((s) => s.addTab);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const debugCommands = useExtensionCommandsByCategory("Debug");
 
   const handleAddProject = async () => {
     const dir = await window.breadcrumbAPI?.selectDirectory();
@@ -202,11 +203,14 @@ function ExplorerView() {
                         })
                       }
                     />
-                    <MenuItem
-                      icon={<Bug className="w-3.5 h-3.5" />}
-                      label="Debug with Claude"
-                      onSelect={() => startDebugSession(project.path)}
-                    />
+                    {debugCommands.map((cmd) => (
+                      <MenuItem
+                        key={cmd.command}
+                        icon={<Bug className="w-3.5 h-3.5" />}
+                        label={cmd.title}
+                        onSelect={() => executeExtensionCommand(cmd.command, project.path)}
+                      />
+                    ))}
                     <MenuSeparator />
                     <MenuItem
                       icon={<Trash2 className="w-3.5 h-3.5" />}
@@ -294,13 +298,16 @@ function ExplorerView() {
                     <Sparkles className="w-3 h-3" />
                     <span>Claude Code</span>
                   </button>
-                  <button
-                    onClick={() => startDebugSession(project.path)}
-                    className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-destructive hover:bg-destructive/10 transition-default"
-                  >
-                    <Bug className="w-3 h-3" />
-                    <span>Debug with Claude</span>
-                  </button>
+                  {debugCommands.map((cmd) => (
+                    <button
+                      key={cmd.command}
+                      onClick={() => executeExtensionCommand(cmd.command, project.path)}
+                      className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-destructive hover:bg-destructive/10 transition-default"
+                    >
+                      <Bug className="w-3 h-3" />
+                      <span>{cmd.title}</span>
+                    </button>
+                  ))}
                   <button
                     onClick={() => removeProject(project.id)}
                     className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-destructive hover:bg-destructive/10 transition-default"

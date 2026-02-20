@@ -6,7 +6,7 @@ import type { TerminalPaneData, ContentPane, SplitNode } from "../../store/appSt
 import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug, LayoutGrid, GripVertical } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 import { PaneContentRenderer } from "../panes/PaneContentRenderer";
-import { startDebugSession } from "../../store/debugStore";
+import { useExtensionCommandsByCategory, executeExtensionCommand } from "../../store/extensionStore";
 import { folderName } from "../../utils/path";
 
 const PANE_DRAG_MIME = "application/breadcrumb-pane";
@@ -81,6 +81,9 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
   const storeUpdateSizes = useAppStore((s) => s.updateSplitTreeSizes);
   const updateTab = useAppStore((s) => s.updateTab);
   const updatePaneProcess = useAppStore((s) => s.updatePaneProcess);
+
+  // Extension-contributed "Debug" category commands (dynamic — vanishes when extension deactivates)
+  const debugCommands = useExtensionCommandsByCategory("Debug");
 
   // Zoom state
   const zoomedPane = useZoomedPane();
@@ -414,15 +417,16 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
           >
             <Sparkles className="w-3.5 h-3.5" />
           </button>
-          {workingDirectory && (
+          {workingDirectory && debugCommands.map((cmd) => (
             <button
-              onClick={() => startDebugSession(workingDirectory)}
+              key={cmd.command}
+              onClick={() => executeExtensionCommand(cmd.command, workingDirectory)}
               className="p-1 text-foreground-muted hover:text-destructive hover:bg-destructive/10 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
-              title="Debug with Claude"
+              title={cmd.title}
             >
               <Bug className="w-3.5 h-3.5" />
             </button>
-          )}
+          ))}
         </div>
       </div>
 
