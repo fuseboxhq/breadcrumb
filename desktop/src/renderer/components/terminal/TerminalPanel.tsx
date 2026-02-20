@@ -393,13 +393,6 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
             )}
           </button>
           <button
-            onClick={() => addPane()}
-            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
-            title="Split terminal (⌘D)"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          <button
             onClick={() => create2x2GridLayout(tabId)}
             className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
             title="2×2 Grid layout"
@@ -407,6 +400,13 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
             <LayoutGrid className="w-3.5 h-3.5" />
           </button>
           <div className="w-px h-3.5 bg-border/50 mx-0.5" />
+          <button
+            onClick={() => addPane()}
+            className="p-1 text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
+            title="Split terminal (⌘D)"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={handleLaunchClaude}
             className="p-1 text-foreground-muted hover:text-[#D97757] hover:bg-[#D97757]/10 rounded-md transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
@@ -581,7 +581,7 @@ function SplitTreeRenderer({
               </PanelResizeHandle>
             )}
             <Panel
-              id={child.type === "pane" ? child.pane.id : undefined}
+              id={child.type === "pane" ? child.pane.id : `split-${index}`}
               order={index}
               defaultSize={sizes[index]}
               minSize={5}
@@ -764,10 +764,10 @@ function PaneDropTarget({
           draggable
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          className="absolute top-0 left-0 z-20 p-0.5 opacity-0 group-hover/pane:opacity-60 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          className="absolute top-0.5 right-0.5 z-20 p-0.5 rounded opacity-0 group-hover/pane:opacity-70 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-accent/15"
           title="Drag to rearrange"
         >
-          <GripVertical className="w-3 h-3 text-foreground-muted" />
+          <GripVertical className="w-3 h-3 text-accent" />
         </div>
       )}
 
