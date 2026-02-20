@@ -8,6 +8,8 @@ import {
   Shield,
   Terminal,
   FolderOpen,
+  LayoutGrid,
+  Keyboard,
 } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
 import type { ExtensionInfoForRenderer } from "../../../main/extensions/types";
@@ -214,7 +216,7 @@ function ExtensionCard({
 
           {/* Commands */}
           {ext.commands.length > 0 && (
-            <div>
+            <div className="mb-3">
               <div className="flex items-center gap-1 mb-1.5">
                 <Terminal className="w-3 h-3 text-foreground-muted" />
                 <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
@@ -236,6 +238,57 @@ function ExtensionCard({
                       — {cmd.title}
                     </span>
                   </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Views */}
+          {ext.contributes?.views && Object.keys(ext.contributes.views).length > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center gap-1 mb-1.5">
+                <LayoutGrid className="w-3 h-3 text-foreground-muted" />
+                <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
+                  Views
+                </span>
+              </div>
+              <div className="space-y-1">
+                {Object.entries(ext.contributes.views).map(([container, views]) =>
+                  views.map((view) => (
+                    <div
+                      key={view.id}
+                      className="text-2xs flex items-center gap-1.5 px-1.5 py-0.5"
+                    >
+                      <code className="font-mono text-accent/80">{view.id}</code>
+                      <span className="text-foreground-muted">— {view.name}</span>
+                      <span className="text-foreground-muted/50">({container})</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Keybindings */}
+          {ext.contributes?.keybindings && ext.contributes.keybindings.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1 mb-1.5">
+                <Keyboard className="w-3 h-3 text-foreground-muted" />
+                <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
+                  Keybindings
+                </span>
+              </div>
+              <div className="space-y-1">
+                {ext.contributes.keybindings.map((kb) => (
+                  <div
+                    key={kb.command}
+                    className="text-2xs flex items-center gap-1.5 px-1.5 py-0.5"
+                  >
+                    <kbd className="px-1 py-0.5 rounded bg-muted/40 text-foreground-muted font-mono">
+                      {kb.mac || kb.key}
+                    </kbd>
+                    <span className="text-foreground-muted">→ {kb.command}</span>
+                  </div>
                 ))}
               </div>
             </div>
