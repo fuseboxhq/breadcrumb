@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import path from "path";
 import { createMainWindow } from "./windows/createMainWindow";
 import { registerIPCHandlers } from "./ipc/handlers";
@@ -64,6 +64,15 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
+  // Allow macOS Keychain client certificates for mutual TLS flows
+  // (e.g. Microsoft SSO on device.login.microsoftonline.com).
+  app.on("select-client-certificate", (event, _webContents, _url, list, callback) => {
+    if (list.length > 0) {
+      event.preventDefault();
+      callback(list[0]);
+    }
+  });
+
   app.on("second-instance", () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -73,6 +82,15 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     app.setName("Breadcrumb");
+
+    // Make the embedded browser session look like standard Chrome.
+    // Electron's default UA contains "Electron/XX" which causes many sites
+    // (Microsoft SSO, some SPAs) to serve degraded or broken responses.
+    const browserSession = session.fromPartition("persist:browser");
+    const electronUA = browserSession.getUserAgent();
+    browserSession.setUserAgent(
+      electronUA.replace(/\s*Electron\/\S+/, "").replace(/\s*Breadcrumb\/\S+/, "")
+    );
 
     mainWindow = createMainWindow();
     setupMainWindow();

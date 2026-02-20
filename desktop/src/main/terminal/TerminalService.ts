@@ -404,7 +404,7 @@ export class TerminalService extends EventEmitter {
 
     const shellToUse = shell || defaultShell;
 
-    const ptyProcess = pty.spawn(shellToUse, [], {
+    const ptyProcess = pty.spawn(shellToUse, ["--login"], {
       name: "xterm-256color",
       cols: cols || DEFAULT_TERMINAL_COLS,
       rows: rows || DEFAULT_TERMINAL_ROWS,
