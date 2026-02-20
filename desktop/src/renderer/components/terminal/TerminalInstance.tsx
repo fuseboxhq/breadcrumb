@@ -34,8 +34,8 @@ interface TerminalInstanceProps {
   canZoom?: boolean;
 }
 
-// Fallback theme — used if CSS custom properties aren't available
-const FALLBACK_THEME = {
+// Fallback theme — used if CSS custom properties aren't available (dark mode)
+const FALLBACK_THEME_DARK = {
   background: "#0f0f0f",
   foreground: "#eeeff1",
   cursor: "#eeeff1",
@@ -58,6 +58,18 @@ const FALLBACK_THEME = {
   brightMagenta: "#a78bfa",
   brightCyan: "#22d3ee",
   brightWhite: "#ffffff",
+};
+
+// Light mode bright ANSI colors — deeper/richer to read well on warm cream
+const LIGHT_BRIGHT_ANSI = {
+  brightBlack: "#6b6560",
+  brightRed: "#dc2626",
+  brightGreen: "#16a34a",
+  brightYellow: "#ca8a04",
+  brightBlue: "#2563eb",
+  brightMagenta: "#7c3aed",
+  brightCyan: "#0891b2",
+  brightWhite: "#1c1917",
 };
 
 /**
@@ -83,32 +95,36 @@ function getCssColor(prop: string): string | null {
 }
 
 /** Build terminal theme from CSS custom properties, falling back to hardcoded values. */
-function getTerminalTheme(): typeof FALLBACK_THEME {
-  const bg = getCssColor("--background") || FALLBACK_THEME.background;
-  const fg = getCssColor("--foreground") || FALLBACK_THEME.foreground;
+function getTerminalTheme(): typeof FALLBACK_THEME_DARK {
+  const isDark = document.documentElement.classList.contains("dark");
+  const fallback = FALLBACK_THEME_DARK;
+  const bright = isDark ? fallback : LIGHT_BRIGHT_ANSI;
+
+  const bg = getCssColor("--background") || fallback.background;
+  const fg = getCssColor("--foreground") || fallback.foreground;
   return {
     background: bg,
     foreground: fg,
     cursor: fg,
     cursorAccent: bg,
-    selectionBackground: (getCssColor("--background-overlay") || FALLBACK_THEME.selectionBackground) + "80",
+    selectionBackground: (getCssColor("--background-overlay") || fallback.selectionBackground) + "80",
     selectionForeground: fg,
-    black: getCssColor("--background-overlay") || FALLBACK_THEME.black,
-    red: getCssColor("--destructive") || FALLBACK_THEME.red,
-    green: getCssColor("--success") || FALLBACK_THEME.green,
-    yellow: getCssColor("--warning") || FALLBACK_THEME.yellow,
-    blue: getCssColor("--info") || FALLBACK_THEME.blue,
-    magenta: getCssColor("--accent") || FALLBACK_THEME.magenta,
-    cyan: getCssColor("--info") || FALLBACK_THEME.cyan,
+    black: getCssColor("--background-overlay") || fallback.black,
+    red: getCssColor("--destructive") || fallback.red,
+    green: getCssColor("--success") || fallback.green,
+    yellow: getCssColor("--warning") || fallback.yellow,
+    blue: getCssColor("--info") || fallback.blue,
+    magenta: getCssColor("--accent") || fallback.magenta,
+    cyan: getCssColor("--info") || fallback.cyan,
     white: fg,
-    brightBlack: getCssColor("--foreground-muted") || FALLBACK_THEME.brightBlack,
-    brightRed: FALLBACK_THEME.brightRed,
-    brightGreen: FALLBACK_THEME.brightGreen,
-    brightYellow: FALLBACK_THEME.brightYellow,
-    brightBlue: FALLBACK_THEME.brightBlue,
-    brightMagenta: FALLBACK_THEME.brightMagenta,
-    brightCyan: FALLBACK_THEME.brightCyan,
-    brightWhite: FALLBACK_THEME.brightWhite,
+    brightBlack: getCssColor("--foreground-muted") || bright.brightBlack,
+    brightRed: bright.brightRed,
+    brightGreen: bright.brightGreen,
+    brightYellow: bright.brightYellow,
+    brightBlue: bright.brightBlue,
+    brightMagenta: bright.brightMagenta,
+    brightCyan: bright.brightCyan,
+    brightWhite: isDark ? fallback.brightWhite : bright.brightWhite,
   };
 }
 
