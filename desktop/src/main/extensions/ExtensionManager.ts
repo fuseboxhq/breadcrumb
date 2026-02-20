@@ -271,6 +271,8 @@ export class ExtensionManager extends EventEmitter {
       publisher: ext.manifest.publisher || "Unknown",
       capabilities: ext.manifest.breadcrumb?.capabilities || {},
       commands: ext.manifest.contributes?.commands || [],
+      contributes: ext.manifest.contributes || {},
+      activationEvents: ext.manifest.activationEvents || [],
     }));
   }
 

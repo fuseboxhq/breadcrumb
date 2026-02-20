@@ -153,4 +153,6 @@ export interface ExtensionInfoForRenderer {
   publisher: string;
   capabilities: ExtensionCapabilities;
   commands: ContributedCommand[];
+  contributes: ExtensionContributions;
+  activationEvents: string[];
 }
