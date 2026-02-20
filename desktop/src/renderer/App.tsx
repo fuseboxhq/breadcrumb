@@ -7,6 +7,7 @@ import { useSettingsStore, useResolvedTheme } from "./store/settingsStore";
 import { useAppStore, flushWorkspacePersist, flattenPanes } from "./store/appStore";
 import { useProjectsStore } from "./store/projectsStore";
 import { useDebugStore } from "./store/debugStore";
+import { useExtensionStore } from "./store/extensionStore";
 import { Toaster } from "sonner";
 
 function App() {
@@ -95,6 +96,12 @@ function App() {
     });
     return () => cleanup?.();
   }, [loadSettings, loadProjects]);
+
+  // Initialize extension contribution store (tracks active extensions + their UI contributions)
+  useEffect(() => {
+    useExtensionStore.getState().init();
+    return () => useExtensionStore.getState().dispose();
+  }, []);
 
   // Flush pending workspace writes before window closes (handles app quit / reload)
   useEffect(() => {
