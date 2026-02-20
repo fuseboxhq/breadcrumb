@@ -902,9 +902,9 @@ function TaskRow({
                 </div>
               ) : (
                 <div className="group/detail relative">
-                  <pre className="text-2xs text-foreground-secondary whitespace-pre-wrap font-mono leading-relaxed">
-                    {taskDetail}
-                  </pre>
+                  <div className="text-2xs text-foreground-secondary leading-relaxed space-y-0.5">
+                    <SimpleMarkdown text={taskDetail} />
+                  </div>
                   <button
                     onClick={handleEdit}
                     className="absolute top-0 right-0 p-1 rounded text-foreground-muted/40 hover:text-accent hover:bg-accent/10 transition-default opacity-0 group-hover/detail:opacity-100"
@@ -1395,5 +1395,73 @@ export function ErrorAlert({
         </button>
       )}
     </div>
+  );
+}
+
+// ─── Lightweight inline markdown renderer ────────────────────────────────────
+
+/** Render inline markdown: **bold**, `code`, and preserve line structure. */
+function renderInline(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  // Match **bold** and `code` spans
+  const regex = /(\*\*(.+?)\*\*|`([^`]+)`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Text before this match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    if (match[2]) {
+      // **bold**
+      parts.push(<strong key={match.index} className="font-semibold text-foreground">{match[2]}</strong>);
+    } else if (match[3]) {
+      // `code`
+      parts.push(
+        <code key={match.index} className="px-1 py-0.5 rounded bg-muted/50 text-accent font-mono text-[10px]">
+          {match[3]}
+        </code>
+      );
+    }
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [text];
+}
+
+/** Simple markdown renderer for task details — handles bold, code, and bullet lists. */
+function SimpleMarkdown({ text }: { text: string }) {
+  const lines = text.split("\n");
+
+  return (
+    <>
+      {lines.map((line, i) => {
+        const trimmed = line.trimStart();
+        const isBullet = trimmed.startsWith("- ");
+
+        if (isBullet) {
+          const content = trimmed.slice(2);
+          return (
+            <div key={i} className="flex gap-1.5 pl-1">
+              <span className="text-foreground-muted select-none shrink-0">&#x2022;</span>
+              <span>{renderInline(content)}</span>
+            </div>
+          );
+        }
+
+        if (trimmed === "") {
+          return <div key={i} className="h-1" />;
+        }
+
+        return (
+          <div key={i}>{renderInline(line)}</div>
+        );
+      })}
+    </>
   );
 }
