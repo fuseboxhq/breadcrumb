@@ -14,6 +14,8 @@ import {
   getRootDirection,
   create2x2Grid,
   updateSizes,
+  swapPanes as swapPanesTree,
+  dockPane as dockPaneTree,
 } from "./splitTree";
 
 // Sidebar navigation views
@@ -279,6 +281,10 @@ export interface AppActions {
   create2x2GridLayout: (tabId: string) => void;
   /** Update flex sizes for a PanelGroup (called from onLayout callback) */
   updateSplitTreeSizes: (tabId: string, panelIds: string[], sizes: number[]) => void;
+  /** Swap positions of two panes in the tree */
+  swapPanes: (tabId: string, paneId1: string, paneId2: string) => void;
+  /** Remove a pane and dock it next to a target pane */
+  dockPane: (tabId: string, draggedPaneId: string, targetPaneId: string, direction: "horizontal" | "vertical") => void;
 
   // Zoom
   togglePaneZoom: (tabId: string, paneId: string) => void;
@@ -882,6 +888,24 @@ export const useAppStore = create<AppStore>()(
         tabState.splitTree = updateSizes(tabState.splitTree, panelIds, sizes);
       });
       // Don't call persistWorkspace for every resize — let PanelGroup debounce
+    },
+
+    swapPanes: (tabId, paneId1, paneId2) => {
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+        tabState.splitTree = swapPanesTree(tabState.splitTree, paneId1, paneId2);
+      });
+      persistWorkspace();
+    },
+
+    dockPane: (tabId, draggedPaneId, targetPaneId, direction) => {
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+        tabState.splitTree = dockPaneTree(tabState.splitTree, draggedPaneId, targetPaneId, direction);
+      });
+      persistWorkspace();
     },
 
     // Zoom

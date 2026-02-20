@@ -3,11 +3,43 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
 import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane, flattenPanes, getRootDirection, findPaneNode } from "../../store/appStore";
 import type { TerminalPaneData, ContentPane, SplitNode } from "../../store/appStore";
-import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug, LayoutGrid } from "lucide-react";
+import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug, LayoutGrid, GripVertical } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
 import { PaneContentRenderer } from "../panes/PaneContentRenderer";
 import { startDebugSession } from "../../store/debugStore";
 import { folderName } from "../../utils/path";
+
+const PANE_DRAG_MIME = "application/breadcrumb-pane";
+
+type DropZone = "center" | "top" | "bottom" | "left" | "right" | null;
+
+/** Detect which drop zone the cursor is in, with 25% edge threshold. */
+function detectDropZone(e: React.DragEvent, rect: DOMRect): DropZone {
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const w = rect.width;
+  const h = rect.height;
+
+  const edgeX = Math.max(w * 0.25, 40);
+  const edgeY = Math.max(h * 0.25, 40);
+
+  // Ensure center zone is at least 20% of each dimension
+  const centerLeft = Math.min(edgeX, w * 0.4);
+  const centerTop = Math.min(edgeY, h * 0.4);
+
+  if (x < centerLeft) return "left";
+  if (x > w - centerLeft) return "right";
+  if (y < centerTop) return "top";
+  if (y > h - centerTop) return "bottom";
+  return "center";
+}
+
+/** Map drop zone edge to split direction for docking. */
+function zoneToDirection(zone: DropZone): "horizontal" | "vertical" | null {
+  if (zone === "left" || zone === "right") return "horizontal";
+  if (zone === "top" || zone === "bottom") return "vertical";
+  return null; // center = swap
+}
 
 interface TerminalPanelProps {
   tabId: string;
@@ -44,6 +76,8 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
   const setPaneCustomLabel = useAppStore((s) => s.setPaneCustomLabel);
   const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
   const create2x2GridLayout = useAppStore((s) => s.create2x2GridLayout);
+  const storeSwapPanes = useAppStore((s) => s.swapPanes);
+  const storeDockPane = useAppStore((s) => s.dockPane);
   const updateTab = useAppStore((s) => s.updateTab);
   const updatePaneProcess = useAppStore((s) => s.updatePaneProcess);
 
@@ -427,6 +461,8 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
             onTogglePaneZoom={(paneId) => togglePaneZoom(tabId, paneId)}
             onClearInitialCommand={clearInitialCommand}
             onClearPaneInitialCommand={clearPaneInitialCommand}
+            onSwapPanes={(id1, id2) => storeSwapPanes(tabId, id1, id2)}
+            onDockPane={(draggedId, targetId, dir) => storeDockPane(tabId, draggedId, targetId, dir)}
           />
         ) : null}
       </div>
@@ -451,6 +487,8 @@ interface SplitTreeRendererProps {
   onTogglePaneZoom: (paneId: string) => void;
   onClearInitialCommand: () => void;
   onClearPaneInitialCommand: (paneId: string) => void;
+  onSwapPanes: (paneId1: string, paneId2: string) => void;
+  onDockPane: (draggedPaneId: string, targetPaneId: string, direction: "horizontal" | "vertical") => void;
   /** Whether this is the first pane in the overall tree (for tab-level initialCommand) */
   isFirstPane?: boolean;
 }
@@ -471,41 +509,32 @@ function SplitTreeRenderer({
   onTogglePaneZoom,
   onClearInitialCommand,
   onClearPaneInitialCommand,
+  onSwapPanes,
+  onDockPane,
   isFirstPane = true,
 }: SplitTreeRendererProps) {
-  // Leaf node — render a single pane
+  // Leaf node — render a single pane with drag-and-drop
   if (node.type === "pane") {
-    const pane = node.pane;
-    const isActive = totalPaneCount === 1 || activePane === pane.id;
     return (
-      <div
-        className={`h-full w-full ${
-          totalPaneCount > 1
-            ? isActive
-              ? "ring-1 ring-accent/20 rounded-sm transition-default"
-              : "opacity-90 hover:opacity-100 transition-default"
-            : ""
-        }`}
-        onClick={() => onSetActivePane(pane.id)}
-      >
-        <PaneContentRenderer
-          pane={pane}
-          tabId={tabId}
-          isActive={isActive}
-          isTabActive={isTabActive}
-          workingDirectory={workingDirectory}
-          tabInitialCommand={isFirstPane ? initialCommand : undefined}
-          onCwdChange={onCwdChange}
-          onProcessExit={onProcessExit}
-          onSplitHorizontal={() => onAddPane("horizontal")}
-          onSplitVertical={() => onAddPane("vertical")}
-          onToggleZoom={() => onTogglePaneZoom(pane.id)}
-          isZoomed={false}
-          canZoom={totalPaneCount > 1}
-          onInitialCommandSent={isFirstPane ? onClearInitialCommand : undefined}
-          onPaneInitialCommandSent={onClearPaneInitialCommand}
-        />
-      </div>
+      <PaneDropTarget
+        pane={node.pane}
+        tabId={tabId}
+        activePane={activePane}
+        isTabActive={isTabActive}
+        isFirstPane={isFirstPane}
+        totalPaneCount={totalPaneCount}
+        workingDirectory={workingDirectory}
+        initialCommand={initialCommand}
+        onSetActivePane={onSetActivePane}
+        onCwdChange={onCwdChange}
+        onProcessExit={onProcessExit}
+        onAddPane={onAddPane}
+        onTogglePaneZoom={onTogglePaneZoom}
+        onClearInitialCommand={onClearInitialCommand}
+        onClearPaneInitialCommand={onClearPaneInitialCommand}
+        onSwapPanes={onSwapPanes}
+        onDockPane={onDockPane}
+      />
     );
   }
 
@@ -560,6 +589,8 @@ function SplitTreeRenderer({
                 onTogglePaneZoom={onTogglePaneZoom}
                 onClearInitialCommand={onClearInitialCommand}
                 onClearPaneInitialCommand={onClearPaneInitialCommand}
+                onSwapPanes={onSwapPanes}
+                onDockPane={onDockPane}
                 isFirstPane={childIsFirst}
               />
             </Panel>
@@ -567,6 +598,184 @@ function SplitTreeRenderer({
         );
       })}
     </PanelGroup>
+  );
+}
+
+// ─── Pane Drop Target (drag-and-drop wrapper for each pane) ─────────────────
+
+interface PaneDropTargetProps {
+  pane: ContentPane;
+  tabId: string;
+  activePane: string;
+  isTabActive: boolean;
+  isFirstPane: boolean;
+  totalPaneCount: number;
+  workingDirectory?: string;
+  initialCommand?: string;
+  onSetActivePane: (paneId: string) => void;
+  onCwdChange: (paneId: string, cwd: string) => void;
+  onProcessExit: (paneId: string, exitCode: number) => void;
+  onAddPane: (direction?: "horizontal" | "vertical") => void;
+  onTogglePaneZoom: (paneId: string) => void;
+  onClearInitialCommand: () => void;
+  onClearPaneInitialCommand: (paneId: string) => void;
+  onSwapPanes: (paneId1: string, paneId2: string) => void;
+  onDockPane: (draggedPaneId: string, targetPaneId: string, direction: "horizontal" | "vertical") => void;
+}
+
+function PaneDropTarget({
+  pane,
+  tabId,
+  activePane,
+  isTabActive,
+  isFirstPane,
+  totalPaneCount,
+  workingDirectory,
+  initialCommand,
+  onSetActivePane,
+  onCwdChange,
+  onProcessExit,
+  onAddPane,
+  onTogglePaneZoom,
+  onClearInitialCommand,
+  onClearPaneInitialCommand,
+  onSwapPanes,
+  onDockPane,
+}: PaneDropTargetProps) {
+  const isActive = totalPaneCount === 1 || activePane === pane.id;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dropZone, setDropZone] = useState<DropZone>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.dataTransfer.setData(PANE_DRAG_MIME, JSON.stringify({ paneId: pane.id, tabId }));
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+  }, [pane.id, tabId]);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(PANE_DRAG_MIME)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropZone(detectDropZone(e, rect));
+    }
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes(PANE_DRAG_MIME)) return;
+    e.preventDefault();
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      setDropZone(null);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const zone = dropZone;
+    setDropZone(null);
+
+    const raw = e.dataTransfer.getData(PANE_DRAG_MIME);
+    if (!raw) return;
+
+    try {
+      const { paneId: draggedId, tabId: dragTabId } = JSON.parse(raw) as { paneId: string; tabId: string };
+      if (draggedId === pane.id) return; // Can't drop on self
+      if (dragTabId !== tabId) return; // Cross-tab not supported yet
+
+      if (zone === "center") {
+        onSwapPanes(draggedId, pane.id);
+      } else if (zone) {
+        const dir = zoneToDirection(zone);
+        if (dir) {
+          onDockPane(draggedId, pane.id, dir);
+        }
+      }
+    } catch {
+      // ignore malformed data
+    }
+  }, [dropZone, pane.id, tabId, onSwapPanes, onDockPane]);
+
+  // Drop zone overlay styling
+  const zoneOverlay = dropZone && !isDragging ? (
+    <div className="absolute inset-0 pointer-events-none z-10">
+      {dropZone === "center" && (
+        <div className="absolute inset-2 border-2 border-dashed border-accent rounded-md bg-accent/10 flex items-center justify-center">
+          <span className="text-2xs text-accent font-medium bg-background/80 px-2 py-0.5 rounded">Swap</span>
+        </div>
+      )}
+      {dropZone === "left" && (
+        <div className="absolute inset-y-0 left-0 w-1/4 bg-accent/15 border-r-2 border-accent rounded-l-sm" />
+      )}
+      {dropZone === "right" && (
+        <div className="absolute inset-y-0 right-0 w-1/4 bg-accent/15 border-l-2 border-accent rounded-r-sm" />
+      )}
+      {dropZone === "top" && (
+        <div className="absolute inset-x-0 top-0 h-1/4 bg-accent/15 border-b-2 border-accent rounded-t-sm" />
+      )}
+      {dropZone === "bottom" && (
+        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-accent/15 border-t-2 border-accent rounded-b-sm" />
+      )}
+    </div>
+  ) : null;
+
+  return (
+    <div
+      ref={containerRef}
+      className={`h-full w-full relative ${
+        totalPaneCount > 1
+          ? isActive
+            ? "ring-1 ring-accent/20 rounded-sm transition-default"
+            : "opacity-90 hover:opacity-100 transition-default"
+          : ""
+      } ${isDragging ? "opacity-50" : ""}`}
+      onClick={() => onSetActivePane(pane.id)}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag handle — only visible on hover when multiple panes */}
+      {totalPaneCount > 1 && (
+        <div
+          draggable
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          className="absolute top-0 left-0 z-20 p-0.5 opacity-0 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          title="Drag to rearrange"
+        >
+          <GripVertical className="w-3 h-3 text-foreground-muted" />
+        </div>
+      )}
+
+      {zoneOverlay}
+
+      <PaneContentRenderer
+        pane={pane}
+        tabId={tabId}
+        isActive={isActive}
+        isTabActive={isTabActive}
+        workingDirectory={workingDirectory}
+        tabInitialCommand={isFirstPane ? initialCommand : undefined}
+        onCwdChange={onCwdChange}
+        onProcessExit={onProcessExit}
+        onSplitHorizontal={() => onAddPane("horizontal")}
+        onSplitVertical={() => onAddPane("vertical")}
+        onToggleZoom={() => onTogglePaneZoom(pane.id)}
+        isZoomed={false}
+        canZoom={totalPaneCount > 1}
+        onInitialCommandSent={isFirstPane ? onClearInitialCommand : undefined}
+        onPaneInitialCommandSent={onClearPaneInitialCommand}
+      />
+    </div>
   );
 }
 
