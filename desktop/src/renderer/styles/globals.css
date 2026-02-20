@@ -13,64 +13,67 @@
 
 @layer base {
   /* ── Light theme (default) ───────────────────────────────────────────── */
+  /* Warm stone/cream palette — inspired by Linear & Notion light modes.
+     Every surface is a different weight of premium cream paper.
+     Hue 30-40 (warm amber), saturation 4-8%, clear luminance steps. */
   :root {
-    /* Background depth layers */
-    --background: 0 0% 100%;           /* #FFFFFF */
-    --background-raised: 0 0% 98%;     /* #FAFAFA */
-    --background-overlay: 0 0% 96%;    /* #F5F5F5 */
+    /* Background depth layers — warm stone family */
+    --background: 40 6% 97%;           /* Warm cream — main canvas, lightest paper */
+    --background-raised: 36 5% 94.5%;  /* Heavier stock — sidebar, tab bar, toolbars */
+    --background-overlay: 33 5% 91%;   /* Card stock — hover states, dropdowns */
 
-    /* Foreground hierarchy */
-    --foreground: 0 0% 7%;             /* #121212 */
-    --foreground-secondary: 0 0% 27%;  /* #454545 */
-    --foreground-muted: 0 0% 40%;      /* #666666 — AA compliant on white */
+    /* Foreground hierarchy — warm charcoals */
+    --foreground: 24 10% 10%;          /* Warm near-black — primary text */
+    --foreground-secondary: 30 6% 28%; /* Warm dark gray — secondary labels */
+    --foreground-muted: 25 5% 40%;     /* Warm mid-gray — muted, AA on cream */
 
     /* Card & surface */
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
+    --card: 36 5% 94.5%;              /* Match raised */
+    --card-foreground: 24 10% 10%;
+    --popover: 40 7% 98%;             /* Slightly lighter — lift effect */
+    --popover-foreground: 24 10% 10%;
 
-    /* Primary accent — Linear indigo */
+    /* Primary accent — Linear indigo (unchanged) */
     --primary: 234 56% 60%;            /* #5E6AD2 */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary surface */
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 15%;
+    --secondary: 34 5% 92%;
+    --secondary-foreground: 24 8% 15%;
 
-    /* Accent — matches primary */
+    /* Accent — matches primary (unchanged) */
     --accent: 234 56% 60%;             /* #5E6AD2 */
     --accent-foreground: 0 0% 100%;
     --accent-secondary: 234 44% 70%;   /* softer indigo for highlights */
     --accent-secondary-foreground: 0 0% 100%;
 
     /* Muted */
-    --muted: 0 0% 93%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 33 5% 90%;
+    --muted-foreground: 25 5% 40%;
 
-    /* Semantic colors */
-    --destructive: 0 84% 60%;          /* red */
+    /* Semantic colors — slightly deeper for cream backgrounds */
+    --destructive: 0 72% 51%;          /* Warmer red, clear on cream */
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;            /* green */
+    --success: 142 64% 40%;            /* Slightly richer green */
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;             /* amber */
-    --warning-foreground: 0 0% 7%;
-    --info: 217 91% 60%;               /* blue */
+    --warning: 38 92% 50%;             /* Amber stays warm */
+    --warning-foreground: 24 10% 10%;
+    --info: 217 80% 55%;               /* Slightly deeper blue */
     --info-foreground: 0 0% 100%;
 
-    /* Legacy color aliases (backward compat — removed in later tasks) */
-    --dracula-purple: 234 56% 55%;
-    --dracula-pink: 330 80% 55%;
-    --dracula-green: 142 71% 40%;
-    --dracula-cyan: 217 85% 50%;
-    --dracula-orange: 25 95% 50%;
-    --dracula-red: 0 84% 55%;
-    --dracula-yellow: 45 93% 45%;
+    /* Legacy color aliases — adjusted for warm bg contrast */
+    --dracula-purple: 234 56% 50%;
+    --dracula-pink: 330 70% 50%;
+    --dracula-green: 142 60% 36%;
+    --dracula-cyan: 217 75% 46%;
+    --dracula-orange: 25 90% 46%;
+    --dracula-red: 0 75% 50%;
+    --dracula-yellow: 45 85% 40%;
 
-    /* Borders & inputs */
-    --border: 0 0% 90%;                /* #E6E6E6 */
-    --border-strong: 0 0% 83%;         /* #D4D4D4 */
-    --input: 0 0% 90%;
+    /* Borders & inputs — warm gray, visible but gentle */
+    --border: 30 6% 86%;               /* Warm light border — like a gentle crease */
+    --border-strong: 28 5% 78%;        /* Stronger warm border */
+    --input: 30 6% 86%;                /* Match border */
     --ring: 234 56% 60%;
 
     /* Radius — 6px base (tighter, Linear-like) */
@@ -78,10 +81,10 @@
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
 
-    /* Shadows — light mode (subtle, no glow) */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    /* Shadows — warm brown-tinted for natural ambient light feel */
+    --shadow-sm: 0 1px 2px rgba(120, 90, 50, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(120, 90, 50, 0.08), 0 2px 4px -2px rgba(120, 90, 50, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(120, 90, 50, 0.08), 0 4px 6px -4px rgba(120, 90, 50, 0.04);
 
     /* Legacy glow shadows (backward compat — subtle accent tint) */
     --shadow-glow: 0 0 6px -2px hsl(234 56% 60% / 0.12);
