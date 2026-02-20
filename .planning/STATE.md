@@ -1,11 +1,12 @@
 # Project State
 
-**Current Phase:** PHASE-29
+**Current Phase:** PHASE-30
 **Last Updated:** 2026-02-20
 
 ## Active Work
 
-PHASE-29: Advanced Terminal Windowing (in_progress) - 7 tasks
+PHASE-30: Light Mode Overhaul (not_started)
+PHASE-29: Advanced Terminal Windowing (done) - 7/7 tasks done
 
 
 ## Completed Phases
