@@ -1,12 +1,10 @@
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import { CommandPalette } from "./components/command-palette/CommandPalette";
 import { ExtensionModal } from "./components/extensions/ExtensionModal";
-import { DebugModal, type DebugSubmitData } from "./components/debug/DebugModal";
 import { useSettingsStore, useResolvedTheme } from "./store/settingsStore";
 import { useAppStore, flushWorkspacePersist, flattenPanes } from "./store/appStore";
 import { useProjectsStore } from "./store/projectsStore";
-import { useDebugStore } from "./store/debugStore";
 import { useExtensionStore } from "./store/extensionStore";
 import { Toaster } from "sonner";
 
@@ -14,78 +12,6 @@ function App() {
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const loadProjects = useProjectsStore((s) => s.loadProjects);
   const resolvedTheme = useResolvedTheme();
-  const debugIsOpen = useDebugStore((s) => s.isOpen);
-  const debugProjectPath = useDebugStore((s) => s.projectPath);
-  const closeDebugModal = useDebugStore((s) => s.closeDebugModal);
-
-  // Handle debug modal submission — save images, build prompt, spawn Claude
-  const handleDebugSubmit = useCallback(
-    async (data: DebugSubmitData) => {
-      const projectPath = debugProjectPath;
-      closeDebugModal();
-
-      if (!projectPath) return;
-
-      // Build the Claude Code prompt
-      const parts: string[] = [];
-
-      if (data.imagePaths.length > 0) {
-        parts.push("## Screenshots");
-        data.imagePaths.forEach((p, i) => {
-          parts.push(`Screenshot ${i + 1}: ${p}`);
-        });
-        parts.push("");
-      }
-
-      parts.push("## Issue Description");
-      parts.push(data.description);
-
-      if (data.consoleLogs) {
-        parts.push("");
-        parts.push("## Console Logs");
-        parts.push("```");
-        parts.push(data.consoleLogs);
-        parts.push("```");
-      }
-
-      parts.push("");
-      parts.push("Please investigate this issue and suggest a fix.");
-
-      const prompt = parts.join("\n");
-
-      // Spawn a new terminal tab with Claude
-      const store = useAppStore.getState();
-      const tabId = `debug-${Date.now()}`;
-      const paneId = `pane-${Date.now()}`;
-      const sessionId = `debug-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-
-      store.addTab({
-        id: tabId,
-        type: "terminal",
-        title: "Debug: Claude",
-        projectId: store.tabs.find((t) => t.projectId)?.projectId,
-        initialCommand: `claude "${prompt.replace(/"/g, '\\"').replace(/\n/g, "\\n")}"\n`,
-      });
-
-      useAppStore.setState((state) => {
-        state.terminalPanes[tabId] = {
-          splitTree: {
-            type: "pane",
-            pane: {
-              type: "terminal",
-              id: paneId,
-              sessionId,
-              cwd: projectPath,
-              lastActivity: Date.now(),
-              processLabel: "Debug: Claude",
-            },
-          },
-          activePane: paneId,
-        };
-      });
-    },
-    [debugProjectPath, closeDebugModal]
-  );
 
   // Load settings and projects from main process on startup
   useEffect(() => {
@@ -175,11 +101,6 @@ function App() {
       <AppShell />
       <CommandPalette />
       <ExtensionModal />
-      <DebugModal
-        isOpen={debugIsOpen}
-        onClose={closeDebugModal}
-        onSubmit={handleDebugSubmit}
-      />
       <Toaster
         theme={resolvedTheme}
         position="bottom-right"
