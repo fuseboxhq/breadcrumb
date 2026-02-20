@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-30: Light Mode Overhaul (not_started)
+PHASE-30: Light Mode Overhaul (in_progress) - 4 tasks
 PHASE-29: Advanced Terminal Windowing (done) - 7/7 tasks done
 
 
