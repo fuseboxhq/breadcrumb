@@ -354,13 +354,13 @@
 }
 
 [data-component="git-diff-view"][data-theme="light"] {
-  --diff-add-line-bg: rgba(46, 160, 67, 0.06);
-  --diff-del-line-bg: rgba(248, 81, 73, 0.06);
-  --diff-add-line-num-bg: rgba(46, 160, 67, 0.10);
-  --diff-del-line-num-bg: rgba(248, 81, 73, 0.10);
-  --diff-add-content-highlight-bg: rgba(46, 160, 67, 0.18);
-  --diff-del-content-highlight-bg: rgba(248, 81, 73, 0.18);
-  --diff-hunk-line-bg: rgba(56, 139, 253, 0.04);
+  --diff-add-line-bg: rgba(34, 140, 55, 0.07);
+  --diff-del-line-bg: rgba(220, 60, 55, 0.07);
+  --diff-add-line-num-bg: rgba(34, 140, 55, 0.12);
+  --diff-del-line-num-bg: rgba(220, 60, 55, 0.12);
+  --diff-add-content-highlight-bg: rgba(34, 140, 55, 0.20);
+  --diff-del-content-highlight-bg: rgba(220, 60, 55, 0.20);
+  --diff-hunk-line-bg: rgba(56, 120, 220, 0.06);
   --diff-content-bg: hsl(var(--background));
   font-family: "JetBrains Mono", "SF Mono", "Cascadia Code", monospace;
   font-size: 12px;
