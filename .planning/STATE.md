@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-31: Dynamic Extension UI Contributions (not_started)
+PHASE-31: Dynamic Extension UI Contributions (in_progress) - 6 tasks
 PHASE-30: Light Mode Overhaul (done) - 4/4 tasks done
 PHASE-29: Advanced Terminal Windowing (done) - 7/7 tasks done
 
