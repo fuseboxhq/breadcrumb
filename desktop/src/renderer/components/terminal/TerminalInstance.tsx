@@ -183,6 +183,18 @@ export function TerminalInstance({
     }
   }, [sessionId]);
 
+  // Focus terminal without triggering browser scroll-into-view on the
+  // hidden textarea. Uses preventScroll to avoid viewport jumps when
+  // switching between panes (especially noticeable with Claude Code).
+  const focusTerminal = useCallback(() => {
+    const textarea = containerRef.current?.querySelector<HTMLTextAreaElement>('.xterm-helper-textarea');
+    if (textarea) {
+      textarea.focus({ preventScroll: true });
+    } else {
+      terminalRef.current?.focus();
+    }
+  }, []);
+
   // Track whether there's a text selection in the terminal
   const [hasSelection, setHasSelection] = useState(false);
 
@@ -192,26 +204,26 @@ export function TerminalInstance({
     if (selection) {
       await navigator.clipboard.writeText(selection);
     }
-    terminalRef.current?.focus();
-  }, []);
+    focusTerminal();
+  }, [focusTerminal]);
 
   const handlePaste = useCallback(async () => {
     const text = await navigator.clipboard.readText();
     if (text) {
       terminalRef.current?.paste(text);
     }
-    terminalRef.current?.focus();
-  }, []);
+    focusTerminal();
+  }, [focusTerminal]);
 
   const handleSelectAll = useCallback(() => {
     terminalRef.current?.selectAll();
-    terminalRef.current?.focus();
-  }, []);
+    focusTerminal();
+  }, [focusTerminal]);
 
   const handleClear = useCallback(() => {
     terminalRef.current?.clear();
-    terminalRef.current?.focus();
-  }, []);
+    focusTerminal();
+  }, [focusTerminal]);
 
   const handleRestart = useCallback(() => {
     const terminal = terminalRef.current;
@@ -481,18 +493,29 @@ export function TerminalInstance({
 
   // Refit + focus on activation — handles tab switches where the container
   // was invisible. refresh() forces xterm to re-render its buffer content.
+  // Preserves scroll position to prevent viewport jumps when clicking into
+  // a pane (especially noticeable with long-running TUIs like Claude Code).
   useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
         const terminal = terminalRef.current;
         if (terminal) {
+          // Save scroll position before operations that might cause a jump
+          const buf = terminal.buffer.active;
+          const savedViewportY = buf.viewportY;
+
           terminal.refresh(0, terminal.rows - 1);
+          fit();
+          focusTerminal();
+
+          // Restore scroll position if fit/refresh caused a viewport jump
+          if (buf.viewportY !== savedViewportY) {
+            terminal.scrollLines(savedViewportY - buf.viewportY);
+          }
         }
-        fit();
-        terminal?.focus();
       });
     }
-  }, [isActive, fit]);
+  }, [isActive, fit, focusTerminal]);
 
   // Live settings updates — apply to existing terminal without recreating
   useEffect(() => {
@@ -516,9 +539,9 @@ export function TerminalInstance({
   // Restore terminal focus when context menu closes
   const handleContextMenuOpenChange = useCallback((open: boolean) => {
     if (!open) {
-      requestAnimationFrame(() => terminalRef.current?.focus());
+      requestAnimationFrame(() => focusTerminal());
     }
-  }, []);
+  }, [focusTerminal]);
 
   return (
     <ContextMenu
@@ -598,7 +621,7 @@ export function TerminalInstance({
           isVisible={searchVisible}
           onClose={() => {
             setSearchVisible(false);
-            terminalRef.current?.focus();
+            focusTerminal();
           }}
         />
 
