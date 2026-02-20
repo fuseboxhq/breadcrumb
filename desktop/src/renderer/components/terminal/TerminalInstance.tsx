@@ -15,6 +15,20 @@ import {
 import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3, RotateCcw } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
+// Suppress xterm Viewport timing error caused by React StrictMode's
+// double-invoke in development. StrictMode mounts → unmounts → remounts;
+// the first mount's Viewport schedules a setTimeout(syncScrollArea) that
+// fires after the terminal is disposed, accessing undefined _renderService.
+// This is harmless — the second mount creates a working terminal.
+window.addEventListener("error", (event) => {
+  if (
+    event.message ===
+    "Cannot read properties of undefined (reading 'dimensions')"
+  ) {
+    event.preventDefault();
+  }
+});
+
 interface TerminalInstanceProps {
   sessionId: string;
   isActive: boolean;
@@ -377,13 +391,16 @@ export function TerminalInstance({
       } catch { /* ignore — will retry on next resize */ }
     };
 
-    // Defer terminal.open() to next animation frame. This prevents the
-    // xterm Viewport crash ("Cannot read properties of undefined (reading
-    // 'dimensions')") caused by React StrictMode's double-invoke: the first
-    // mount's rAF is cancelled in cleanup before it fires, so the disposed
-    // terminal's Viewport.syncScrollArea setTimeout never gets scheduled.
-    // Also ensures the container's layout pass completes before xterm
-    // initializes its renderer dimensions.
+    // Open immediately when container has dimensions (production path).
+    // In dev with React StrictMode, the first mount's terminal gets
+    // disposed before its Viewport setTimeout fires — the module-level
+    // error handler suppresses that harmless crash.
+    if (tryOpen()) {
+      tryCreatePty();
+    }
+
+    // Fallback: if container wasn't ready on mount (zero-sized, invisible
+    // tab, etc.), retry on next frame. ResizeObserver also retries at 80ms.
     const openRafId = requestAnimationFrame(() => {
       if (destroyed) return;
       if (tryOpen()) {
