@@ -43,6 +43,24 @@ const config: ForgeConfig = {
         );
       }
     },
+    postPackage: async (_forgeConfig, options) => {
+      // Fix node-pty spawn-helper execute permissions.
+      // ASAR unpacking strips the +x bit from binaries, causing
+      // "posix_spawnp failed" when node-pty tries to fork a shell.
+      for (const outputPath of options.outputPaths) {
+        const helpers = [
+          path.join(outputPath, "Breadcrumb.app/Contents/Resources/app.asar.unpacked/node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper"),
+          path.join(outputPath, "Breadcrumb.app/Contents/Resources/app.asar.unpacked/node_modules/node-pty/prebuilds/darwin-x64/spawn-helper"),
+          path.join(outputPath, "Breadcrumb.app/Contents/Resources/app.asar.unpacked/node_modules/node-pty/build/Release/spawn-helper"),
+        ];
+        for (const helper of helpers) {
+          if (fs.existsSync(helper)) {
+            fs.chmodSync(helper, 0o755);
+            console.log(`[postPackage] chmod +x ${path.basename(path.dirname(helper))}/${path.basename(helper)}`);
+          }
+        }
+      }
+    },
   },
   makers: [
     {
