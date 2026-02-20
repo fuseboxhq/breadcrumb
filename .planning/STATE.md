@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-29: Advanced Terminal Windowing (in_progress) - 6 tasks
+PHASE-29: Advanced Terminal Windowing (in_progress) - 7 tasks
 
 
 ## Completed Phases

@@ -100,6 +100,7 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 | breadcrumb-2bn.4 | Drag-and-drop pane swap and dock | open | High | .1, .2 |
 | breadcrumb-2bn.5 | Drop zone feedback, animations, and polish | open | Medium | .4 |
 | breadcrumb-2bn.6 | Layout persistence and workspace migration | open | Medium | .1, .2 |
+| breadcrumb-2bn.7 | Fix terminal scroll jump on pane focus | open | Medium | - |
 
 ### Task Details
 
@@ -162,6 +163,14 @@ The `frontend-design` skill will be active during execution of UI tasks in this 
 - `PanelGroup` `onLayout` callbacks persist sizes into tree state, debounced via existing `persistWorkspace()`
 - Migration path: detect old `{ panes: [], splitDirection }` format → convert to `{ splitTree: { type: "split", direction, children: [...panes as PaneNodes], sizes: evenDistribution } }`
 - Test: save layout, restart app, verify tree structure and pane sizes restored correctly
+
+**breadcrumb-2bn.7: Fix terminal scroll jump on pane focus**
+- Investigate: clicking into a terminal pane (especially one running Claude Code) causes the viewport to jump/scroll to a mid-buffer position instead of staying at the current scroll offset
+- Likely cause: xterm.js `focus()` or `scrollToBottom()` being called inappropriately when the pane receives click focus, or FitAddon triggering a re-render that resets scroll position
+- Check `TerminalInstance.tsx` click/focus handlers and `useShellIntegration.ts` for scroll-related side effects
+- Check if `terminal.scrollToBottom()` is called on focus events or resize events that shouldn't trigger it
+- Fix should preserve scroll position when clicking into an already-visible pane — only auto-scroll on new output
+- Test with Claude Code (long output, user scrolled up mid-conversation) and regular shell sessions
 
 ## Technical Decisions
 
