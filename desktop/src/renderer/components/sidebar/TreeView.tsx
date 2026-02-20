@@ -29,6 +29,10 @@ export interface TreeViewProps {
   renderActions?: (node: TreeNode) => ReactNode;
   /** Optional context menu wrapper — receives the node and its rendered content */
   renderContextMenu?: (node: TreeNode, children: ReactNode) => ReactNode;
+  /** Custom label renderer — return ReactNode to override the default label */
+  renderLabel?: (node: TreeNode) => ReactNode | null;
+  /** Called when a node is double-clicked */
+  onDoubleClick?: (id: string) => void;
   /** Called when Escape is pressed — use to return focus to main content */
   onEscape?: () => void;
   /** Additional className for the root */
@@ -66,8 +70,10 @@ export function TreeView({
   selectedId,
   onSelect,
   onToggle,
+  renderLabel,
   renderActions,
   renderContextMenu,
+  onDoubleClick,
   onEscape,
   className = "",
 }: TreeViewProps) {
@@ -195,6 +201,8 @@ export function TreeView({
           onFocus={setFocusedId}
           onSelect={onSelect}
           onToggle={onToggle}
+          onDoubleClick={onDoubleClick}
+          renderLabel={renderLabel}
           renderActions={renderActions}
           renderContextMenu={renderContextMenu}
           registerRef={registerRef}
@@ -214,6 +222,8 @@ interface TreeNodeItemProps {
   onFocus: (id: string) => void;
   onSelect?: (id: string) => void;
   onToggle?: (id: string) => void;
+  onDoubleClick?: (id: string) => void;
+  renderLabel?: (node: TreeNode) => ReactNode | null;
   renderActions?: (node: TreeNode) => ReactNode;
   renderContextMenu?: (node: TreeNode, children: ReactNode) => ReactNode;
   registerRef: (id: string, el: HTMLDivElement | null) => void;
@@ -227,6 +237,8 @@ function TreeNodeItem({
   onFocus,
   onSelect,
   onToggle,
+  onDoubleClick,
+  renderLabel,
   renderActions,
   renderContextMenu,
   registerRef,
@@ -254,6 +266,7 @@ function TreeNodeItem({
       tabIndex={isFocused ? 0 : -1}
       onFocus={() => onFocus(node.id)}
       onClick={handleClick}
+      onDoubleClick={onDoubleClick ? () => onDoubleClick(node.id) : undefined}
       className={`
         group flex items-center gap-1 px-2 py-1 text-sm rounded-md cursor-pointer outline-none
         transition-default select-none
@@ -284,7 +297,7 @@ function TreeNodeItem({
       )}
 
       {/* Label */}
-      <span className="truncate flex-1">{node.label}</span>
+      {renderLabel?.(node) ?? <span className="truncate flex-1">{node.label}</span>}
 
       {/* Badge */}
       {node.badge && (
@@ -317,6 +330,8 @@ function TreeNodeItem({
               onFocus={onFocus}
               onSelect={onSelect}
               onToggle={onToggle}
+              onDoubleClick={onDoubleClick}
+              renderLabel={renderLabel}
               renderActions={renderActions}
               renderContextMenu={renderContextMenu}
               registerRef={registerRef}

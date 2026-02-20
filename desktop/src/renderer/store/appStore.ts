@@ -26,6 +26,8 @@ export interface WorkspaceTab {
   pinned?: boolean;
   /** Command to run once after the terminal shell starts (e.g. "claude\n") */
   initialCommand?: string;
+  /** User-assigned custom title for this tab (e.g. "Dev Servers") */
+  customTitle?: string;
   // Browser-specific
   browserId?: string;
   initialUrl?: string;
@@ -184,6 +186,7 @@ export interface SerializedTab {
   pinned?: boolean;
   browserId?: string;
   initialUrl?: string;
+  customTitle?: string;
 }
 
 export interface WorkspaceSnapshot {
@@ -240,6 +243,9 @@ export interface AppActions {
 
   // Browser tab in center workspace
   openBrowserTab: (url?: string) => void;
+
+  // Tab renaming
+  setTabCustomTitle: (tabId: string, title: string | null) => void;
 
   // Tab merging (drag-and-drop)
   mergeTabInto: (sourceTabId: string, targetTabId: string) => void;
@@ -326,6 +332,7 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
         type: t.type,
         title: t.title,
         projectId: t.projectId,
+        customTitle: t.customTitle,
         // Persist browser tab fields
         ...(t.type === "browser" ? { browserId: t.browserId, initialUrl: t.initialUrl } : {}),
       })),
@@ -474,6 +481,17 @@ export const useAppStore = create<AppStore>()(
         const tab = state.tabs.find((t) => t.id === id);
         if (tab) {
           Object.assign(tab, updates);
+        }
+      });
+      persistWorkspace();
+    },
+
+    // Tab renaming
+    setTabCustomTitle: (tabId, title) => {
+      set((state) => {
+        const tab = state.tabs.find((t) => t.id === tabId);
+        if (tab) {
+          tab.customTitle = title || undefined;
         }
       });
       persistWorkspace();
@@ -982,6 +1000,7 @@ export const useAppStore = create<AppStore>()(
             title: t.title || t.type,
             url: t.url,
             projectId: t.projectId ? (projectIdMap.get(t.projectId) || t.projectId) : undefined,
+            customTitle: t.customTitle,
             // Restore browser tab fields with fresh browserId to avoid stale view references
             ...(t.type === "browser" ? {
               browserId: `center-browser-${Date.now()}-${t.id}`,

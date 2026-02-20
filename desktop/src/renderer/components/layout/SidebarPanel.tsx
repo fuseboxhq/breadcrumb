@@ -341,11 +341,43 @@ function TerminalsView() {
   const removePane = useAppStore((s) => s.removePane);
   const togglePaneZoom = useAppStore((s) => s.togglePaneZoom);
   const zoomedPane = useAppStore((s) => s.zoomedPane);
+  const setTabCustomTitle = useAppStore((s) => s.setTabCustomTitle);
   const projects = useProjectsStore((s) => s.projects);
   const terminalTabs = tabs.filter((t) => t.type === "terminal");
 
   // Track expanded state for tree nodes
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Inline rename state
+  const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const startTabRename = useCallback((tabId: string) => {
+    const tab = terminalTabs.find((t) => t.id === tabId);
+    if (!tab) return;
+    setRenamingTabId(tabId);
+    setRenameValue(tab.customTitle || tab.title);
+  }, [terminalTabs]);
+
+  const commitTabRename = useCallback(() => {
+    if (renamingTabId) {
+      const trimmed = renameValue.trim();
+      setTabCustomTitle(renamingTabId, trimmed || null);
+      setRenamingTabId(null);
+    }
+  }, [renamingTabId, renameValue, setTabCustomTitle]);
+
+  const cancelTabRename = useCallback(() => {
+    setRenamingTabId(null);
+  }, []);
+
+  useEffect(() => {
+    if (renamingTabId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingTabId]);
 
   // Auto-expand project groups and active tab
   useEffect(() => {
@@ -441,7 +473,7 @@ function TerminalsView() {
 
         return {
           id: tab.id,
-          label: tab.title,
+          label: tab.customTitle || tab.title,
           icon: tabIcon,
           isActive: tab.id === activeTabId,
           children: paneChildren.length > 0 ? paneChildren : undefined,
@@ -486,6 +518,31 @@ function TerminalsView() {
           selectedId={activeTabId}
           onSelect={handleSelect}
           onToggle={handleToggle}
+          renderLabel={(node) => {
+            if (node.id === renamingTabId) {
+              return (
+                <input
+                  ref={renameInputRef}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={commitTabRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitTabRename();
+                    if (e.key === "Escape") cancelTabRename();
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-background border border-accent/50 rounded px-1 py-0 text-sm text-foreground outline-none w-full min-w-0 flex-1"
+                />
+              );
+            }
+            return null; // Use default label
+          }}
+          onDoubleClick={(id) => {
+            // Only allow renaming tab nodes (not groups or panes)
+            const isTab = terminalTabs.some((t) => t.id === id);
+            if (isTab) startTabRename(id);
+          }}
           onEscape={() => {
             // Return focus to the active terminal pane
             const terminalEl = document.querySelector<HTMLElement>(".xterm-helper-textarea");
@@ -518,6 +575,12 @@ function TerminalsView() {
                 <ContextMenu
                   content={
                     <>
+                      <MenuItem
+                        icon={<Pencil className="w-3.5 h-3.5" />}
+                        label="Rename Group"
+                        onSelect={() => startTabRename(node.id)}
+                      />
+                      <MenuSeparator />
                       <MenuItem
                         icon={<SplitSquareVertical className="w-3.5 h-3.5" />}
                         label="Split Horizontal"

@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe } from "lucide-react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe, Pencil } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
 import {
@@ -21,13 +21,40 @@ const TAB_ICONS: Record<TabType, typeof Terminal> = {
 export function TabBar() {
   const tabs = useAppStore((s) => s.tabs);
   const activeTabId = useAppStore((s) => s.activeTabId);
-  const { setActiveTab, removeTab, closeTabs, addTab, pinDiffTab, openBrowserTab, mergeTabInto } = useAppStore();
+  const { setActiveTab, removeTab, closeTabs, addTab, pinDiffTab, openBrowserTab, mergeTabInto, setTabCustomTitle } = useAppStore();
   const activeProject = useProjectsStore((s) =>
     s.projects.find((p) => p.id === s.activeProjectId) || null
   );
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const [draggingTabId, setDraggingTabId] = useState<string | null>(null);
+  const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const startRename = useCallback((tabId: string, currentTitle: string) => {
+    setRenamingTabId(tabId);
+    setRenameValue(currentTitle);
+  }, []);
+
+  const commitRename = useCallback(() => {
+    if (renamingTabId) {
+      const trimmed = renameValue.trim();
+      setTabCustomTitle(renamingTabId, trimmed || null);
+      setRenamingTabId(null);
+    }
+  }, [renamingTabId, renameValue, setTabCustomTitle]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingTabId(null);
+  }, []);
+
+  useEffect(() => {
+    if (renamingTabId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingTabId]);
 
   const handleNewTerminal = () => {
     const id = `terminal-${Date.now()}`;
@@ -155,9 +182,31 @@ export function TabBar() {
             )}
 
             <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-accent" : ""} ${isDragTarget ? "opacity-0" : ""}`} />
-            <span className={`truncate ${isUnpinned ? "italic text-foreground-muted" : ""} ${isDragTarget ? "opacity-0" : ""}`}>
-              {tab.title}
-            </span>
+            {renamingTabId === tab.id ? (
+              <input
+                ref={renameInputRef}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                  if (e.key === "Escape") cancelRename();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-background border border-accent/50 rounded px-1 py-0 text-xs text-foreground outline-none w-full min-w-0"
+              />
+            ) : (
+              <span
+                className={`truncate ${isUnpinned ? "italic text-foreground-muted" : ""} ${isDragTarget ? "opacity-0" : ""}`}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  startRename(tab.id, tab.customTitle || tab.title);
+                }}
+              >
+                {tab.customTitle || tab.title}
+              </span>
+            )}
 
             <span
               role="button"
@@ -206,6 +255,14 @@ export function TabBar() {
                   />
                 )}
                 {isDiff && <MenuSeparator />}
+
+                {/* Rename */}
+                <MenuItem
+                  icon={<Pencil className="w-3.5 h-3.5" />}
+                  label="Rename Tab"
+                  onSelect={() => startRename(tab.id, tab.customTitle || tab.title)}
+                />
+                <MenuSeparator />
 
                 {/* Close actions */}
                 <MenuItem
