@@ -6,6 +6,7 @@ import { immer } from "zustand/middleware/immer";
 import { useProjectsStore } from "./projectsStore";
 import {
   type SplitNode,
+  type SerializedSplitNode,
   flattenPanes,
   findPaneNode,
   insertSplit,
@@ -16,6 +17,8 @@ import {
   updateSizes,
   swapPanes as swapPanesTree,
   dockPane as dockPaneTree,
+  serializeSplitTree,
+  deserializeSplitTree,
 } from "./splitTree";
 
 // Sidebar navigation views
@@ -128,8 +131,8 @@ export interface TabPaneState {
 }
 
 // Re-export splitTree types and helpers for consumers
-export type { SplitNode, PaneNode, SplitContainerNode } from "./splitTree";
-export { flattenPanes, getRootDirection, create2x2Grid, insertSplit, removePaneFromTree, treeFromFlat, findPaneNode } from "./splitTree";
+export type { SplitNode, PaneNode, SplitContainerNode, SerializedSplitNode } from "./splitTree";
+export { flattenPanes, getRootDirection, create2x2Grid, insertSplit, removePaneFromTree, treeFromFlat, findPaneNode, serializeSplitTree, deserializeSplitTree } from "./splitTree";
 
 // Right panel pane types
 export type RightPanelPaneType = "browser" | "planning";
@@ -186,9 +189,13 @@ export interface SerializedPane {
 }
 
 export interface SerializedTabPaneState {
-  panes: SerializedPane[];
+  /** @deprecated Old flat format — kept for backward compatibility on restore */
+  panes?: SerializedPane[];
+  /** @deprecated Old flat format */
+  splitDirection?: "horizontal" | "vertical";
+  /** New tree format — takes priority over panes[] when present */
+  splitTree?: SerializedSplitNode;
   activePane: string;
-  splitDirection: "horizontal" | "vertical";
 }
 
 export interface SerializedTab {
@@ -365,15 +372,8 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
       Object.entries(state.terminalPanes).map(([tabId, tabState]) => [
         tabId,
         {
-          panes: flattenPanes(tabState.splitTree)
-            .filter((p): p is TerminalPaneData => p.type === "terminal")
-            .map((p) => ({
-              id: p.id,
-              cwd: p.cwd,
-              customLabel: p.customLabel,
-            })),
+          splitTree: serializeSplitTree(tabState.splitTree),
           activePane: tabState.activePane,
-          splitDirection: getRootDirection(tabState.splitTree),
         },
       ])
     ),
@@ -887,7 +887,7 @@ export const useAppStore = create<AppStore>()(
 
         tabState.splitTree = updateSizes(tabState.splitTree, panelIds, sizes);
       });
-      // Don't call persistWorkspace for every resize — let PanelGroup debounce
+      persistWorkspace();
     },
 
     swapPanes: (tabId, paneId1, paneId2) => {
@@ -1126,12 +1126,26 @@ export const useAppStore = create<AppStore>()(
           : state.tabs[0]?.id || null;
 
         // Restore terminal pane structure with fresh sessionIds
-        // Handles both old flat format (panes[]) and would handle tree format in future
+        // Handles both old flat format (panes[]) and new tree format (splitTree)
         state.terminalPanes = {};
         for (const [tabId, savedPaneState] of Object.entries(snapshot.terminalPanes || {})) {
           // Only restore pane state if the tab still exists
           if (!state.tabs.some((t) => t.id === tabId)) continue;
-          // Skip if panes array is invalid
+
+          // New tree format — takes priority
+          if (savedPaneState?.splitTree) {
+            const counterRef = { value: 0 };
+            const restoredTree = deserializeSplitTree(savedPaneState.splitTree, tabId, counterRef);
+            // Verify tree has at least one pane
+            if (flattenPanes(restoredTree).length === 0) continue;
+            state.terminalPanes[tabId] = {
+              splitTree: restoredTree,
+              activePane: savedPaneState.activePane || flattenPanes(restoredTree)[0].id,
+            };
+            continue;
+          }
+
+          // Legacy flat format fallback
           if (!savedPaneState?.panes || !Array.isArray(savedPaneState.panes) || savedPaneState.panes.length === 0) continue;
 
           const restoredPanes: TerminalPaneData[] = savedPaneState.panes

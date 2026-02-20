@@ -78,6 +78,7 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
   const create2x2GridLayout = useAppStore((s) => s.create2x2GridLayout);
   const storeSwapPanes = useAppStore((s) => s.swapPanes);
   const storeDockPane = useAppStore((s) => s.dockPane);
+  const storeUpdateSizes = useAppStore((s) => s.updateSplitTreeSizes);
   const updateTab = useAppStore((s) => s.updateTab);
   const updatePaneProcess = useAppStore((s) => s.updatePaneProcess);
 
@@ -463,6 +464,7 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
             onClearPaneInitialCommand={clearPaneInitialCommand}
             onSwapPanes={(id1, id2) => storeSwapPanes(tabId, id1, id2)}
             onDockPane={(draggedId, targetId, dir) => storeDockPane(tabId, draggedId, targetId, dir)}
+            onSizesChange={(panelIds, sizes) => storeUpdateSizes(tabId, panelIds, sizes)}
           />
         ) : null}
       </div>
@@ -489,6 +491,7 @@ interface SplitTreeRendererProps {
   onClearPaneInitialCommand: (paneId: string) => void;
   onSwapPanes: (paneId1: string, paneId2: string) => void;
   onDockPane: (draggedPaneId: string, targetPaneId: string, direction: "horizontal" | "vertical") => void;
+  onSizesChange: (panelIds: string[], sizes: number[]) => void;
   /** Whether this is the first pane in the overall tree (for tab-level initialCommand) */
   isFirstPane?: boolean;
 }
@@ -511,6 +514,7 @@ function SplitTreeRenderer({
   onClearPaneInitialCommand,
   onSwapPanes,
   onDockPane,
+  onSizesChange,
   isFirstPane = true,
 }: SplitTreeRendererProps) {
   // Leaf node — render a single pane with drag-and-drop
@@ -541,8 +545,16 @@ function SplitTreeRenderer({
   // Split node — render nested PanelGroup with resize handles
   const { direction, children, sizes } = node;
 
+  // Capture panel IDs for onLayout callback
+  const childIds = children.map((c, i) =>
+    c.type === "pane" ? c.pane.id : `split-${i}`
+  );
+  const handleLayout = useCallback((newSizes: number[]) => {
+    onSizesChange(childIds, newSizes);
+  }, [onSizesChange, childIds.join(",")]);
+
   return (
-    <PanelGroup direction={direction}>
+    <PanelGroup direction={direction} onLayout={handleLayout}>
       {children.map((child, index) => {
         // Track whether this child contains the first pane in the tree
         const childIsFirst = isFirstPane && index === 0;
@@ -591,6 +603,7 @@ function SplitTreeRenderer({
                 onClearPaneInitialCommand={onClearPaneInitialCommand}
                 onSwapPanes={onSwapPanes}
                 onDockPane={onDockPane}
+                onSizesChange={onSizesChange}
                 isFirstPane={childIsFirst}
               />
             </Panel>
@@ -704,33 +717,35 @@ function PaneDropTarget({
     }
   }, [dropZone, pane.id, tabId, onSwapPanes, onDockPane]);
 
-  // Drop zone overlay styling
-  const zoneOverlay = dropZone && !isDragging ? (
-    <div className="absolute inset-0 pointer-events-none z-10">
+  // Drop zone overlay — always rendered for smooth opacity transition
+  const showOverlay = dropZone != null && !isDragging;
+
+  const zoneOverlay = (
+    <div className={`absolute inset-0 pointer-events-none z-10 transition-opacity duration-150 ${showOverlay ? "opacity-100" : "opacity-0"}`}>
       {dropZone === "center" && (
-        <div className="absolute inset-2 border-2 border-dashed border-accent rounded-md bg-accent/10 flex items-center justify-center">
+        <div className="absolute inset-2 border-2 border-dashed border-accent/60 rounded-md bg-accent/10 flex items-center justify-center">
           <span className="text-2xs text-accent font-medium bg-background/80 px-2 py-0.5 rounded">Swap</span>
         </div>
       )}
       {dropZone === "left" && (
-        <div className="absolute inset-y-0 left-0 w-1/4 bg-accent/15 border-r-2 border-accent rounded-l-sm" />
+        <div className="absolute inset-y-0 left-0 w-1/4 bg-blue-500/15 border-r-2 border-blue-400/60 rounded-l-sm" />
       )}
       {dropZone === "right" && (
-        <div className="absolute inset-y-0 right-0 w-1/4 bg-accent/15 border-l-2 border-accent rounded-r-sm" />
+        <div className="absolute inset-y-0 right-0 w-1/4 bg-blue-500/15 border-l-2 border-blue-400/60 rounded-r-sm" />
       )}
       {dropZone === "top" && (
-        <div className="absolute inset-x-0 top-0 h-1/4 bg-accent/15 border-b-2 border-accent rounded-t-sm" />
+        <div className="absolute inset-x-0 top-0 h-1/4 bg-blue-500/15 border-b-2 border-blue-400/60 rounded-t-sm" />
       )}
       {dropZone === "bottom" && (
-        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-accent/15 border-t-2 border-accent rounded-b-sm" />
+        <div className="absolute inset-x-0 bottom-0 h-1/4 bg-blue-500/15 border-t-2 border-blue-400/60 rounded-b-sm" />
       )}
     </div>
-  ) : null;
+  );
 
   return (
     <div
       ref={containerRef}
-      className={`h-full w-full relative ${
+      className={`group/pane h-full w-full relative ${
         totalPaneCount > 1
           ? isActive
             ? "ring-1 ring-accent/20 rounded-sm transition-default"
@@ -749,7 +764,7 @@ function PaneDropTarget({
           draggable
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          className="absolute top-0 left-0 z-20 p-0.5 opacity-0 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          className="absolute top-0 left-0 z-20 p-0.5 opacity-0 group-hover/pane:opacity-60 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
           title="Drag to rearrange"
         >
           <GripVertical className="w-3 h-3 text-foreground-muted" />

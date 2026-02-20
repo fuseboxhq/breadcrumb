@@ -351,6 +351,82 @@ export function create2x2Grid(panes: ContentPane[]): SplitNode {
   };
 }
 
+// ─── Serialization ──────────────────────────────────────────────────────────────
+
+/** JSON-safe representation of a pane for persistence. */
+export interface SerializedPaneNode {
+  type: "pane";
+  id: string;
+  cwd: string;
+  customLabel?: string;
+}
+
+/** JSON-safe representation of a split for persistence. */
+export interface SerializedSplitContainerNode {
+  type: "split";
+  direction: "horizontal" | "vertical";
+  children: SerializedSplitNode[];
+  sizes: number[];
+}
+
+export type SerializedSplitNode = SerializedPaneNode | SerializedSplitContainerNode;
+
+/**
+ * Serialize a SplitNode tree to a JSON-safe representation.
+ * Strips transient data (sessionId, processName, etc.) — only keeps id, cwd, customLabel.
+ */
+export function serializeSplitTree(node: SplitNode): SerializedSplitNode {
+  if (node.type === "pane") {
+    const p = node.pane;
+    const serialized: SerializedPaneNode = {
+      type: "pane",
+      id: p.id,
+      cwd: p.type === "terminal" ? p.cwd : "",
+    };
+    if (p.type === "terminal" && p.customLabel) {
+      serialized.customLabel = p.customLabel;
+    }
+    return serialized;
+  }
+  return {
+    type: "split",
+    direction: node.direction,
+    children: node.children.map(serializeSplitTree),
+    sizes: [...node.sizes],
+  };
+}
+
+/**
+ * Deserialize a JSON-safe tree back to a live SplitNode tree.
+ * Creates fresh sessionIds and sets lastActivity.
+ */
+export function deserializeSplitTree(
+  node: SerializedSplitNode,
+  tabId: string,
+  counterRef: { value: number }
+): SplitNode {
+  if (node.type === "pane") {
+    const idx = counterRef.value++;
+    return {
+      type: "pane",
+      pane: {
+        type: "terminal",
+        id: node.id,
+        sessionId: `${tabId}-${Date.now()}-${idx}`,
+        cwd: node.cwd || "",
+        customLabel: node.customLabel,
+        lastActivity: Date.now(),
+      },
+    };
+  }
+  return {
+    type: "split",
+    direction: node.direction,
+    children: node.children.map((c) => deserializeSplitTree(c, tabId, counterRef)),
+    sizes: [...node.sizes],
+  };
+}
+
 /** Update sizes at a specific split node identified by its children's pane IDs. */
 export function updateSizes(
   tree: SplitNode,
