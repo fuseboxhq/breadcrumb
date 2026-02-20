@@ -15,20 +15,6 @@ import {
 import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3, RotateCcw } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 
-// Suppress xterm Viewport timing error caused by React StrictMode's
-// double-invoke in development. StrictMode mounts → unmounts → remounts;
-// the first mount's Viewport schedules a setTimeout(syncScrollArea) that
-// fires after the terminal is disposed, accessing undefined _renderService.
-// This is harmless — the second mount creates a working terminal.
-window.addEventListener("error", (event) => {
-  if (
-    event.message ===
-    "Cannot read properties of undefined (reading 'dimensions')"
-  ) {
-    event.preventDefault();
-  }
-});
-
 interface TerminalInstanceProps {
   sessionId: string;
   isActive: boolean;
@@ -391,20 +377,24 @@ export function TerminalInstance({
       } catch { /* ignore — will retry on next resize */ }
     };
 
-    // Open immediately when container has dimensions (production path).
-    // In dev with React StrictMode, the first mount's terminal gets
-    // disposed before its Viewport setTimeout fires — the module-level
-    // error handler suppresses that harmless crash.
-    if (tryOpen()) {
-      tryCreatePty();
-    }
-
-    // Fallback: if container wasn't ready on mount (zero-sized, invisible
-    // tab, etc.), retry on next frame. ResizeObserver also retries at 80ms.
+    // Defer terminal.open() to next animation frame. This prevents the
+    // xterm Viewport crash caused by React StrictMode's double-invoke:
+    // StrictMode runs mount → cleanup → remount synchronously. The first
+    // mount's rAF is cancelled in cleanup (cancelAnimationFrame below),
+    // so the terminal never opens and no Viewport setTimeout is scheduled.
+    // The second mount's rAF fires normally and creates a working terminal.
     const openRafId = requestAnimationFrame(() => {
       if (destroyed) return;
       if (tryOpen()) {
         tryCreatePty();
+        // If fitAddon.proposeDimensions() wasn't ready yet (renderer
+        // needs a frame to initialize after open), retry shortly.
+        // The ResizeObserver also retries at 80ms as a final fallback.
+        if (!ptyCreated) {
+          setTimeout(() => {
+            if (!destroyed) tryCreatePty();
+          }, 50);
+        }
       }
     });
 
