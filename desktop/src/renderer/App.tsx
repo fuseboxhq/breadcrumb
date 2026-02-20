@@ -4,7 +4,7 @@ import { CommandPalette } from "./components/command-palette/CommandPalette";
 import { ExtensionModal } from "./components/extensions/ExtensionModal";
 import { DebugModal, type DebugSubmitData } from "./components/debug/DebugModal";
 import { useSettingsStore, useResolvedTheme } from "./store/settingsStore";
-import { useAppStore, flushWorkspacePersist } from "./store/appStore";
+import { useAppStore, flushWorkspacePersist, flattenPanes } from "./store/appStore";
 import { useProjectsStore } from "./store/projectsStore";
 import { useDebugStore } from "./store/debugStore";
 import { Toaster } from "sonner";
@@ -68,8 +68,9 @@ function App() {
 
       useAppStore.setState((state) => {
         state.terminalPanes[tabId] = {
-          panes: [
-            {
+          splitTree: {
+            type: "pane",
+            pane: {
               type: "terminal",
               id: paneId,
               sessionId,
@@ -77,9 +78,8 @@ function App() {
               lastActivity: Date.now(),
               processLabel: "Debug: Claude",
             },
-          ],
+          },
           activePane: paneId,
-          splitDirection: "horizontal",
         };
       });
     },
@@ -124,8 +124,9 @@ function App() {
       // Directly set up pane state with the pre-created sessionId
       useAppStore.setState((state) => {
         state.terminalPanes[tabId] = {
-          panes: [
-            {
+          splitTree: {
+            type: "pane",
+            pane: {
               type: "terminal",
               id: paneId,
               sessionId,
@@ -133,9 +134,8 @@ function App() {
               lastActivity: Date.now(),
               processLabel: name,
             },
-          ],
+          },
           activePane: paneId,
-          splitDirection: "horizontal",
         };
       });
     });
@@ -150,7 +150,8 @@ function App() {
 
       // Find the tab+pane that owns this sessionId
       for (const [tabId, tabPaneState] of Object.entries(state.terminalPanes)) {
-        const pane = tabPaneState.panes.find(
+        const panes = flattenPanes(tabPaneState.splitTree);
+        const pane = panes.find(
           (p) => p.type === "terminal" && p.sessionId === sessionId
         );
         if (pane) {

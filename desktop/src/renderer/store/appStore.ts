@@ -4,6 +4,17 @@ import { immer } from "zustand/middleware/immer";
 // Safe because all cross-references are inside functions, not top-level code.
 // ESM live bindings resolve by the time any store action executes.
 import { useProjectsStore } from "./projectsStore";
+import {
+  type SplitNode,
+  flattenPanes,
+  findPaneNode,
+  insertSplit,
+  removePaneFromTree,
+  treeFromFlat,
+  getRootDirection,
+  create2x2Grid,
+  updateSizes,
+} from "./splitTree";
 
 // Sidebar navigation views
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
@@ -110,10 +121,13 @@ export function isTerminalPane(pane: ContentPane): pane is TerminalPaneData {
 }
 
 export interface TabPaneState {
-  panes: ContentPane[];
+  splitTree: SplitNode;
   activePane: string;
-  splitDirection: "horizontal" | "vertical";
 }
+
+// Re-export splitTree types and helpers for consumers
+export type { SplitNode, PaneNode, SplitContainerNode } from "./splitTree";
+export { flattenPanes, getRootDirection, create2x2Grid, insertSplit, removePaneFromTree, treeFromFlat, findPaneNode } from "./splitTree";
 
 // Right panel pane types
 export type RightPanelPaneType = "browser" | "planning";
@@ -261,6 +275,10 @@ export interface AppActions {
   updatePaneProcess: (tabId: string, paneId: string, processName: string, processLabel: string) => void;
   setPaneCustomLabel: (tabId: string, paneId: string, label: string | null) => void;
   clearTabPanes: (tabId: string) => void;
+  /** Replace the current layout with a 2×2 grid (creates new panes as needed) */
+  create2x2GridLayout: (tabId: string) => void;
+  /** Update flex sizes for a PanelGroup (called from onLayout callback) */
+  updateSplitTreeSizes: (tabId: string, panelIds: string[], sizes: number[]) => void;
 
   // Zoom
   togglePaneZoom: (tabId: string, paneId: string) => void;
@@ -341,7 +359,7 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
       Object.entries(state.terminalPanes).map(([tabId, tabState]) => [
         tabId,
         {
-          panes: tabState.panes
+          panes: flattenPanes(tabState.splitTree)
             .filter((p): p is TerminalPaneData => p.type === "terminal")
             .map((p) => ({
               id: p.id,
@@ -349,7 +367,7 @@ function buildWorkspaceSnapshot(): WorkspaceSnapshot {
               customLabel: p.customLabel,
             })),
           activePane: tabState.activePane,
-          splitDirection: tabState.splitDirection,
+          splitDirection: getRootDirection(tabState.splitTree),
         },
       ])
     ),
@@ -578,15 +596,20 @@ export const useAppStore = create<AppStore>()(
         const draftSource = draft.terminalPanes[sourceTabId];
         if (!draftTarget || !draftSource) return;
 
-        // Append all source panes into target, re-IDing to avoid duplicates
-        // (every tab starts with "pane-1", so merged panes would collide)
-        const existingIds = new Set(draftTarget.panes.map((p) => p.id));
-        for (const pane of draftSource.panes) {
+        // Extract all panes from source tree
+        const sourcePanes = flattenPanes(draftSource.splitTree);
+        const existingIds = new Set(flattenPanes(draftTarget.splitTree).map((p) => p.id));
+
+        // Re-ID to avoid duplicates (every tab starts with "pane-1")
+        for (const pane of sourcePanes) {
           if (existingIds.has(pane.id)) {
             pane.id = `pane-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
           }
-          draftTarget.panes.push(pane);
         }
+
+        // Merge: combine target tree and source panes into a horizontal split
+        const allPanes = [...flattenPanes(draftTarget.splitTree), ...sourcePanes];
+        draftTarget.splitTree = treeFromFlat(allPanes, getRootDirection(draftTarget.splitTree));
 
         // Remove source tab
         draft.tabs = draft.tabs.filter((t) => t.id !== sourceTabId);
@@ -604,9 +627,9 @@ export const useAppStore = create<AppStore>()(
 
         // Re-number Claude instances per project to avoid duplicates after merge
         const projectGroups = new Map<string | undefined, Array<TerminalPaneData>>();
-        for (const [tid, tabState] of Object.entries(draft.terminalPanes)) {
+        for (const [tid, ts] of Object.entries(draft.terminalPanes)) {
           const tab = draft.tabs.find((t) => t.id === tid);
-          for (const pane of tabState.panes) {
+          for (const pane of flattenPanes(ts.splitTree)) {
             if (pane.type === "terminal" && pane.claudeInstanceNumber) {
               const pid = tab?.projectId;
               if (!projectGroups.has(pid)) projectGroups.set(pid, []);
@@ -630,18 +653,16 @@ export const useAppStore = create<AppStore>()(
     initializeTabPanes: (tabId, workingDirectory) => {
       set((state) => {
         if (!state.terminalPanes[tabId]) {
+          const initialPane: TerminalPaneData = {
+            type: "terminal",
+            id: "pane-1",
+            sessionId: `${tabId}-1`,
+            cwd: workingDirectory || "",
+            lastActivity: Date.now(),
+          };
           state.terminalPanes[tabId] = {
-            panes: [
-              {
-                type: "terminal",
-                id: "pane-1",
-                sessionId: `${tabId}-1`,
-                cwd: workingDirectory || "",
-                lastActivity: Date.now(),
-              },
-            ],
+            splitTree: { type: "pane", pane: initialPane },
             activePane: "pane-1",
-            splitDirection: "horizontal",
           };
         }
       });
@@ -653,25 +674,32 @@ export const useAppStore = create<AppStore>()(
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
 
-        if (direction) {
-          tabState.splitDirection = direction;
-        }
+        const splitDir = direction || "horizontal";
 
         // Inherit CWD from the currently active terminal pane
-        const activeP = tabState.panes.find((p) => p.id === tabState.activePane);
+        const panes = flattenPanes(tabState.splitTree);
+        const activeP = panes.find((p) => p.id === tabState.activePane);
         const inheritCwd = (activeP && activeP.type === "terminal") ? activeP.cwd : "";
 
         const id = `pane-${Date.now()}`;
         const sessionId = `${tabId}-${Date.now()}`;
 
-        tabState.panes.push({
+        const newPane: TerminalPaneData = {
           type: "terminal",
           id,
           sessionId,
           cwd: inheritCwd,
           lastActivity: Date.now(),
           initialCommand,
-        });
+        };
+
+        // Split the active pane in the requested direction
+        tabState.splitTree = insertSplit(
+          tabState.splitTree,
+          tabState.activePane,
+          newPane,
+          splitDir
+        );
         tabState.activePane = id;
       });
       persistWorkspace();
@@ -682,11 +710,13 @@ export const useAppStore = create<AppStore>()(
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
 
-        if (direction) {
-          tabState.splitDirection = direction;
-        }
-
-        tabState.panes.push(pane);
+        const splitDir = direction || "horizontal";
+        tabState.splitTree = insertSplit(
+          tabState.splitTree,
+          tabState.activePane,
+          pane,
+          splitDir
+        );
         tabState.activePane = pane.id;
       });
       persistWorkspace();
@@ -697,12 +727,13 @@ export const useAppStore = create<AppStore>()(
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
 
-        const newPanes = tabState.panes.filter((p) => p.id !== paneId);
-        if (newPanes.length === 0) return; // Don't remove last pane
+        const newTree = removePaneFromTree(tabState.splitTree, paneId);
+        if (!newTree) return; // Don't remove last pane
 
-        tabState.panes = newPanes;
+        tabState.splitTree = newTree;
         if (tabState.activePane === paneId) {
-          tabState.activePane = newPanes[newPanes.length - 1].id;
+          const remaining = flattenPanes(newTree);
+          tabState.activePane = remaining[remaining.length - 1].id;
         }
         // Clear zoom if zoomed pane was removed
         if (state.zoomedPane?.tabId === tabId && state.zoomedPane?.paneId === paneId) {
@@ -725,8 +756,11 @@ export const useAppStore = create<AppStore>()(
       set((state) => {
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
-        tabState.splitDirection =
-          tabState.splitDirection === "horizontal" ? "vertical" : "horizontal";
+        // Toggle the root split direction
+        if (tabState.splitTree.type === "split") {
+          tabState.splitTree.direction =
+            tabState.splitTree.direction === "horizontal" ? "vertical" : "horizontal";
+        }
       });
       persistWorkspace();
     },
@@ -736,10 +770,10 @@ export const useAppStore = create<AppStore>()(
         const tabState = state.terminalPanes[tabId];
         if (!tabState) return;
 
-        const pane = tabState.panes.find((p) => p.id === paneId);
-        if (pane && pane.type === "terminal") {
-          pane.cwd = cwd;
-          pane.lastActivity = Date.now();
+        const node = findPaneNode(tabState.splitTree, paneId);
+        if (node && node.pane.type === "terminal") {
+          node.pane.cwd = cwd;
+          node.pane.lastActivity = Date.now();
         }
       });
       persistWorkspace();
@@ -747,8 +781,11 @@ export const useAppStore = create<AppStore>()(
 
     updatePaneProcess: (tabId, paneId, processName, processLabel) =>
       set((state) => {
-        const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
-        if (!pane || pane.type !== "terminal") return;
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+        const node = findPaneNode(tabState.splitTree, paneId);
+        if (!node || node.pane.type !== "terminal") return;
+        const pane = node.pane;
 
         const wasClaude = pane.processName === "claude";
         const isClaude = processName === "claude";
@@ -764,12 +801,12 @@ export const useAppStore = create<AppStore>()(
             const thisProjectId = thisTab?.projectId;
 
             const usedNumbers = new Set<number>();
-            for (const [tid, tabState] of Object.entries(state.terminalPanes)) {
+            for (const [tid, ts] of Object.entries(state.terminalPanes)) {
               // Only consider tabs with the same project scope
               const tab = state.tabs.find((t) => t.id === tid);
               if (tab?.projectId !== thisProjectId) continue;
 
-              for (const p of tabState.panes) {
+              for (const p of flattenPanes(ts.splitTree)) {
                 if (p.type === "terminal" && p.claudeInstanceNumber && p !== pane) {
                   usedNumbers.add(p.claudeInstanceNumber);
                 }
@@ -793,9 +830,11 @@ export const useAppStore = create<AppStore>()(
 
     setPaneCustomLabel: (tabId, paneId, label) => {
       set((state) => {
-        const pane = state.terminalPanes[tabId]?.panes.find((p) => p.id === paneId);
-        if (pane && pane.type === "terminal") {
-          pane.customLabel = label || undefined;
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+        const node = findPaneNode(tabState.splitTree, paneId);
+        if (node && node.pane.type === "terminal") {
+          node.pane.customLabel = label || undefined;
         }
       });
       persistWorkspace();
@@ -805,6 +844,45 @@ export const useAppStore = create<AppStore>()(
       set((state) => {
         delete state.terminalPanes[tabId];
       }),
+
+    create2x2GridLayout: (tabId) => {
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+
+        const existingPanes = flattenPanes(tabState.splitTree);
+        // Build up to 4 panes — reuse existing, create new as needed
+        const allPanes: ContentPane[] = [...existingPanes];
+        const activeCwd = existingPanes.find(
+          (p) => p.id === tabState.activePane && p.type === "terminal"
+        );
+        const inheritCwd = activeCwd && activeCwd.type === "terminal" ? activeCwd.cwd : "";
+
+        while (allPanes.length < 4) {
+          const id = `pane-${Date.now()}-${allPanes.length}`;
+          allPanes.push({
+            type: "terminal",
+            id,
+            sessionId: `${tabId}-${Date.now()}-${allPanes.length}`,
+            cwd: inheritCwd,
+            lastActivity: Date.now(),
+          } as TerminalPaneData);
+        }
+
+        tabState.splitTree = create2x2Grid(allPanes.slice(0, 4));
+      });
+      persistWorkspace();
+    },
+
+    updateSplitTreeSizes: (tabId, panelIds, sizes) => {
+      set((state) => {
+        const tabState = state.terminalPanes[tabId];
+        if (!tabState) return;
+
+        tabState.splitTree = updateSizes(tabState.splitTree, panelIds, sizes);
+      });
+      // Don't call persistWorkspace for every resize — let PanelGroup debounce
+    },
 
     // Zoom
     togglePaneZoom: (tabId, paneId) =>
@@ -1024,6 +1102,7 @@ export const useAppStore = create<AppStore>()(
           : state.tabs[0]?.id || null;
 
         // Restore terminal pane structure with fresh sessionIds
+        // Handles both old flat format (panes[]) and would handle tree format in future
         state.terminalPanes = {};
         for (const [tabId, savedPaneState] of Object.entries(snapshot.terminalPanes || {})) {
           // Only restore pane state if the tab still exists
@@ -1031,20 +1110,23 @@ export const useAppStore = create<AppStore>()(
           // Skip if panes array is invalid
           if (!savedPaneState?.panes || !Array.isArray(savedPaneState.panes) || savedPaneState.panes.length === 0) continue;
 
+          const restoredPanes: TerminalPaneData[] = savedPaneState.panes
+            .filter((p) => p.id)
+            .map((p, i) => ({
+              type: "terminal" as const,
+              id: p.id,
+              sessionId: `${tabId}-${Date.now()}-${i}`,
+              cwd: p.cwd || "",
+              customLabel: p.customLabel,
+              lastActivity: Date.now(),
+            }));
+
+          if (restoredPanes.length === 0) continue;
+
+          // Convert flat pane list into a split tree
           state.terminalPanes[tabId] = {
-            panes: savedPaneState.panes
-              .filter((p) => p.id) // Skip panes without an ID
-              .map((p, i) => ({
-                type: "terminal" as const,
-                id: p.id,
-                // Generate fresh sessionId — old PTY sessions don't survive restart
-                sessionId: `${tabId}-${Date.now()}-${i}`,
-                cwd: p.cwd || "",
-                customLabel: p.customLabel,
-                lastActivity: Date.now(),
-              })),
-            activePane: savedPaneState.activePane || savedPaneState.panes[0]?.id || "pane-1",
-            splitDirection: savedPaneState.splitDirection || "horizontal",
+            splitTree: treeFromFlat(restoredPanes, savedPaneState.splitDirection || "horizontal"),
+            activePane: savedPaneState.activePane || restoredPanes[0].id,
           };
         }
 
@@ -1066,12 +1148,23 @@ export const useCurrentProjectPath = () => useAppStore((s) => s.currentProjectPa
 // Pane selector hooks
 export const useTabPanes = (tabId: string) =>
   useAppStore((s) => s.terminalPanes[tabId]);
+/** Flat list of panes from the split tree (backward-compat for rendering) */
 export const useTabPanesList = (tabId: string) =>
-  useAppStore((s) => s.terminalPanes[tabId]?.panes || []);
+  useAppStore((s) => {
+    const ts = s.terminalPanes[tabId];
+    return ts ? flattenPanes(ts.splitTree) : [];
+  });
 export const useActivePane = (tabId: string) =>
   useAppStore((s) => s.terminalPanes[tabId]?.activePane);
+/** Root-level split direction (backward-compat) */
 export const useSplitDirection = (tabId: string) =>
-  useAppStore((s) => s.terminalPanes[tabId]?.splitDirection || "horizontal");
+  useAppStore((s) => {
+    const ts = s.terminalPanes[tabId];
+    return ts ? getRootDirection(ts.splitTree) : "horizontal";
+  });
+/** The full split tree for recursive rendering */
+export const useSplitTree = (tabId: string) =>
+  useAppStore((s) => s.terminalPanes[tabId]?.splitTree);
 export const useZoomedPane = () => useAppStore((s) => s.zoomedPane);
 
 // Layout selector hooks

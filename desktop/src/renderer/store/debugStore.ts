@@ -125,8 +125,9 @@ function spawnSkillCreation(projectPath: string): void {
 
   useAppStore.setState((state) => {
     state.terminalPanes[tabId] = {
-      panes: [
-        {
+      splitTree: {
+        type: "pane",
+        pane: {
           type: "terminal",
           id: paneId,
           sessionId,
@@ -134,9 +135,8 @@ function spawnSkillCreation(projectPath: string): void {
           lastActivity: Date.now(),
           processLabel: "Create Debug Skill",
         },
-      ],
+      },
       activePane: paneId,
-      splitDirection: "horizontal",
     };
   });
 }

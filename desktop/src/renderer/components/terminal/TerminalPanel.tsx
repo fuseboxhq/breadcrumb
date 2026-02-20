@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TerminalInstance } from "./TerminalInstance";
-import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane } from "../../store/appStore";
+import { useAppStore, useTabPanes, useZoomedPane, resolveLabel, isTerminalPane, flattenPanes, getRootDirection, findPaneNode } from "../../store/appStore";
 import type { TerminalPaneData, ContentPane } from "../../store/appStore";
 import { Plus, SplitSquareVertical, Rows3, X, Maximize2, Minimize2, Sparkles, Globe, GitCompareArrows, Bug } from "lucide-react";
 import { ProcessIcon } from "../icons/ProcessIcon";
@@ -19,10 +19,10 @@ interface TerminalPanelProps {
 export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: TerminalPanelProps) {
   // Read pane state from shared store (all pane types for universal rendering)
   const tabPaneState = useTabPanes(tabId);
-  const panes = tabPaneState?.panes || [];
+  const panes = tabPaneState ? flattenPanes(tabPaneState.splitTree) : [];
   const terminalPanes = panes.filter(isTerminalPane);
   const activePane = tabPaneState?.activePane || "pane-1";
-  const splitDirection = tabPaneState?.splitDirection || "horizontal";
+  const splitDirection = tabPaneState ? getRootDirection(tabPaneState.splitTree) : "horizontal";
 
   // Read initial command from tab (e.g. "claude\n")
   const initialCommand = useAppStore(
@@ -60,7 +60,8 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
   // Maps sessionId → paneId for this tab's panes, then calls updatePaneProcess.
   useEffect(() => {
     const cleanup = window.breadcrumbAPI?.onTerminalProcessChange((event) => {
-      const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+      const ts = useAppStore.getState().terminalPanes[tabId];
+      const currentPanes = ts ? flattenPanes(ts.splitTree) : [];
       const pane = currentPanes.find(
         (p) => p.type === "terminal" && p.sessionId === event.sessionId
       );
@@ -110,8 +111,9 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
 
   // Navigate to adjacent pane
   const navigatePane = useCallback((direction: "next" | "prev") => {
-    const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
-    const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
+    const ts = useAppStore.getState().terminalPanes[tabId];
+    const currentPanes = ts ? flattenPanes(ts.splitTree) : [];
+    const currentActive = ts?.activePane;
     const currentIndex = currentPanes.findIndex((p) => p.id === currentActive);
     if (currentIndex === -1) return;
     let nextIndex: number;
@@ -125,7 +127,8 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
 
   // Navigate to specific pane by number
   const navigateToPaneNumber = useCallback((num: number) => {
-    const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+    const ts2 = useAppStore.getState().terminalPanes[tabId];
+    const currentPanes = ts2 ? flattenPanes(ts2.splitTree) : [];
     const index = num - 1;
     if (index >= 0 && index < currentPanes.length) {
       storeSetActivePane(tabId, currentPanes[index].id);
@@ -158,14 +161,17 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
   // Clear a pane-level initial command after it's been sent
   const clearPaneInitialCommand = useCallback((paneId: string) => {
     useAppStore.setState((state) => {
-      const p = state.terminalPanes[tabId]?.panes.find((pp) => pp.id === paneId);
-      if (p && p.type === "terminal") p.initialCommand = undefined;
+      const ts = state.terminalPanes[tabId];
+      if (!ts) return;
+      const node = findPaneNode(ts.splitTree, paneId);
+      if (node && node.pane.type === "terminal") node.pane.initialCommand = undefined;
     });
   }, [tabId]);
 
   // Close pane on shell exit — if last pane, close the whole tab
   const handleProcessExit = useCallback((paneId: string, _exitCode: number) => {
-    const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+    const ts3 = useAppStore.getState().terminalPanes[tabId];
+    const currentPanes = ts3 ? flattenPanes(ts3.splitTree) : [];
     if (currentPanes.length > 1) {
       storeRemovePane(tabId, paneId);
     } else {
@@ -194,7 +200,8 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
       // Cmd+Shift+Enter — toggle zoom on active pane
       if (meta && e.shiftKey && e.key === "Enter") {
         e.preventDefault();
-        const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+        const ts = useAppStore.getState().terminalPanes[tabId];
+      const currentPanes = ts ? flattenPanes(ts.splitTree) : [];
         const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
         if (currentPanes.length > 1 && currentActive) {
           togglePaneZoom(tabId, currentActive);
@@ -219,7 +226,8 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
       // Cmd+W — close pane (if multiple) or close entire tab (if single pane)
       if (meta && e.key === "w") {
         e.preventDefault();
-        const currentPanes = useAppStore.getState().terminalPanes[tabId]?.panes || [];
+        const ts = useAppStore.getState().terminalPanes[tabId];
+      const currentPanes = ts ? flattenPanes(ts.splitTree) : [];
         const currentActive = useAppStore.getState().terminalPanes[tabId]?.activePane;
         if (currentPanes.length > 1 && currentActive) {
           removePane(currentActive);

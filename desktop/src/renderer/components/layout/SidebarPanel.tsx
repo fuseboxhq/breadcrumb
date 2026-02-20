@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useAppStore, resolveLabel, isTerminalPane, type SidebarView } from "../../store/appStore";
+import { useAppStore, resolveLabel, isTerminalPane, flattenPanes, type SidebarView } from "../../store/appStore";
 import { useProjectsStore, useActiveProject } from "../../store/projectsStore";
 import { useSettingsStore, useTerminalSettings } from "../../store/settingsStore";
 import { ExtensionsPanel } from "../extensions/ExtensionsPanel";
@@ -391,7 +391,7 @@ function TerminalsView() {
       // Expand active tab if it has multiple panes
       if (activeTabId) {
         const paneState = terminalPanes[activeTabId];
-        if (paneState && paneState.panes.length > 1) {
+        if (paneState && flattenPanes(paneState.splitTree).length > 1) {
           next.add(activeTabId);
         }
       }
@@ -446,7 +446,7 @@ function TerminalsView() {
 
       const tabNodes: TreeNodeType[] = groupTabs.map((tab) => {
         const paneState = terminalPanes[tab.id];
-        const panes = paneState?.panes || [];
+        const panes = paneState ? flattenPanes(paneState.splitTree) : [];
         const hasMultiplePanes = panes.length > 1;
 
         // Build pane children (only when multiple panes)
@@ -612,9 +612,10 @@ function TerminalsView() {
             if (isPane) {
               const [tabId, paneId] = node.id.split(":");
               const paneState = terminalPanes[tabId];
-              const pane = paneState?.panes.find((p) => p.id === paneId);
+              const allPanes = paneState ? flattenPanes(paneState.splitTree) : [];
+              const pane = allPanes.find((p) => p.id === paneId);
               const isPaneZoomed = zoomedPane?.tabId === tabId && zoomedPane?.paneId === paneId;
-              const canZoom = (paneState?.panes.length || 0) > 1;
+              const canZoom = allPanes.length > 1;
               return (
                 <ContextMenu
                   content={
