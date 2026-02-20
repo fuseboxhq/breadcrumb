@@ -1,11 +1,12 @@
 # Project State
 
-**Current Phase:** PHASE-30
+**Current Phase:** PHASE-31
 **Last Updated:** 2026-02-20
 
 ## Active Work
 
-PHASE-30: Light Mode Overhaul (in_progress) - 4 tasks
+PHASE-31: Dynamic Extension UI Contributions (not_started)
+PHASE-30: Light Mode Overhaul (done) - 4/4 tasks done
 PHASE-29: Advanced Terminal Windowing (done) - 7/7 tasks done
 
 
