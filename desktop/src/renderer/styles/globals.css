@@ -54,7 +54,7 @@
     /* Semantic colors — slightly deeper for cream backgrounds */
     --destructive: 0 72% 51%;          /* Warmer red, clear on cream */
     --destructive-foreground: 0 0% 100%;
-    --success: 142 64% 40%;            /* Slightly richer green */
+    --success: 142 64% 34%;            /* Deep green — AA-large on cream */
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;             /* Amber stays warm */
     --warning-foreground: 24 10% 10%;
