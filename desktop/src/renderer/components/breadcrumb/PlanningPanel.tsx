@@ -46,34 +46,39 @@ const EMPTY_BY_PHASE: Record<string, CommitInfo[]> = {};
 export function PlanningPanel() {
   const projects = useProjects();
   const activeProjectId = useActiveProjectId();
-  const projectsStore = useProjectsStore.getState;
   const refreshProject = usePlanningStore((s) => s.refreshProject);
   const planningProjects = usePlanningStore((s) => s.projects);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Selected project path — defaults to active project
-  const [selectedProjectPath, setSelectedProjectPath] = useState<string | null>(
-    null
-  );
+  const setActiveProject = useProjectsStore((s) => s.setActiveProject);
 
-  // Sync selection with active project
-  useEffect(() => {
+  // Derive selectedProjectPath from global activeProjectId (single source of truth)
+  const selectedProjectPath = useMemo(() => {
     if (activeProjectId) {
-      const project = projectsStore().projects.find(
-        (p) => p.id === activeProjectId
-      );
-      if (project) {
-        setSelectedProjectPath(project.path);
-      }
+      const project = projects.find((p) => p.id === activeProjectId);
+      if (project) return project.path;
     }
-  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Fallback: first project
+    return projects.length > 0 ? projects[0].path : null;
+  }, [activeProjectId, projects]);
 
-  // Auto-select first project if nothing is selected
+  // Auto-select first project if nothing is active
   useEffect(() => {
-    if (!selectedProjectPath && projects.length > 0) {
-      setSelectedProjectPath(projects[0].path);
+    if (!activeProjectId && projects.length > 0) {
+      setActiveProject(projects[0].id);
     }
-  }, [selectedProjectPath, projects]);
+  }, [activeProjectId, projects, setActiveProject]);
+
+  // Selecting a project in the PortfolioHeader updates the global store
+  const handleSelectProject = useCallback(
+    (path: string) => {
+      const project = projects.find((p) => p.path === path);
+      if (project) {
+        setActiveProject(project.id);
+      }
+    },
+    [projects, setActiveProject]
+  );
 
   // Auto-fetch all projects on mount
   useEffect(() => {
@@ -149,7 +154,7 @@ export function PlanningPanel() {
             {/* Portfolio Header */}
             <PortfolioHeader
               selectedProjectPath={selectedProjectPath}
-              onSelectProject={setSelectedProjectPath}
+              onSelectProject={handleSelectProject}
             />
 
             {/* Dashboard Body */}
