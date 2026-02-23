@@ -24,6 +24,7 @@ export const IPC_CHANNELS = {
   TERMINAL_DATA: "terminal:data",
   TERMINAL_EXIT: "terminal:exit",
   TERMINAL_PROCESS_CHANGE: "terminal:process-change",
+  TERMINAL_ACK_DATA: "terminal:ack-data",
 
   // Git channels
   GIT_INFO: "git:info",

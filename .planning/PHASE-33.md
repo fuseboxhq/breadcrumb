@@ -79,10 +79,10 @@ WebGL addon → Search addon → other addons → Terminal
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-8vj.1 | Enable WebGL2 GPU renderer with fallback | open | Medium | - |
-| breadcrumb-8vj.2 | Implement PTY flow control with backpressure | open | High | - |
-| breadcrumb-8vj.3 | Cap scrollback and fix disposal hygiene | open | Low | - |
-| breadcrumb-8vj.4 | Verify DEC 2026 and resize debounce | open | Low | .1, .2 |
+| breadcrumb-8vj.1 | Enable WebGL2 GPU renderer with fallback | done | Medium | - |
+| breadcrumb-8vj.2 | Implement PTY flow control with backpressure | done | High | - |
+| breadcrumb-8vj.3 | Cap scrollback and fix disposal hygiene | done | Low | - |
+| breadcrumb-8vj.4 | Verify DEC 2026 and resize debounce | done | Low | .1, .2 |
 
 ### Task Details
 

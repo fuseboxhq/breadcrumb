@@ -360,6 +360,11 @@ export interface TerminalSession {
   workingDirectory: string;
 }
 
+// Flow control constants (from VS Code's terminal implementation).
+// Prevents burst output (e.g. Claude Code) from overwhelming the renderer.
+const FLOW_CONTROL_HIGH_WATERMARK = 100_000; // Pause PTY when unacked chars exceed this
+const FLOW_CONTROL_LOW_WATERMARK = 5_000;    // Resume PTY when unacked chars drop below this
+
 export class TerminalService extends EventEmitter {
   private sessions: Map<string, TerminalSession> = new Map();
   private processPollers: Map<string, NodeJS.Timeout> = new Map();
@@ -379,6 +384,10 @@ export class TerminalService extends EventEmitter {
    */
   private outputBuffers: Map<string, string> = new Map();
   private static readonly MAX_REPLAY_BUFFER = 100_000; // 100KB
+
+  // Flow control state per session
+  private unacknowledgedChars: Map<string, number> = new Map();
+  private isPtyPaused: Map<string, boolean> = new Map();
 
   constructor() {
     super();
@@ -421,8 +430,20 @@ export class TerminalService extends EventEmitter {
 
     this.sessions.set(id, session);
 
+    // Initialize flow control state
+    this.unacknowledgedChars.set(id, 0);
+    this.isPtyPaused.set(id, false);
+
     ptyProcess.onData((data: string) => {
       this.emit("data", { sessionId: id, data });
+
+      // Flow control: track unacknowledged chars, pause PTY if renderer falls behind
+      const unacked = (this.unacknowledgedChars.get(id) || 0) + data.length;
+      this.unacknowledgedChars.set(id, unacked);
+      if (!this.isPtyPaused.get(id) && unacked > FLOW_CONTROL_HIGH_WATERMARK) {
+        this.isPtyPaused.set(id, true);
+        ptyProcess.pause();
+      }
 
       // Append to replay buffer (ring-trimmed to MAX_REPLAY_BUFFER)
       let buf = this.outputBuffers.get(id) || "";
@@ -436,6 +457,8 @@ export class TerminalService extends EventEmitter {
     ptyProcess.onExit(({ exitCode, signal }) => {
       this.stopProcessPolling(id);
       this.outputBuffers.delete(id);
+      this.unacknowledgedChars.delete(id);
+      this.isPtyPaused.delete(id);
       this.emit("exit", { sessionId: id, exitCode, signal });
       this.sessions.delete(id);
     });
@@ -658,12 +681,30 @@ export class TerminalService extends EventEmitter {
     }
   }
 
+  /**
+   * Acknowledge that the renderer has processed `charCount` characters.
+   * Resumes the PTY if it was paused and unacknowledged drops below the low watermark.
+   */
+  acknowledgeData(sessionId: string, charCount: number): void {
+    const unacked = Math.max((this.unacknowledgedChars.get(sessionId) || 0) - charCount, 0);
+    this.unacknowledgedChars.set(sessionId, unacked);
+    if (this.isPtyPaused.get(sessionId) && unacked < FLOW_CONTROL_LOW_WATERMARK) {
+      const session = this.sessions.get(sessionId);
+      if (session) {
+        session.pty.resume();
+        this.isPtyPaused.set(sessionId, false);
+      }
+    }
+  }
+
   terminate(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
     try {
       this.stopProcessPolling(sessionId);
       this.outputBuffers.delete(sessionId);
+      this.unacknowledgedChars.delete(sessionId);
+      this.isPtyPaused.delete(sessionId);
       session.pty.kill();
       this.sessions.delete(sessionId);
       return true;

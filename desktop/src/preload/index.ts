@@ -48,6 +48,8 @@ export interface BreadcrumbAPI {
   writeTerminal: (sessionId: string, data: string) => Promise<{ success: boolean; error?: string }>;
   resizeTerminal: (sessionId: string, cols: number, rows: number) => Promise<{ success: boolean; error?: string }>;
   terminateTerminal: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+  /** Acknowledge that the renderer has processed `charCount` chars (flow control) */
+  ackTerminalData: (sessionId: string, charCount: number) => void;
   onTerminalData: (callback: (data: TerminalDataEvent) => void) => () => void;
   onTerminalExit: (callback: (data: TerminalExitEvent) => void) => () => void;
   onTerminalProcessChange: (callback: (data: TerminalProcessChangeEvent) => void) => () => void;
@@ -151,6 +153,10 @@ const api: BreadcrumbAPI = {
 
   terminateTerminal: (sessionId) =>
     ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_TERMINATE, sessionId),
+
+  // Flow control: fire-and-forget ACK (no response needed, use send not invoke)
+  ackTerminalData: (sessionId, charCount) =>
+    ipcRenderer.send(IPC_CHANNELS.TERMINAL_ACK_DATA, { sessionId, charCount }),
 
   onTerminalData: (callback) => {
     const handler = (_: Electron.IpcRendererEvent, data: TerminalDataEvent) =>

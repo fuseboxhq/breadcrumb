@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
+import { WebglAddon } from "@xterm/addon-webgl";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { useShellIntegration } from "../../hooks/useShellIntegration";
@@ -14,6 +15,13 @@ import {
 } from "../shared/ContextMenu";
 import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3, RotateCcw } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
+
+// Module-level WebGL fallback flag — if WebGL fails once, skip for all future terminals (VS Code pattern)
+let webglFailed = false;
+
+// Maximum scrollback lines — prevents memory exhaustion with Claude Code burst output.
+// 160 cols × 50K lines ≈ 100MB per terminal. 10K is safe for heavy workloads.
+const MAX_SCROLLBACK = 10_000;
 
 interface TerminalInstanceProps {
   sessionId: string;
@@ -146,6 +154,7 @@ export function TerminalInstance({
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const searchAddonRef = useRef<SearchAddon | null>(null);
+  const webglAddonRef = useRef<WebglAddon | null>(null);
   const [lastExitCode, setLastExitCode] = useState<number | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
   const [ptyExited, setPtyExited] = useState(false);
@@ -289,7 +298,7 @@ export function TerminalInstance({
       fontSize: settings.fontSize,
       fontFamily: settings.fontFamily,
       theme: getTerminalTheme(),
-      scrollback: settings.scrollback,
+      scrollback: Math.min(settings.scrollback, MAX_SCROLLBACK),
       allowProposedApi: true,
     });
 
@@ -339,6 +348,27 @@ export function TerminalInstance({
       if (clientWidth > 0 && clientHeight > 0) {
         terminal.open(container);
         opened = true;
+
+        // Load WebGL2 renderer for GPU-accelerated rendering (~900% faster).
+        // Must load AFTER open() — needs the canvas element.
+        if (!webglFailed) {
+          try {
+            const webglAddon = new WebglAddon();
+            webglAddon.onContextLoss(() => {
+              // GPU context lost (OOM, system sleep, context limit).
+              // Dispose addon — xterm.js falls back to canvas automatically.
+              try { webglAddon.dispose(); } catch { /* ignore */ }
+              webglAddonRef.current = null;
+            });
+            terminal.loadAddon(webglAddon);
+            webglAddonRef.current = webglAddon;
+          } catch {
+            // WebGL2 not available — skip for all future terminals
+            webglFailed = true;
+            webglAddonRef.current = null;
+          }
+        }
+
         return true;
       }
       return false;
@@ -434,11 +464,16 @@ export function TerminalInstance({
     // Receive PTY output — tmux-like auto-scroll: pin to bottom on new
     // output only if the user hasn't scrolled up. When the user scrolls
     // back to the bottom, auto-scroll resumes on the next write.
+    // Flow control: ACK inside write() callback so the PTY is paused until
+    // xterm.js has actually parsed and rendered the data (true backpressure).
     const cleanupData = window.breadcrumbAPI?.onTerminalData((event) => {
       if (event.sessionId === sessionId && opened) {
         const buf = terminal.buffer.active;
         const wasAtBottom = buf.baseY === buf.viewportY;
-        terminal.write(event.data);
+        terminal.write(event.data, () => {
+          // ACK after xterm.js has finished parsing — enables backpressure
+          window.breadcrumbAPI?.ackTerminalData(sessionId, event.data.length);
+        });
         if (wasAtBottom) {
           terminal.scrollToBottom();
         }
@@ -460,7 +495,9 @@ export function TerminalInstance({
 
     // Debounced resize handler — collapses rapid PanelGroup layout
     // transitions into a single PTY resize (avoids SIGWINCH storms).
-    // On the very first callback, creates the PTY with actual dimensions.
+    // Horizontal resize is expensive (causes line reflow) so gets a longer
+    // debounce for terminals with large buffers (VS Code pattern).
+    let horizontalResizeTimer: ReturnType<typeof setTimeout> | undefined;
     const handleResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
@@ -474,12 +511,38 @@ export function TerminalInstance({
         }
         try {
           const dims = fitAddon.proposeDimensions();
-          if (dims && dims.cols > 0 && dims.rows > 0) {
-            if (dims.cols !== terminal.cols || dims.rows !== terminal.rows) {
-              terminal.resize(dims.cols, dims.rows);
-              window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
-            }
+          if (!dims || dims.cols <= 0 || dims.rows <= 0) return;
+          const colsChanged = dims.cols !== terminal.cols;
+          const rowsChanged = dims.rows !== terminal.rows;
+          if (!colsChanged && !rowsChanged) return;
+
+          // Vertical resize is cheap — apply immediately
+          if (rowsChanged && !colsChanged) {
+            terminal.resize(dims.cols, dims.rows);
+            window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+            return;
           }
+
+          // Horizontal resize with large buffer — debounce to avoid expensive reflow
+          const bufferLength = terminal.buffer.normal.length;
+          if (colsChanged && bufferLength > 200) {
+            clearTimeout(horizontalResizeTimer);
+            // Apply row change immediately if needed
+            if (rowsChanged) {
+              terminal.resize(terminal.cols, dims.rows);
+              window.breadcrumbAPI?.resizeTerminal(sessionId, terminal.cols, dims.rows);
+            }
+            horizontalResizeTimer = setTimeout(() => {
+              if (destroyed) return;
+              terminal.resize(dims.cols, terminal.rows);
+              window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, terminal.rows);
+            }, 100);
+            return;
+          }
+
+          // Small buffer or only horizontal — apply immediately
+          terminal.resize(dims.cols, dims.rows);
+          window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
         } catch { /* ignore */ }
       }, 80);
     };
@@ -491,12 +554,16 @@ export function TerminalInstance({
       destroyed = true;
       cancelAnimationFrame(openRafId);
       clearTimeout(resizeTimer);
+      clearTimeout(horizontalResizeTimer);
       dataDisposable.dispose();
       selectionDisposable.dispose();
       cleanupShell();
       cleanupData?.();
       cleanupExit?.();
       resizeObserver.disconnect();
+      // Dispose WebGL addon FIRST to release GPU context before terminal teardown
+      try { webglAddonRef.current?.dispose(); } catch { /* ignore */ }
+      webglAddonRef.current = null;
       searchAddonRef.current = null;
       fitAddonRef.current = null;
       terminalRef.current = null;
@@ -541,7 +608,7 @@ export function TerminalInstance({
     terminal.options.fontFamily = terminalSettings.fontFamily;
     terminal.options.cursorBlink = terminalSettings.cursorBlink;
     terminal.options.cursorStyle = terminalSettings.cursorStyle;
-    terminal.options.scrollback = terminalSettings.scrollback;
+    terminal.options.scrollback = Math.min(terminalSettings.scrollback, MAX_SCROLLBACK);
     requestAnimationFrame(() => fit());
   }, [terminalSettings, fit]);
 

@@ -62,6 +62,12 @@ export function registerTerminalIPCHandlers(mainWindow: BrowserWindow): () => vo
     }
   );
 
+  // Flow control: renderer acknowledges processed data (fire-and-forget, no response needed)
+  const ackHandler = (_: Electron.IpcMainEvent, { sessionId, charCount }: { sessionId: string; charCount: number }) => {
+    terminalService.acknowledgeData(sessionId, charCount);
+  };
+  ipcMain.on(IPC_CHANNELS.TERMINAL_ACK_DATA, ackHandler);
+
   ipcMain.handle(IPC_CHANNELS.TERMINAL_TERMINATE, async (_, sessionId: string) => {
     try {
       return { success: terminalService.terminate(sessionId) };
@@ -74,6 +80,7 @@ export function registerTerminalIPCHandlers(mainWindow: BrowserWindow): () => vo
     terminalService.off("data", dataHandler);
     terminalService.off("exit", exitHandler);
     terminalService.off("processChange", processChangeHandler);
+    ipcMain.removeListener(IPC_CHANNELS.TERMINAL_ACK_DATA, ackHandler);
     ipcMain.removeHandler(IPC_CHANNELS.TERMINAL_CREATE);
     ipcMain.removeHandler(IPC_CHANNELS.TERMINAL_WRITE);
     ipcMain.removeHandler(IPC_CHANNELS.TERMINAL_RESIZE);
