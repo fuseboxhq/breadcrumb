@@ -552,9 +552,7 @@ function TerminalsView() {
           }}
           onEscape={() => {
             // Return focus to the active terminal pane
-            // ghostty-web uses a canvas + textarea, query the terminal's textarea
-            const terminalEl = document.querySelector<HTMLElement>(".xterm-helper-textarea")
-              || document.querySelector<HTMLTextAreaElement>("[data-ghostty-terminal] textarea");
+            const terminalEl = document.querySelector<HTMLElement>(".xterm-helper-textarea");
             terminalEl?.focus();
           }}
           renderActions={(node) => {

@@ -1,23 +1,19 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import { init, Terminal, FitAddon } from "ghostty-web";
-import { OscShim } from "../../lib/oscShim";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import { SearchAddon } from "@xterm/addon-search";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { useShellIntegration } from "../../hooks/useShellIntegration";
 import { useTerminalSettings, useResolvedTheme } from "../../store/settingsStore";
+import { TerminalSearch } from "./TerminalSearch";
 import {
   ContextMenu,
   MenuItem,
   MenuSeparator,
 } from "../shared/ContextMenu";
 import { Copy, ClipboardPaste, CheckSquare, Eraser, Maximize2, Minimize2, SplitSquareVertical, Rows3, RotateCcw } from "lucide-react";
-
-// ── WASM init singleton ──────────────────────────────────────────────────────
-let ghosttyInitPromise: Promise<void> | null = null;
-function ensureGhosttyInit(): Promise<void> {
-  if (!ghosttyInitPromise) {
-    ghosttyInitPromise = init();
-  }
-  return ghosttyInitPromise;
-}
+import "@xterm/xterm/css/xterm.css";
 
 interface TerminalInstanceProps {
   sessionId: string;
@@ -149,8 +145,9 @@ export function TerminalInstance({
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const oscShimRef = useRef<OscShim | null>(null);
+  const searchAddonRef = useRef<SearchAddon | null>(null);
   const [lastExitCode, setLastExitCode] = useState<number | null>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [ptyExited, setPtyExited] = useState(false);
   const terminalSettings = useTerminalSettings();
   const resolvedTheme = useResolvedTheme();
@@ -168,7 +165,8 @@ export function TerminalInstance({
   const settingsRef = useRef(terminalSettings);
   settingsRef.current = terminalSettings;
 
-  // Shell integration (OSC 133 + OSC 7) via OscShim
+  // Shell integration (OSC 133 + OSC 7)
+  // registerHandlers is now stable (no deps) thanks to callbacksRef pattern
   const { registerHandlers } = useShellIntegration({
     onCwdChange: (cwd) => {
       onCwdChange?.(cwd);
@@ -201,13 +199,15 @@ export function TerminalInstance({
     }
   }, [sessionId]);
 
-  // Focus terminal — use ghostty-web's textarea property directly
+  // Focus terminal without triggering browser scroll-into-view on the
+  // hidden textarea. Uses preventScroll to avoid viewport jumps when
+  // switching between panes (especially noticeable with Claude Code).
   const focusTerminal = useCallback(() => {
-    const terminal = terminalRef.current;
-    if (terminal?.textarea) {
-      terminal.textarea.focus({ preventScroll: true });
+    const textarea = containerRef.current?.querySelector<HTMLTextAreaElement>('.xterm-helper-textarea');
+    if (textarea) {
+      textarea.focus({ preventScroll: true });
     } else {
-      terminal?.focus();
+      terminalRef.current?.focus();
     }
   }, []);
 
@@ -258,10 +258,14 @@ export function TerminalInstance({
     });
   }, [sessionId, workingDirectory]);
 
-  // Cmd+L to clear (search temporarily disabled — ghostty-web has no search addon)
+  // Cmd+F to toggle search, Cmd+L to clear
   useEffect(() => {
     if (!isActive) return;
     const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        setSearchVisible((prev) => !prev);
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === "l") {
         e.preventDefault();
         terminalRef.current?.clear();
@@ -278,248 +282,258 @@ export function TerminalInstance({
     if (!containerRef.current) return;
 
     const settings = settingsRef.current;
+
+    const terminal = new Terminal({
+      cursorBlink: settings.cursorBlink,
+      cursorStyle: settings.cursorStyle,
+      fontSize: settings.fontSize,
+      fontFamily: settings.fontFamily,
+      theme: getTerminalTheme(),
+      scrollback: settings.scrollback,
+      allowProposedApi: true,
+    });
+
+    // Load addons in correct order
+
+    // 1. Unicode11 — must be first, then activate
+    const unicode11Addon = new Unicode11Addon();
+    terminal.loadAddon(unicode11Addon);
+    terminal.unicode.activeVersion = "11";
+
+    // 2. FitAddon
+    const fitAddon = new FitAddon();
+    terminal.loadAddon(fitAddon);
+
+    // 3. WebLinks — clickable URLs, opens in system browser via IPC
+    const webLinksAddon = new WebLinksAddon((event, uri) => {
+      event.preventDefault();
+      window.open(uri, "_blank");
+    });
+    terminal.loadAddon(webLinksAddon);
+
+    // 4. Search
+    const searchAddon = new SearchAddon();
+    terminal.loadAddon(searchAddon);
+    searchAddonRef.current = searchAddon;
+
+    // 5. Shell integration OSC handlers
+    const cleanupShell = registerHandlers(terminal);
+
+    // 6. Track selection state for context menu
+    const selectionDisposable = terminal.onSelectionChange(() => {
+      setHasSelection(!!terminal.getSelection());
+    });
+
+    terminalRef.current = terminal;
+    fitAddonRef.current = fitAddon;
+
+    let ptyCreated = false;
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
     let destroyed = false;
 
-    // Create OSC shim for shell integration
-    const oscShim = new OscShim();
-    oscShimRef.current = oscShim;
-
-    // ghostty-web requires WASM init before creating Terminal instances
-    const setupPromise = ensureGhosttyInit().then(() => {
-      if (destroyed) return;
-
-      const terminal = new Terminal({
-        cursorBlink: settings.cursorBlink,
-        cursorStyle: settings.cursorStyle,
-        fontSize: settings.fontSize,
-        fontFamily: settings.fontFamily,
-        theme: getTerminalTheme(),
-        scrollback: settings.scrollback,
-      });
-
-      // Load FitAddon (built into ghostty-web)
-      const fitAddon = new FitAddon();
-      terminal.loadAddon(fitAddon);
-
-      // Register shell integration handlers via OSC shim
-      const cleanupShell = registerHandlers(terminal, oscShim);
-
-      // Track selection state for context menu
-      const selectionDisposable = terminal.onSelectionChange(() => {
-        setHasSelection(!!terminal.getSelection());
-      });
-
-      terminalRef.current = terminal;
-      fitAddonRef.current = fitAddon;
-
-      let ptyCreated = false;
-      let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-
-      let opened = false;
-      const container = containerRef.current!;
-      const tryOpen = () => {
-        if (opened || destroyed || !container) return false;
-        const { clientWidth, clientHeight } = container;
-        if (clientWidth > 0 && clientHeight > 0) {
-          terminal.open(container);
-          opened = true;
-          return true;
-        }
-        return false;
-      };
-
-      // Resolve working directory upfront (async but fast)
-      let resolvedCwd: string | null = workingDirectory || null;
-      if (!resolvedCwd) {
-        window.breadcrumbAPI?.getWorkingDirectory().then((dir) => {
-          resolvedCwd = dir || "/";
-          if (!ptyCreated && !destroyed) {
-            tryCreatePty();
-          }
-        }).catch(() => {
-          resolvedCwd = "/";
-        });
+    let opened = false;
+    const container = containerRef.current;
+    const tryOpen = () => {
+      if (opened || destroyed || !container) return false;
+      const { clientWidth, clientHeight } = container;
+      if (clientWidth > 0 && clientHeight > 0) {
+        terminal.open(container);
+        opened = true;
+        return true;
       }
+      return false;
+    };
 
-      const tryCreatePty = () => {
-        if (ptyCreated || destroyed || !resolvedCwd || !opened) return;
+    // Resolve working directory upfront (async but fast)
+    let resolvedCwd: string | null = workingDirectory || null;
+    if (!resolvedCwd) {
+      window.breadcrumbAPI?.getWorkingDirectory().then((dir) => {
+        resolvedCwd = dir || "/";
+        // If the ResizeObserver already fired but couldn't create the PTY
+        // because cwd wasn't resolved yet, create it now
+        if (!ptyCreated && !destroyed) {
+          tryCreatePty();
+        }
+      }).catch(() => {
+        resolvedCwd = "/";
+      });
+    }
+
+    const tryCreatePty = () => {
+      if (ptyCreated || destroyed || !resolvedCwd || !opened) return;
+      try {
+        const dims = fitAddon.proposeDimensions();
+        if (dims && dims.cols > 0 && dims.rows > 0) {
+          ptyCreated = true;
+          terminal.resize(dims.cols, dims.rows);
+          window.breadcrumbAPI?.createTerminal({
+            id: sessionId,
+            name: sessionId,
+            workingDirectory: resolvedCwd,
+            cols: dims.cols,
+            rows: dims.rows,
+          }).then((result) => {
+            if (destroyed) return;
+
+            // When reconnecting to an existing PTY session (e.g. pane moved
+            // via tab merge), replay the output buffer so the fresh xterm.js
+            // restores the full terminal state — alternate screen mode, cursor
+            // position, colors, scroll regions, etc.
+            if (result?.replayBuffer) {
+              terminal.write(result.replayBuffer);
+            }
+
+            // Sync PTY dimensions — handles the case where the session
+            // already existed and the PTY still has old dimensions from
+            // the previous container. Also triggers SIGWINCH so TUI apps
+            // (like Claude Code) redraw at the correct size.
+            window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+
+            // Send initial command (e.g. "claude\n") after shell starts
+            const cmd = initialCommandRef.current;
+            if (cmd) {
+              setTimeout(() => {
+                if (!destroyed) {
+                  window.breadcrumbAPI?.writeTerminal(sessionId, cmd);
+                  initialCommandRef.current = undefined;
+                  onInitialCommandSentRef.current?.();
+                }
+              }, 300);
+            }
+          });
+        }
+      } catch { /* ignore — will retry on next resize */ }
+    };
+
+    // Defer terminal.open() to next animation frame. This prevents the
+    // xterm Viewport crash caused by React StrictMode's double-invoke:
+    // StrictMode runs mount → cleanup → remount synchronously. The first
+    // mount's rAF is cancelled in cleanup (cancelAnimationFrame below),
+    // so the terminal never opens and no Viewport setTimeout is scheduled.
+    // The second mount's rAF fires normally and creates a working terminal.
+    const openRafId = requestAnimationFrame(() => {
+      if (destroyed) return;
+      if (tryOpen()) {
+        tryCreatePty();
+        // If fitAddon.proposeDimensions() wasn't ready yet (renderer
+        // needs a frame to initialize after open), retry shortly.
+        // The ResizeObserver also retries at 80ms as a final fallback.
+        if (!ptyCreated) {
+          setTimeout(() => {
+            if (!destroyed) tryCreatePty();
+          }, 50);
+        }
+      }
+    });
+
+    // Forward keystrokes to PTY
+    const dataDisposable = terminal.onData((data) => {
+      window.breadcrumbAPI?.writeTerminal(sessionId, data);
+    });
+
+    // Receive PTY output — tmux-like auto-scroll: pin to bottom on new
+    // output only if the user hasn't scrolled up. When the user scrolls
+    // back to the bottom, auto-scroll resumes on the next write.
+    const cleanupData = window.breadcrumbAPI?.onTerminalData((event) => {
+      if (event.sessionId === sessionId && opened) {
+        const buf = terminal.buffer.active;
+        const wasAtBottom = buf.baseY === buf.viewportY;
+        terminal.write(event.data);
+        if (wasAtBottom) {
+          terminal.scrollToBottom();
+        }
+      }
+    });
+
+    const cleanupExit = window.breadcrumbAPI?.onTerminalExit((event) => {
+      if (event.sessionId === sessionId) {
+        setPtyExited(true);
+        // Auto-close pane/tab after a short delay so the user sees
+        // the exit briefly (like iTerm/tmux closing on shell exit).
+        setTimeout(() => {
+          if (!destroyed) {
+            onProcessExitRef.current?.(event.exitCode);
+          }
+        }, 150);
+      }
+    });
+
+    // Debounced resize handler — collapses rapid PanelGroup layout
+    // transitions into a single PTY resize (avoids SIGWINCH storms).
+    // On the very first callback, creates the PTY with actual dimensions.
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (destroyed) return;
+        // Deferred open: if the terminal hasn't been opened yet (container
+        // was zero-sized on mount), open it now that we have dimensions.
+        tryOpen();
+        if (!ptyCreated) {
+          tryCreatePty();
+          return;
+        }
         try {
           const dims = fitAddon.proposeDimensions();
           if (dims && dims.cols > 0 && dims.rows > 0) {
-            ptyCreated = true;
-            terminal.resize(dims.cols, dims.rows);
-            window.breadcrumbAPI?.createTerminal({
-              id: sessionId,
-              name: sessionId,
-              workingDirectory: resolvedCwd,
-              cols: dims.cols,
-              rows: dims.rows,
-            }).then((result) => {
-              if (destroyed) return;
-
-              // Replay buffer to restore terminal state for reconnecting sessions
-              if (result?.replayBuffer) {
-                oscShim.process(result.replayBuffer);
-                terminal.write(result.replayBuffer);
-              }
-
-              // Sync PTY dimensions
+            if (dims.cols !== terminal.cols || dims.rows !== terminal.rows) {
+              terminal.resize(dims.cols, dims.rows);
               window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
-
-              // Send initial command (e.g. "claude\n") after shell starts
-              const cmd = initialCommandRef.current;
-              if (cmd) {
-                setTimeout(() => {
-                  if (!destroyed) {
-                    window.breadcrumbAPI?.writeTerminal(sessionId, cmd);
-                    initialCommandRef.current = undefined;
-                    onInitialCommandSentRef.current?.();
-                  }
-                }, 300);
-              }
-            });
-          }
-        } catch { /* ignore — will retry on next resize */ }
-      };
-
-      // Defer terminal.open() to next animation frame (same React StrictMode
-      // workaround as before — first mount's rAF is cancelled in cleanup)
-      const openRafId = requestAnimationFrame(() => {
-        if (destroyed) return;
-        if (tryOpen()) {
-          tryCreatePty();
-          if (!ptyCreated) {
-            setTimeout(() => {
-              if (!destroyed) tryCreatePty();
-            }, 50);
-          }
-        }
-      });
-
-      // Forward keystrokes to PTY
-      const dataDisposable = terminal.onData((data) => {
-        window.breadcrumbAPI?.writeTerminal(sessionId, data);
-      });
-
-      // Receive PTY output — process through OSC shim first, then write to terminal.
-      // Auto-scroll: pin to bottom on new output only if user hasn't scrolled up.
-      const cleanupData = window.breadcrumbAPI?.onTerminalData((event) => {
-        if (event.sessionId === sessionId && opened) {
-          // Detect if at bottom using ghostty-web's viewport API
-          const scrollbackLen = terminal.getScrollbackLength();
-          const viewportY = terminal.getViewportY();
-          const wasAtBottom = viewportY <= 0 || scrollbackLen === 0;
-
-          // Run through OSC shim (extracts OSC 133/7 for shell integration)
-          oscShim.process(event.data);
-          terminal.write(event.data);
-
-          if (wasAtBottom) {
-            terminal.scrollToBottom();
-          }
-        }
-      });
-
-      const cleanupExit = window.breadcrumbAPI?.onTerminalExit((event) => {
-        if (event.sessionId === sessionId) {
-          setPtyExited(true);
-          setTimeout(() => {
-            if (!destroyed) {
-              onProcessExitRef.current?.(event.exitCode);
             }
-          }, 150);
-        }
-      });
-
-      // Debounced resize handler
-      const handleResize = () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          if (destroyed) return;
-          tryOpen();
-          if (!ptyCreated) {
-            tryCreatePty();
-            return;
           }
-          try {
-            const dims = fitAddon.proposeDimensions();
-            if (dims && dims.cols > 0 && dims.rows > 0) {
-              if (dims.cols !== terminal.cols || dims.rows !== terminal.rows) {
-                terminal.resize(dims.cols, dims.rows);
-                window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
-              }
-            }
-          } catch { /* ignore */ }
-        }, 80);
-      };
+        } catch { /* ignore */ }
+      }, 80);
+    };
 
-      const resizeObserver = new ResizeObserver(handleResize);
-      resizeObserver.observe(container);
-
-      // Return cleanup — stored on the setupPromise so the outer cleanup can call it
-      const cleanup = () => {
-        destroyed = true;
-        cancelAnimationFrame(openRafId);
-        clearTimeout(resizeTimer);
-        dataDisposable.dispose();
-        selectionDisposable.dispose();
-        cleanupShell();
-        cleanupData?.();
-        cleanupExit?.();
-        resizeObserver.disconnect();
-        oscShim.dispose();
-        oscShimRef.current = null;
-        fitAddonRef.current = null;
-        terminalRef.current = null;
-        terminal.dispose();
-      };
-
-      // Store cleanup on a ref-accessible location
-      cleanupRef.current = cleanup;
-    });
-
-    // Ref to hold the async cleanup function
-    const cleanupRef = { current: null as (() => void) | null };
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(containerRef.current);
 
     return () => {
       destroyed = true;
-      if (cleanupRef.current) {
-        cleanupRef.current();
-      }
-      oscShim.dispose();
-      oscShimRef.current = null;
+      cancelAnimationFrame(openRafId);
+      clearTimeout(resizeTimer);
+      dataDisposable.dispose();
+      selectionDisposable.dispose();
+      cleanupShell();
+      cleanupData?.();
+      cleanupExit?.();
+      resizeObserver.disconnect();
+      searchAddonRef.current = null;
+      fitAddonRef.current = null;
+      terminalRef.current = null;
+      terminal.dispose();
     };
+    // Only recreate when the session or working directory changes.
+    // registerHandlers is stable (empty deps). Settings are read from ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, workingDirectory]);
 
-  // Refit + focus on activation — ghostty-web auto-renders at 60fps so no
-  // manual refresh() needed. Preserve scroll position to prevent viewport
-  // jumps when clicking into a pane (especially with Claude Code).
+  // Refit + focus on activation — handles tab switches where the container
+  // was invisible. refresh() forces xterm to re-render its buffer content.
+  // Preserves scroll position to prevent viewport jumps when clicking into
+  // a pane (especially noticeable with long-running TUIs like Claude Code).
   useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
         const terminal = terminalRef.current;
         if (terminal) {
           // Save scroll position before operations that might cause a jump
-          const savedViewportY = terminal.getViewportY();
+          const buf = terminal.buffer.active;
+          const savedViewportY = buf.viewportY;
 
+          terminal.refresh(0, terminal.rows - 1);
           fit();
           focusTerminal();
 
-          // Restore scroll position if fit caused a viewport jump
-          const currentViewportY = terminal.getViewportY();
-          if (currentViewportY !== savedViewportY) {
-            terminal.scrollToLine(
-              terminal.getScrollbackLength() - savedViewportY
-            );
+          // Restore scroll position if fit/refresh caused a viewport jump
+          if (buf.viewportY !== savedViewportY) {
+            terminal.scrollLines(savedViewportY - buf.viewportY);
           }
         }
       });
     }
   }, [isActive, fit, focusTerminal]);
 
-  // Live settings updates — apply to existing terminal without recreating.
-  // ghostty-web supports runtime option changes via its options proxy.
+  // Live settings updates — apply to existing terminal without recreating
   useEffect(() => {
     const terminal = terminalRef.current;
     if (!terminal) return;
@@ -531,8 +545,7 @@ export function TerminalInstance({
     requestAnimationFrame(() => fit());
   }, [terminalSettings, fit]);
 
-  // Re-apply terminal theme when light/dark mode changes.
-  // ghostty-web's CanvasRenderer.setTheme() handles runtime updates.
+  // Re-apply terminal theme when light/dark mode changes
   useEffect(() => {
     const terminal = terminalRef.current;
     if (!terminal) return;
@@ -618,6 +631,16 @@ export function TerminalInstance({
           className="w-full h-full bg-background"
         />
 
+        {/* Search overlay */}
+        <TerminalSearch
+          searchAddon={searchAddonRef.current}
+          isVisible={searchVisible}
+          onClose={() => {
+            setSearchVisible(false);
+            focusTerminal();
+          }}
+        />
+
         {/* PTY exited — restart overlay */}
         {ptyExited && (
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-center p-4 bg-gradient-to-t from-background/90 to-transparent animate-fade-in">
@@ -632,7 +655,7 @@ export function TerminalInstance({
         )}
 
         {/* Exit code badge */}
-        {lastExitCode !== null && (
+        {lastExitCode !== null && !searchVisible && (
           <div className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-md text-2xs font-mono animate-fade-in ${
             lastExitCode === 0
               ? "bg-success/15 border border-success/25 text-success"
