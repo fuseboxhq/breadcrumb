@@ -272,7 +272,6 @@ export class PlanningService {
   }
 
   private parseStateFile(content: string): PhaseSummary[] {
-    const phases: PhaseSummary[] = [];
     const lines = content.split("\n");
 
     // Extract current phase — accept both "PHASE-XX" and "Phase XX" formats
@@ -290,9 +289,11 @@ export class PlanningService {
     // Match phase lines — accept both "PHASE-XX:" and "Phase XX:" formats.
     // Allow optional leading "- " (list marker) before the phase identifier.
     // Accept any status value and normalize it.
+    // Deduplicate by phase ID — last occurrence wins (most detailed/recent).
     const phaseLineRegex =
       /^(?:-\s+)?(?:PHASE-|Phase\s+)(\d+):\s+(.+?)\s+\((\w+)\)(?:\s+-\s+(\d+)(?:\/(\d+))?\s+tasks?(?:\s+done)?)?/i;
 
+    const seen = new Map<string, PhaseSummary>();
     for (const line of lines) {
       const match = line.match(phaseLineRegex);
       if (match) {
@@ -304,7 +305,7 @@ export class PlanningService {
           ? parseInt(match[5])
           : parseInt(match[4] || "0");
         const completedCount = match[5] ? parseInt(match[4] || "0") : 0;
-        phases.push({
+        seen.set(normalizedId, {
           id: normalizedId,
           title: match[2].trim(),
           status,
@@ -315,7 +316,7 @@ export class PlanningService {
       }
     }
 
-    return phases;
+    return Array.from(seen.values());
   }
 
   private parsePhaseFile(content: string, phaseId: string): PhaseDetail {
