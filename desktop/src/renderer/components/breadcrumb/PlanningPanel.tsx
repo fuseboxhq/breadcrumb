@@ -313,10 +313,17 @@ function DashboardBody({
     [projectPath, openDiffTab, gitCommits]
   );
 
-  // Progress summary
+  // Progress summary — prefer actual task data from phase details when loaded
+  const phaseDetailsData = usePlanningStore((s) => s.projects[projectPath]?.phaseDetails ?? {});
   const completedPhases = phases.filter((p) => p.status === "complete").length;
-  const totalTasks = phases.reduce((sum, p) => sum + p.taskCount, 0);
-  const completedTasks = phases.reduce((sum, p) => sum + p.completedCount, 0);
+  const totalTasks = phases.reduce((sum, p) => {
+    const d = phaseDetailsData[p.id];
+    return sum + (d?.tasks?.length ?? p.taskCount);
+  }, 0);
+  const completedTasks = phases.reduce((sum, p) => {
+    const d = phaseDetailsData[p.id];
+    return sum + (d?.tasks ? d.tasks.filter((t) => t.status === "done").length : p.completedCount);
+  }, 0);
 
   if (loading && phases.length === 0) {
     return <SkeletonList rows={4} />;
@@ -425,6 +432,7 @@ function PhasePipeline({
 }) {
   const [expandedPhase, setExpandedPhase] = useState<string | null>(null);
   const gitByPhase = useGitStore((s) => s.projects[projectPath]?.byPhase ?? EMPTY_BY_PHASE);
+  const phaseDetails = usePlanningStore((s) => s.projects[projectPath]?.phaseDetails ?? {});
 
   // Sort: active first, then planned, then completed — newest (highest number) first within each group
   const sortedPhases = useMemo(() => {
@@ -466,9 +474,15 @@ function PhasePipeline({
           const isComplete = phase.status === "complete";
           const isExpanded = expandedPhase === phase.id;
           const commitCount = gitByPhase[phase.id]?.length ?? 0;
+          // Prefer actual task data from phase detail when loaded (STATE.md counts can be stale)
+          const detail = phaseDetails[phase.id];
+          const taskCount = detail?.tasks?.length ?? phase.taskCount;
+          const completedCount = detail?.tasks
+            ? detail.tasks.filter((t) => t.status === "done").length
+            : phase.completedCount;
           const progress =
-            phase.taskCount > 0
-              ? (phase.completedCount / phase.taskCount) * 100
+            taskCount > 0
+              ? (completedCount / taskCount) * 100
               : 0;
 
           return (
@@ -498,7 +512,7 @@ function PhasePipeline({
                     : "hover:bg-muted/20"
                 }`}
                 aria-expanded={isExpanded}
-                aria-label={`${phase.title} — ${phase.completedCount} of ${phase.taskCount} tasks done`}
+                aria-label={`${phase.title} — ${completedCount} of ${taskCount} tasks done`}
               >
                 {/* Status icon */}
                 <PhaseStatusIcon
@@ -526,7 +540,7 @@ function PhasePipeline({
                   </div>
 
                   {/* Progress bar + task count */}
-                  {phase.taskCount > 0 && (
+                  {taskCount > 0 && (
                     <div className="flex items-center gap-2 mt-0.5">
                       <div className="w-16 h-[3px] bg-muted/40 rounded-full overflow-hidden">
                         <div
@@ -540,7 +554,7 @@ function PhasePipeline({
                         />
                       </div>
                       <span className="text-2xs text-foreground-muted tabular-nums">
-                        {phase.completedCount}/{phase.taskCount}
+                        {completedCount}/{taskCount}
                       </span>
                       {commitCount > 0 && (
                         <span className="flex items-center gap-0.5 text-2xs text-foreground-muted/50 ml-1">
@@ -553,7 +567,7 @@ function PhasePipeline({
                 </div>
 
                 {/* Expand chevron */}
-                {(phase.taskCount > 0 || commitCount > 0) && (
+                {(taskCount > 0 || commitCount > 0) && (
                   <ChevronRight
                     className={`w-3.5 h-3.5 text-foreground-muted shrink-0 transition-transform duration-150 ${
                       isExpanded ? "rotate-90" : ""
@@ -563,7 +577,7 @@ function PhasePipeline({
               </button>
 
               {/* Expanded task list + commits — animated with CSS grid */}
-              {(phase.taskCount > 0 || commitCount > 0) && (
+              {(taskCount > 0 || commitCount > 0) && (
                 <div
                   className="grid transition-[grid-template-rows] duration-150 ease-out"
                   style={{
@@ -573,7 +587,7 @@ function PhasePipeline({
                   <div className="overflow-hidden">
                     {isExpanded && (
                       <>
-                        {phase.taskCount > 0 && (
+                        {taskCount > 0 && (
                           <PhaseTasksExpanded
                             projectPath={projectPath}
                             phaseId={phase.id}
