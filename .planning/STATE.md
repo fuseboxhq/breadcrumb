@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-33: xterm.js Terminal Hardening (not_started)
+PHASE-33: xterm.js Terminal Hardening (in_progress) - 4 tasks
 PHASE-32: Terminal & Planning Robustness (in_progress) - 6 tasks
 PHASE-31: Dynamic Extension UI Contributions (in_progress) - 6 tasks
 PHASE-30: Light Mode Overhaul (done) - 4/4 tasks done
