@@ -82,6 +82,12 @@ export class ExtensionManager extends EventEmitter {
       }
     });
 
+    this.host.on("browser-open-request", (requestId: string, extensionId: string, url?: string) => {
+      const browserId = `ext-${extensionId}-browser-${Date.now()}`;
+      this.emit("browser-opened", browserId, url, extensionId);
+      this.host.send({ type: "browser-opened", requestId, browserId });
+    });
+
     this.host.on("state-set", (extensionId: string, key: string, value: unknown) => {
       ExtensionStateManager.set(extensionId, key, value);
     });
@@ -269,6 +275,8 @@ export class ExtensionManager extends EventEmitter {
       description: ext.manifest.description || "",
       status: ext.status,
       publisher: ext.manifest.publisher || "Unknown",
+      icon: ext.manifest.icon || "puzzle",
+      categories: ext.manifest.categories || [],
       capabilities: ext.manifest.breadcrumb?.capabilities || {},
       commands: ext.manifest.contributes?.commands || [],
       contributes: ext.manifest.contributes || {},

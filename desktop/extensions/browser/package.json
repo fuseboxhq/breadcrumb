@@ -1,0 +1,42 @@
+{
+  "name": "browser",
+  "displayName": "Browser",
+  "version": "1.0.0",
+  "description": "Embedded browser for previewing web applications within Breadcrumb IDE. Open local dev servers, external URLs, and inspect pages without leaving the editor. Supports multiple tabs, navigation history, and Chrome DevTools.",
+  "publisher": "breadcrumb",
+  "icon": "globe",
+  "categories": ["Preview", "Development"],
+  "main": "./src/index.js",
+  "engines": {
+    "breadcrumb": "^1.0.0",
+    "node": ">=18.0.0"
+  },
+  "activationEvents": ["*"],
+  "contributes": {
+    "commands": [
+      {
+        "command": "browser.open",
+        "title": "Open Browser",
+        "category": "Browser"
+      },
+      {
+        "command": "browser.openUrl",
+        "title": "Open URL in Browser",
+        "category": "Browser"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "browser.open",
+        "key": "ctrl+b",
+        "mac": "cmd+b"
+      }
+    ]
+  },
+  "breadcrumb": {
+    "apiVersion": "1.0.0",
+    "capabilities": {
+      "network": true
+    }
+  }
+}

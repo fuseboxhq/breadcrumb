@@ -1,6 +1,6 @@
 # Phase 31: Dynamic Extension UI Contributions
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-vrp
 **Created:** 2026-02-20
 
@@ -96,12 +96,12 @@ The `frontend-design` skill is not needed for this phase — the work is archite
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-vrp.1 | Expand ExtensionInfoForRenderer to include full contributes manifest | open | Low | - |
-| breadcrumb-vrp.2 | Create reactive extensionStore in renderer for contribution tracking | open | Medium | .1 |
-| breadcrumb-vrp.3 | Replace hardcoded debug UI in toolbar and sidebar with contribution-driven rendering | open | High | .2 |
-| breadcrumb-vrp.4 | Dynamic command palette: merge extension commands based on active state | open | Medium | .2 |
-| breadcrumb-vrp.5 | Enhance Extensions panel to show per-extension contributions | open | Low | .2 |
-| breadcrumb-vrp.6 | Wire debug-assistant modal and store through extension command execution | open | Medium | .3 |
+| breadcrumb-vrp.1 | Expand ExtensionInfoForRenderer to include full contributes manifest | done | Low | - |
+| breadcrumb-vrp.2 | Create reactive extensionStore in renderer for contribution tracking | done | Medium | .1 |
+| breadcrumb-vrp.3 | Replace hardcoded debug UI in toolbar and sidebar with contribution-driven rendering | done | High | .2 |
+| breadcrumb-vrp.4 | Dynamic command palette: merge extension commands based on active state | done | Medium | .2 |
+| breadcrumb-vrp.5 | Enhance Extensions panel to show per-extension contributions | done | Low | .2 |
+| breadcrumb-vrp.6 | Wire debug-assistant modal and store through extension command execution | done | Medium | .3 |
 
 ### Task Details
 

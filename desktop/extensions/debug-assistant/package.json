@@ -2,8 +2,10 @@
   "name": "debug-assistant",
   "displayName": "AI Debug Assistant",
   "version": "1.0.0",
-  "description": "Per-project AI debug assistant — describe a bug with screenshots and console logs, spawn Claude Code with project-specific debug context",
+  "description": "Per-project AI debug assistant for Breadcrumb IDE. Describe a bug with screenshots and console logs, then spawn a Claude Code session with project-specific debug context. Automatically discovers or creates per-project debug skills that teach Claude about your logging framework, error locations, and debugging procedures.",
   "publisher": "breadcrumb",
+  "icon": "bug",
+  "categories": ["Debugging", "AI"],
   "main": "./src/index.js",
   "engines": {
     "breadcrumb": "^1.0.0",

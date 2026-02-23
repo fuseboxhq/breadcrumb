@@ -15,6 +15,8 @@ export interface ExtensionManifest {
   version: string;
   description?: string;
   publisher?: string;
+  icon?: string; // Lucide icon name, e.g. "bug", "globe"
+  categories?: string[]; // e.g. ["Debugging", "AI"]
   main: string; // entry point relative to extension dir
   engines: {
     breadcrumb: string; // semver range, e.g. "^1.0.0"
@@ -108,6 +110,7 @@ export type HostMessage =
   | { type: "execute-command"; commandId: string; args: unknown[] }
   | { type: "terminal-created"; requestId: string; sessionId: string }
   | { type: "terminal-create-failed"; requestId: string; error: string }
+  | { type: "browser-opened"; requestId: string; browserId: string }
   | { type: "modal-result"; requestId: string; result: Record<string, unknown> | null }
   | { type: "shutdown" };
 
@@ -120,6 +123,7 @@ export type HostResponse =
   | { type: "register-command"; extensionId: string; commandId: string }
   | { type: "log"; level: "info" | "warn" | "error"; message: string }
   | { type: "terminal-create"; requestId: string; extensionId: string; name: string; workingDirectory?: string; shell?: string }
+  | { type: "browser-open"; requestId: string; extensionId: string; url?: string }
   | { type: "state-set"; extensionId: string; key: string; value: unknown }
   | { type: "show-input-modal"; requestId: string; extensionId: string; schema: ExtensionModalSchema };
 
@@ -151,6 +155,8 @@ export interface ExtensionInfoForRenderer {
   description: string;
   status: ExtensionStatus;
   publisher: string;
+  icon: string;
+  categories: string[];
   capabilities: ExtensionCapabilities;
   commands: ContributedCommand[];
   contributes: ExtensionContributions;

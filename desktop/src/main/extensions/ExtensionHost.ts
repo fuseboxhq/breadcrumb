@@ -246,6 +246,10 @@ export class ExtensionHost extends EventEmitter {
         this.emit("terminal-create-request", msg.requestId, msg.extensionId, msg.name, msg.workingDirectory, msg.shell);
         break;
       }
+      case "browser-open": {
+        this.emit("browser-open-request", msg.requestId, msg.extensionId, msg.url);
+        break;
+      }
       case "state-set": {
         this.emit("state-set", msg.extensionId, msg.key, msg.value);
         break;

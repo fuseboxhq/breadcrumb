@@ -1,23 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  Puzzle,
-  RefreshCw,
-  Play,
-  Square,
-  Database,
-  Shield,
-  Terminal,
-  FolderOpen,
-  LayoutGrid,
-  Keyboard,
-} from "lucide-react";
+import { RefreshCw, Play, Square, FolderOpen, Puzzle } from "lucide-react";
 import { SkeletonList } from "../ui/Skeleton";
+import {
+  ExtensionDetailModal,
+  resolveExtensionIcon,
+} from "./ExtensionDetailModal";
 import type { ExtensionInfoForRenderer } from "../../../main/extensions/types";
 
 export function ExtensionsPanel() {
   const [extensions, setExtensions] = useState<ExtensionInfoForRenderer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedExt, setSelectedExt] = useState<string | null>(null);
+  const [detailExt, setDetailExt] = useState<ExtensionInfoForRenderer | null>(
+    null
+  );
 
   const loadExtensions = useCallback(async () => {
     setLoading(true);
@@ -35,11 +30,20 @@ export function ExtensionsPanel() {
     loadExtensions();
 
     const cleanup = window.breadcrumbAPI?.onExtensionsChanged?.((exts) => {
-      if (Array.isArray(exts)) setExtensions(exts);
+      if (Array.isArray(exts)) {
+        setExtensions(exts);
+        // Keep detail modal in sync if the viewed extension changed
+        if (detailExt) {
+          const updated = exts.find(
+            (e: ExtensionInfoForRenderer) => e.id === detailExt.id
+          );
+          if (updated) setDetailExt(updated);
+        }
+      }
     });
 
     return () => cleanup?.();
-  }, [loadExtensions]);
+  }, [loadExtensions, detailExt]);
 
   const handleToggle = async (ext: ExtensionInfoForRenderer) => {
     if (ext.status === "active") {
@@ -53,7 +57,9 @@ export function ExtensionsPanel() {
   const handleOpenFolder = async () => {
     const home = await window.breadcrumbAPI?.getWorkingDirectory();
     if (home) {
-      window.breadcrumbAPI?.browser.openExternal(`file://${home}/.breadcrumb/extensions`);
+      window.breadcrumbAPI?.browser.openExternal(
+        `file://${home}/.breadcrumb/extensions`
+      );
     }
   };
 
@@ -77,7 +83,9 @@ export function ExtensionsPanel() {
             className="p-1 rounded-md text-foreground-muted hover:text-foreground-secondary hover:bg-muted/50 transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
             title="Refresh"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -91,7 +99,9 @@ export function ExtensionsPanel() {
             <div className="w-10 h-10 rounded-xl bg-muted/30 flex items-center justify-center mb-3">
               <Puzzle className="w-5 h-5 text-foreground-muted" />
             </div>
-            <p className="text-sm text-foreground-secondary mb-1">No extensions</p>
+            <p className="text-sm text-foreground-secondary mb-1">
+              No extensions
+            </p>
             <p className="text-2xs text-foreground-muted">
               Add extensions to ~/.breadcrumb/extensions/
             </p>
@@ -102,199 +112,89 @@ export function ExtensionsPanel() {
               <ExtensionCard
                 key={ext.id}
                 ext={ext}
-                isSelected={selectedExt === ext.id}
-                onSelect={() =>
-                  setSelectedExt(selectedExt === ext.id ? null : ext.id)
-                }
+                onOpenDetail={() => setDetailExt(ext)}
                 onToggle={() => handleToggle(ext)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Detail modal */}
+      {detailExt && (
+        <ExtensionDetailModal
+          ext={detailExt}
+          onClose={() => setDetailExt(null)}
+          onToggle={() => handleToggle(detailExt)}
+        />
+      )}
     </div>
   );
 }
 
 function ExtensionCard({
   ext,
-  isSelected,
-  onSelect,
+  onOpenDetail,
   onToggle,
 }: {
   ext: ExtensionInfoForRenderer;
-  isSelected: boolean;
-  onSelect: () => void;
+  onOpenDetail: () => void;
   onToggle: () => void;
 }) {
-  const ExtIcon = getExtIcon(ext);
+  const ExtIcon = resolveExtensionIcon(ext.icon);
 
   return (
-    <div
-      className={`rounded-lg border transition-default ${
-        isSelected
-          ? "border-accent/20 bg-accent/5"
-          : "border-transparent hover:bg-background-raised"
-      }`}
-    >
-      <button
-        onClick={onSelect}
-        className="w-full text-left p-2.5 flex items-start gap-2.5"
-      >
-        <div className="shrink-0 w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center">
-          <ExtIcon className="w-4 h-4 text-foreground-muted" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <StatusDot status={ext.status} />
-            <span className="text-sm font-medium text-foreground truncate">
-              {ext.displayName}
-            </span>
+    <div className="rounded-lg border border-transparent hover:bg-background-raised transition-default group">
+      <div className="flex items-start gap-2.5 p-2.5">
+        {/* Click on icon+text opens detail modal */}
+        <button
+          onClick={onOpenDetail}
+          className="flex items-start gap-2.5 flex-1 min-w-0 text-left"
+        >
+          <div className="shrink-0 w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center">
+            <ExtIcon className="w-4 h-4 text-foreground-muted" />
           </div>
-          <p className="text-2xs text-foreground-muted truncate">
-            {ext.description || "No description"}
-          </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-2xs text-foreground-muted/60 font-mono">
-              v{ext.version}
-            </span>
-            <span className="text-2xs text-foreground-muted/60">
-              {ext.publisher}
-            </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <StatusDot status={ext.status} />
+              <span className="text-sm font-medium text-foreground truncate">
+                {ext.displayName}
+              </span>
+            </div>
+            <p className="text-2xs text-foreground-muted truncate">
+              {ext.description || "No description"}
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-2xs text-foreground-muted/60 font-mono">
+                v{ext.version}
+              </span>
+              <span className="text-2xs text-foreground-muted/60">
+                {ext.publisher}
+              </span>
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
 
-      {/* Detail panel */}
-      {isSelected && (
-        <div className="px-2.5 pb-2.5 animate-fade-in">
-          {/* Actions */}
-          <div className="flex items-center gap-2 mb-3">
-            <button
-              onClick={onToggle}
-              className={`
-                flex items-center gap-1.5 px-2.5 py-1 text-2xs font-medium rounded-md transition-default
-                ${ext.status === "active"
-                  ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                  : "bg-success/10 text-success hover:bg-success/20"
-                }
-              `}
-            >
-              {ext.status === "active" ? (
-                <>
-                  <Square className="w-3 h-3" /> Deactivate
-                </>
-              ) : (
-                <>
-                  <Play className="w-3 h-3" /> Activate
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Capabilities */}
-          {Object.keys(ext.capabilities).length > 0 && (
-            <div className="mb-3">
-              <div className="flex items-center gap-1 mb-1.5">
-                <Shield className="w-3 h-3 text-foreground-muted" />
-                <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
-                  Capabilities
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(ext.capabilities).map(([key, value]) => (
-                  <span
-                    key={key}
-                    className="text-2xs px-1.5 py-0.5 rounded-md bg-muted/40 text-foreground-muted font-mono"
-                  >
-                    {key}: {String(value)}
-                  </span>
-                ))}
-              </div>
-            </div>
+        {/* Quick toggle */}
+        <button
+          onClick={onToggle}
+          className={`
+            shrink-0 p-1.5 rounded-md text-2xs transition-default opacity-0 group-hover:opacity-100
+            ${
+              ext.status === "active"
+                ? "text-destructive hover:bg-destructive/10"
+                : "text-success hover:bg-success/10"
+            }
+          `}
+          title={ext.status === "active" ? "Deactivate" : "Activate"}
+        >
+          {ext.status === "active" ? (
+            <Square className="w-3.5 h-3.5" />
+          ) : (
+            <Play className="w-3.5 h-3.5" />
           )}
-
-          {/* Commands */}
-          {ext.commands.length > 0 && (
-            <div className="mb-3">
-              <div className="flex items-center gap-1 mb-1.5">
-                <Terminal className="w-3 h-3 text-foreground-muted" />
-                <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
-                  Commands
-                </span>
-              </div>
-              <div className="space-y-1">
-                {ext.commands.map((cmd) => (
-                  <button
-                    key={cmd.command}
-                    onClick={() => window.breadcrumbAPI?.executeExtensionCommand(cmd.command)}
-                    className="w-full text-left text-2xs flex items-center gap-1.5 px-1.5 py-0.5 rounded-md hover:bg-muted/50 transition-default focus-visible:ring-1 focus-visible:ring-primary/30 focus-visible:outline-none"
-                    title={`Run ${cmd.command}`}
-                  >
-                    <code className="font-mono text-accent/80">
-                      {cmd.command}
-                    </code>
-                    <span className="text-foreground-muted">
-                      — {cmd.title}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Views */}
-          {ext.contributes?.views && Object.keys(ext.contributes.views).length > 0 && (
-            <div className="mb-3">
-              <div className="flex items-center gap-1 mb-1.5">
-                <LayoutGrid className="w-3 h-3 text-foreground-muted" />
-                <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
-                  Views
-                </span>
-              </div>
-              <div className="space-y-1">
-                {Object.entries(ext.contributes.views).map(([container, views]) =>
-                  views.map((view) => (
-                    <div
-                      key={view.id}
-                      className="text-2xs flex items-center gap-1.5 px-1.5 py-0.5"
-                    >
-                      <code className="font-mono text-accent/80">{view.id}</code>
-                      <span className="text-foreground-muted">— {view.name}</span>
-                      <span className="text-foreground-muted/50">({container})</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Keybindings */}
-          {ext.contributes?.keybindings && ext.contributes.keybindings.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1 mb-1.5">
-                <Keyboard className="w-3 h-3 text-foreground-muted" />
-                <span className="text-2xs font-semibold text-foreground-muted uppercase tracking-widest">
-                  Keybindings
-                </span>
-              </div>
-              <div className="space-y-1">
-                {ext.contributes.keybindings.map((kb) => (
-                  <div
-                    key={kb.command}
-                    className="text-2xs flex items-center gap-1.5 px-1.5 py-0.5"
-                  >
-                    <kbd className="px-1 py-0.5 rounded bg-muted/40 text-foreground-muted font-mono">
-                      {kb.mac || kb.key}
-                    </kbd>
-                    <span className="text-foreground-muted">→ {kb.command}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        </button>
+      </div>
     </div>
   );
 }
@@ -313,9 +213,4 @@ function StatusDot({ status }: { status: string }) {
       className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors[status] || colors.inactive}`}
     />
   );
-}
-
-function getExtIcon(ext: ExtensionInfoForRenderer) {
-  if (ext.id.includes("db") || ext.id.includes("database")) return Database;
-  return Puzzle;
 }

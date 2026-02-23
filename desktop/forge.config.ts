@@ -28,7 +28,7 @@ const config: ForgeConfig = {
         fs.readFileSync(path.join(buildPath, "package.json"), "utf-8")
       );
       // Only install native dependencies that Vite marked as external
-      const nativeDeps = ["node-pty", "electron-store"];
+      const nativeDeps = ["node-pty", "electron-store", "better-sqlite3"];
       const depsToInstall = nativeDeps.filter(
         (dep) => packageJson.dependencies?.[dep]
       );

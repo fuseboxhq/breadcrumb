@@ -16,6 +16,7 @@ export default defineConfig({
       external: [
         "electron",
         "node-pty",
+        "better-sqlite3",
         /\.node$/,
       ],
     },

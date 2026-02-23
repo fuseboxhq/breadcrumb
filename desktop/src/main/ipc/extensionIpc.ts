@@ -98,6 +98,17 @@ export function registerExtensionIPCHandlers(
   };
   ipcMain.handle(IPC_CHANNELS.EXTENSIONS_MODAL_RESULT, handleModalResult);
 
+  // Forward browser open requests to renderer so it opens a browser tab
+  const onBrowserOpened = (browserId: string, url?: string, extensionId?: string) => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(
+        IPC_CHANNELS.EXTENSIONS_BROWSER_OPENED,
+        { browserId, url, extensionId }
+      );
+    }
+  };
+  extensionManager.on("browser-opened", onBrowserOpened);
+
   // Forward terminal creation to renderer so it opens a pane
   const onTerminalCreated = (sessionId: string, name: string, extensionId: string, workingDirectory?: string) => {
     if (!mainWindow.isDestroyed()) {
@@ -139,6 +150,7 @@ export function registerExtensionIPCHandlers(
     extensionManager.removeListener("extensions-changed", onExtensionsChanged);
     extensionManager.removeListener("extension-status-changed", onStatusChanged);
     extensionManager.removeListener("terminal-created", onTerminalCreated);
+    extensionManager.removeListener("browser-opened", onBrowserOpened);
     extensionManager.removeListener("show-input-modal", onShowInputModal);
     ipcMain.removeHandler(IPC_CHANNELS.EXTENSIONS_MODAL_RESULT);
   };

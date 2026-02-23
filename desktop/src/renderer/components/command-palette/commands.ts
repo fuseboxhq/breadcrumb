@@ -1,6 +1,5 @@
 import {
   Terminal,
-  Globe,
   LayoutGrid,
   FolderTree,
   Puzzle,
@@ -59,15 +58,6 @@ export function buildCommands(ctx: CommandContext): CommandItem[] {
       },
     },
     {
-      id: "new-browser",
-      label: "Open Browser",
-      description: "Open browser in right panel",
-      icon: Globe,
-      category: "Actions",
-      shortcut: "⌘B",
-      action: () => { ctx.addRightPanelPane("browser"); close(); },
-    },
-    {
       id: "open-planner",
       label: "Open Planner",
       description: "Open planning dashboard in right panel",
@@ -107,14 +97,6 @@ export function buildCommands(ctx: CommandContext): CommandItem[] {
       icon: LayoutGrid,
       category: "Navigation",
       action: () => { ctx.addRightPanelPane("planning"); close(); },
-    },
-    {
-      id: "view-browser",
-      label: "Show Browser Panel",
-      description: "Browser in right panel",
-      icon: Globe,
-      category: "Navigation",
-      action: () => { ctx.addRightPanelPane("browser"); close(); },
     },
     {
       id: "view-extensions",

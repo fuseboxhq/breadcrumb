@@ -43,6 +43,7 @@ interface LoadedExtension {
 const extensions = new Map<string, LoadedExtension>();
 const commands = new Map<string, (...args: unknown[]) => unknown>();
 const pendingTerminalRequests = new Map<string, { resolve: (v: { sessionId: string }) => void; reject: (e: Error) => void }>();
+const pendingBrowserRequests = new Map<string, { resolve: (v: { browserId: string }) => void }>();
 /** Local state cache per extension — enables synchronous get() */
 const stateCache = new Map<string, unknown>();
 const pendingModalRequests = new Map<string, { resolve: (v: Record<string, unknown> | null) => void }>();
@@ -132,6 +133,20 @@ const breadcrumb = {
       });
     },
   },
+  browser: {
+    open(url?: string): Promise<{ browserId: string }> {
+      const requestId = Math.random().toString(36).slice(2);
+      return new Promise((resolve) => {
+        pendingBrowserRequests.set(requestId, { resolve });
+        sendToMain({
+          type: "browser-open",
+          requestId,
+          extensionId: "", // filled in by activate wrapper
+          url,
+        });
+      });
+    },
+  },
 };
 
 // ---------- Message handling ----------
@@ -197,6 +212,21 @@ async function handleActivate(
       });
     };
 
+    // Patch browser.open to include extensionId
+    const origBrowserOpen = breadcrumb.browser.open;
+    breadcrumb.browser.open = (url?: string) => {
+      const requestId = Math.random().toString(36).slice(2);
+      return new Promise((resolve) => {
+        pendingBrowserRequests.set(requestId, { resolve });
+        sendToMain({
+          type: "browser-open",
+          requestId,
+          extensionId,
+          url,
+        });
+      });
+    };
+
     // Patch showInputModal to include extensionId
     const origShowInputModal = breadcrumb.window.showInputModal;
     breadcrumb.window.showInputModal = (schema) => {
@@ -241,6 +271,7 @@ async function handleActivate(
     // Restore originals
     breadcrumb.commands.registerCommand = origRegister;
     breadcrumb.terminal.createTerminal = origCreateTerminal;
+    breadcrumb.browser.open = origBrowserOpen;
     breadcrumb.window.showInputModal = origShowInputModal;
 
     extensions.set(extensionId, { id: extensionId, module: mod, context });
@@ -359,6 +390,14 @@ process.on("message", async (msg: HostMessage) => {
       if (pending) {
         pending.reject(new Error(msg.error));
         pendingTerminalRequests.delete(msg.requestId);
+      }
+      break;
+    }
+    case "browser-opened": {
+      const pending = pendingBrowserRequests.get(msg.requestId);
+      if (pending) {
+        pending.resolve({ browserId: msg.browserId });
+        pendingBrowserRequests.delete(msg.requestId);
       }
       break;
     }

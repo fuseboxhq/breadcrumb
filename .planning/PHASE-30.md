@@ -1,6 +1,6 @@
 # Phase 30: Light Mode Overhaul
 
-**Status:** in_progress
+**Status:** done
 **Beads Epic:** breadcrumb-m53
 **Created:** 2026-02-20
 
@@ -108,10 +108,10 @@ The overhaul is purely CSS variable changes in the `:root` block of `globals.css
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-m53.1 | Design warm light palette and update core CSS variables | open | High | - |
-| breadcrumb-m53.2 | Warm up terminal xterm ANSI colors and selection for light mode | open | Medium | .1 |
-| breadcrumb-m53.3 | Update git diff viewer, scrollbars, and focus indicators for warm palette | open | Low | .1 |
-| breadcrumb-m53.4 | Verify contrast ratios and visual polish across all surfaces | open | Medium | .1 |
+| breadcrumb-m53.1 | Design warm light palette and update core CSS variables | done | High | - |
+| breadcrumb-m53.2 | Warm up terminal xterm ANSI colors and selection for light mode | done | Medium | .1 |
+| breadcrumb-m53.3 | Update git diff viewer, scrollbars, and focus indicators for warm palette | done | Low | .1 |
+| breadcrumb-m53.4 | Verify contrast ratios and visual polish across all surfaces | done | Medium | .1 |
 
 ### Task Details
 

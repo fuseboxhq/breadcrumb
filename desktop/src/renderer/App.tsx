@@ -75,6 +75,20 @@ function App() {
     return () => cleanup?.();
   }, []);
 
+  // Listen for extension-spawned browser tab creation from main process
+  useEffect(() => {
+    const cleanup = window.breadcrumbAPI?.onExtensionBrowserOpened?.((data) => {
+      const store = useAppStore.getState();
+      // Open the browser pane in the right panel (no-ops if already open)
+      store.addRightPanelPane("browser");
+      // If a specific URL was requested, add a new tab for it
+      if (data.url) {
+        store.addBrowserTab(data.url);
+      }
+    });
+    return () => cleanup?.();
+  }, []);
+
   // Listen for terminal process name changes from main process
   useEffect(() => {
     const cleanup = window.breadcrumbAPI?.onTerminalProcessChange((event) => {

@@ -97,6 +97,7 @@ export interface BreadcrumbAPI {
   executeExtensionCommand: (commandId: string, ...args: unknown[]) => Promise<{ success: boolean; result?: unknown; error?: string }>;
   onExtensionsChanged: (callback: (extensions: ExtensionInfoForRenderer[]) => void) => () => void;
   onExtensionTerminalCreated: (callback: (data: { sessionId: string; name: string; extensionId: string; workingDirectory?: string }) => void) => () => void;
+  onExtensionBrowserOpened: (callback: (data: { browserId: string; url?: string; extensionId?: string }) => void) => () => void;
   onExtensionShowModal: (callback: (data: { requestId: string; schema: unknown }) => void) => () => void;
   resolveExtensionModal: (requestId: string, result: Record<string, unknown> | null) => Promise<{ success: boolean }>;
 
@@ -253,6 +254,13 @@ const api: BreadcrumbAPI = {
       callback(data);
     ipcRenderer.on(IPC_CHANNELS.EXTENSIONS_TERMINAL_CREATED, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.EXTENSIONS_TERMINAL_CREATED, handler);
+  },
+
+  onExtensionBrowserOpened: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, data: { browserId: string; url?: string; extensionId?: string }) =>
+      callback(data);
+    ipcRenderer.on(IPC_CHANNELS.EXTENSIONS_BROWSER_OPENED, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.EXTENSIONS_BROWSER_OPENED, handler);
   },
 
   onExtensionShowModal: (callback) => {
