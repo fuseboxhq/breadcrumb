@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-32: Terminal & Planning Robustness (not_started)
+PHASE-32: Terminal & Planning Robustness (in_progress) - 6 tasks
 PHASE-31: Dynamic Extension UI Contributions (in_progress) - 6 tasks
 PHASE-30: Light Mode Overhaul (done) - 4/4 tasks done
 PHASE-29: Advanced Terminal Windowing (done) - 7/7 tasks done
