@@ -1,16 +1,17 @@
 # Project State
 
-**Current Phase:** PHASE-32
+**Current Phase:** None
 **Last Updated:** 2026-02-20
 
 ## Active Work
 
-PHASE-32: Terminal & Planning Robustness (complete) - 6/6 tasks done
-PHASE-31: Dynamic Extension UI Contributions (complete) - 6/6 tasks done
+(No active phases)
 
 ## Completed Phases
 
 - PHASE-33: xterm.js Terminal Hardening (complete) - 4/4 tasks done
+- PHASE-32: Terminal & Planning Robustness (complete) - 6/6 tasks done
+- PHASE-31: Dynamic Extension UI Contributions (complete) - 6/6 tasks done
 - PHASE-30: Light Mode Overhaul (complete) - 4/4 tasks done
 - PHASE-29: Advanced Terminal Windowing (complete) - 7/7 tasks done
 - PHASE-28: Premium UI Overhaul & Theme System (completed 2026-02-18) - 6/6 tasks done

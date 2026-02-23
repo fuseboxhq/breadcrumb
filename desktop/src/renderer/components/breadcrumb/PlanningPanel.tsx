@@ -435,13 +435,13 @@ function PhasePipeline({
     const desc = (a: PhaseSummary, b: PhaseSummary) => phaseNum(b) - phaseNum(a);
 
     const active = phases
-      .filter((p) => p.status === "in_progress" || p.isActive)
+      .filter((p) => p.status === "in_progress" || (p.isActive && p.status !== "complete"))
       .sort(desc);
     const planned = phases
       .filter((p) => p.status === "not_started" && !p.isActive)
       .sort(desc);
     const completed = phases
-      .filter((p) => p.status === "complete")
+      .filter((p) => p.status === "complete" && !active.includes(p))
       .sort(desc);
     return [...active, ...planned, ...completed];
   }, [phases]);
