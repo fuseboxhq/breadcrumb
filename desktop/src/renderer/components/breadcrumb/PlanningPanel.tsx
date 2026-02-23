@@ -466,7 +466,7 @@ function PhasePipeline({
       <p className="text-2xs font-medium uppercase tracking-wider text-foreground-muted mb-3">
         Phase Pipeline
       </p>
-      <div className="relative">
+      <div className="relative max-h-[280px] overflow-y-auto scrollbar-thin">
         {sortedPhases.map((phase, index) => {
           const isLast = index === sortedPhases.length - 1;
           const isActive =
