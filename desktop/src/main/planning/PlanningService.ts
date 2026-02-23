@@ -104,8 +104,11 @@ export class PlanningService {
   }
 
   /**
-   * Resolve phase file path — handles both `PHASE-XX.md` and
-   * slugified names like `PHASE-XX-some-title.md`.
+   * Resolve phase file path — handles multiple conventions:
+   * 1. `.planning/PHASE-XX.md` (exact match)
+   * 2. `.planning/PHASE-XX-slug.md` (prefix match in root)
+   * 3. `.planning/phases/XX-slug/PHASE-XX.md` (subdirectory match)
+   * 4. `.planning/phases/XX-slug/*.md` (any .md in matching subdir)
    */
   private async resolvePhaseFile(
     projectPath: string,
@@ -113,18 +116,56 @@ export class PlanningService {
   ): Promise<string | null> {
     const planningDir = join(projectPath, ".planning");
 
-    // Try exact match first
+    // 1. Try exact match in root
     const exact = join(planningDir, `${phaseId}.md`);
     if (await fileExists(exact)) return exact;
 
-    // Try prefix match (e.g. PHASE-26-close-the-review-loop.md)
+    // 2. Try prefix match in root (e.g. PHASE-26-close-the-review-loop.md)
     if (!(await fileExists(planningDir))) return null;
     const prefix = `${phaseId}-`;
-    const files = await readdir(planningDir);
-    const match = files.find(
+    const rootFiles = await readdir(planningDir);
+    const rootMatch = rootFiles.find(
       (f) => f.startsWith(prefix) && f.endsWith(".md")
     );
-    return match ? join(planningDir, match) : null;
+    if (rootMatch) return join(planningDir, rootMatch);
+
+    // 3. Try subdirectory search in .planning/phases/
+    // Extract the phase number from phaseId (e.g., "PHASE-24" → "24")
+    const numMatch = phaseId.match(/(\d+)$/);
+    if (!numMatch) return null;
+    const phaseNum = numMatch[1];
+
+    const phasesDir = join(planningDir, "phases");
+    if (!(await fileExists(phasesDir))) return null;
+
+    try {
+      const subdirs = await readdir(phasesDir);
+      // Find subdirectory starting with the phase number (e.g., "24-fraud-intelligence-hub")
+      const matchingDir = subdirs.find((d) => {
+        const dashIdx = d.indexOf("-");
+        const dirNum = dashIdx >= 0 ? d.substring(0, dashIdx) : d;
+        return dirNum === phaseNum;
+      });
+
+      if (matchingDir) {
+        const subdir = join(phasesDir, matchingDir);
+        const subFiles = await readdir(subdir);
+
+        // 3a. Look for PHASE-XX.md in subdirectory
+        const phaseFile = subFiles.find(
+          (f) => f.toUpperCase().startsWith(`PHASE-${phaseNum}`) && f.endsWith(".md")
+        );
+        if (phaseFile) return join(subdir, phaseFile);
+
+        // 3b. Fall back to any .md file in the subdirectory
+        const anyMd = subFiles.find((f) => f.endsWith(".md"));
+        if (anyMd) return join(subdir, anyMd);
+      }
+    } catch {
+      // Ignore errors reading phases directory
+    }
+
+    return null;
   }
 
   async getBeadsTasks(projectPath: string, epicId: string): Promise<BeadsTask[]> {
@@ -211,36 +252,65 @@ export class PlanningService {
 
   // ── Parsers ──────────────────────────────────────────────────────────────
 
+  /**
+   * Normalize status strings from various STATE.md conventions to the
+   * canonical set: "complete", "in_progress", "not_started".
+   */
+  private normalizeStatus(raw: string): PhaseSummary["status"] {
+    switch (raw.toLowerCase()) {
+      case "done":
+      case "closed":
+      case "complete":
+      case "completed":
+        return "complete";
+      case "in_progress":
+        return "in_progress";
+      case "not_started":
+      default:
+        return "not_started";
+    }
+  }
+
   private parseStateFile(content: string): PhaseSummary[] {
     const phases: PhaseSummary[] = [];
     const lines = content.split("\n");
 
-    // Extract current phase
+    // Extract current phase — accept both "PHASE-XX" and "Phase XX" formats
     let currentPhaseId = "";
     for (const line of lines) {
-      const currentMatch = line.match(/^\*\*Current Phase:\*\*\s*(PHASE-\d+)/);
+      const currentMatch = line.match(
+        /^\*\*Current Phase:\*\*\s*(?:PHASE-|Phase\s+)(\d+)/i
+      );
       if (currentMatch) {
-        currentPhaseId = currentMatch[1];
+        currentPhaseId = `PHASE-${currentMatch[1]}`;
         break;
       }
     }
 
+    // Match phase lines — accept both "PHASE-XX:" and "Phase XX:" formats.
+    // Allow optional leading "- " (list marker) before the phase identifier.
+    // Accept any status value and normalize it.
+    const phaseLineRegex =
+      /^(?:-\s+)?(?:PHASE-|Phase\s+)(\d+):\s+(.+?)\s+\((\w+)\)(?:\s+-\s+(\d+)(?:\/(\d+))?\s+tasks?(?:\s+done)?)?/i;
+
     for (const line of lines) {
-      const match = line.match(
-        /^(PHASE-\d+):\s+(.+?)\s+\((complete|in_progress|not_started)\)(?:\s+-\s+(\d+)(?:\/(\d+))?\s+tasks?(?:\s+done)?)?/
-      );
+      const match = line.match(phaseLineRegex);
       if (match) {
+        const normalizedId = `PHASE-${match[1]}`;
+        const rawStatus = match[3];
+        const status = this.normalizeStatus(rawStatus);
+
         const taskCount = match[5]
           ? parseInt(match[5])
           : parseInt(match[4] || "0");
         const completedCount = match[5] ? parseInt(match[4] || "0") : 0;
         phases.push({
-          id: match[1],
+          id: normalizedId,
           title: match[2].trim(),
-          status: match[3] as PhaseSummary["status"],
+          status,
           taskCount,
           completedCount,
-          isActive: match[1] === currentPhaseId,
+          isActive: normalizedId === currentPhaseId,
         });
       }
     }

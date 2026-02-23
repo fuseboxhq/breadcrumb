@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
-import type { Terminal } from "@xterm/xterm";
+import type { Terminal } from "ghostty-web";
+import type { OscShim } from "../lib/oscShim";
 
 export interface CommandBlock {
   id: string;
@@ -27,7 +28,11 @@ interface ShellIntegrationCallbacks {
 
 /**
  * Hook to register OSC 133 (command boundaries) and OSC 7 (cwd tracking)
- * handlers on an xterm.js Terminal instance.
+ * handlers via an OscShim that intercepts raw PTY data.
+ *
+ * Unlike the previous xterm.js version which used terminal.parser.registerOscHandler(),
+ * this version works with any terminal emulator by intercepting data before
+ * it reaches the terminal.
  *
  * Callbacks are stored in a ref so that `registerHandlers` has a stable
  * identity — callers can safely include it in useEffect dependency arrays
@@ -47,14 +52,13 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
   callbacksRef.current = callbacks;
 
   const registerHandlers = useCallback(
-    (terminal: Terminal) => {
-      const disposables: { dispose: () => void }[] = [];
-
+    (terminal: Terminal, shim: OscShim) => {
       // OSC 133: Command boundary detection
-      const osc133Handler = terminal.parser.registerOscHandler(133, (data: string) => {
+      const unsubOsc133 = shim.on(133, (data: string) => {
         const parts = data.split(";");
         const type = parts[0];
-        const cursorLine = terminal.buffer.active.cursorY + terminal.buffer.active.baseY;
+        const buf = terminal.buffer.active;
+        const cursorLine = buf.cursorY + buf.baseY;
 
         switch (type) {
           case "A": {
@@ -115,13 +119,10 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
             break;
           }
         }
-
-        return true;
       });
-      disposables.push(osc133Handler);
 
       // OSC 7: Working directory reporting
-      const osc7Handler = terminal.parser.registerOscHandler(7, (data: string) => {
+      const unsubOsc7 = shim.on(7, (data: string) => {
         // Format: file://hostname/path
         try {
           if (data.startsWith("file://")) {
@@ -136,13 +137,12 @@ export function useShellIntegration(callbacks?: ShellIntegrationCallbacks) {
         } catch {
           // Ignore malformed URLs
         }
-        return true;
       });
-      disposables.push(osc7Handler);
 
       // Return cleanup function
       return () => {
-        disposables.forEach((d) => d.dispose());
+        unsubOsc133();
+        unsubOsc7();
       };
     },
     [] // No dependencies — stable forever

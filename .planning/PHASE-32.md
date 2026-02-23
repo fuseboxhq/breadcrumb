@@ -75,12 +75,12 @@ ghostty-web needs a one-time `await init()` to load the WASM module.
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-48z.1 | Install ghostty-web, remove @xterm/* packages | open | Low | - |
-| breadcrumb-48z.2 | Build OSC parser shim for shell integration | open | High | .1 |
-| breadcrumb-48z.3 | Migrate TerminalInstance.tsx to ghostty-web API | open | High | .1, .2 |
-| breadcrumb-48z.4 | Adapt scroll, theme, and settings management | open | Medium | .3 |
-| breadcrumb-48z.5 | Harden PlanningService parser and phase file resolution | open | Medium | - |
-| breadcrumb-48z.6 | Fix argus-platform STATE.md and CLAUDE.md | open | Low | .5 |
+| breadcrumb-48z.1 | Install ghostty-web, remove @xterm/* packages | done | Low | - |
+| breadcrumb-48z.2 | Build OSC parser shim for shell integration | done | High | .1 |
+| breadcrumb-48z.3 | Migrate TerminalInstance.tsx to ghostty-web API | done | High | .1, .2 |
+| breadcrumb-48z.4 | Adapt scroll, theme, and settings management | done | Medium | .3 |
+| breadcrumb-48z.5 | Harden PlanningService parser and phase file resolution | done | Medium | - |
+| breadcrumb-48z.6 | Fix argus-platform STATE.md and CLAUDE.md | done | Low | .5 |
 
 ### Task Details
 
