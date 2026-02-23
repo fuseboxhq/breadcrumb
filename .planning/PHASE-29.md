@@ -1,6 +1,7 @@
 # Phase 29: Advanced Terminal Windowing
 
-**Status:** done
+**Status:** complete
+**Completed:** 2026-02-20
 **Beads Epic:** breadcrumb-2bn
 **Created:** 2026-02-20
 

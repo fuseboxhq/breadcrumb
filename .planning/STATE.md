@@ -5,14 +5,14 @@
 
 ## Active Work
 
-PHASE-32: Terminal & Planning Robustness (in_progress) - 6 tasks
-PHASE-31: Dynamic Extension UI Contributions (in_progress) - 6 tasks
-PHASE-30: Light Mode Overhaul (done) - 4/4 tasks done
-PHASE-29: Advanced Terminal Windowing (done) - 7/7 tasks done
-
+PHASE-32: Terminal & Planning Robustness (complete) - 6/6 tasks done
+PHASE-31: Dynamic Extension UI Contributions (complete) - 6/6 tasks done
 
 ## Completed Phases
 
+- PHASE-33: xterm.js Terminal Hardening (complete) - 4/4 tasks done
+- PHASE-30: Light Mode Overhaul (complete) - 4/4 tasks done
+- PHASE-29: Advanced Terminal Windowing (complete) - 7/7 tasks done
 - PHASE-28: Premium UI Overhaul & Theme System (completed 2026-02-18) - 6/6 tasks done
 - PHASE-27: AI Debug Assistant (completed 2026-02-17) - 6/6 tasks done
 PHASE-26: Multi-Tab Browser & Universal Split Panes (completed 2026-02-14) - 7/7 tasks done

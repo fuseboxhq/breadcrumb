@@ -1,6 +1,7 @@
 # Phase 30: Light Mode Overhaul
 
-**Status:** done
+**Status:** complete
+**Completed:** 2026-02-20
 **Beads Epic:** breadcrumb-m53
 **Created:** 2026-02-20
 
