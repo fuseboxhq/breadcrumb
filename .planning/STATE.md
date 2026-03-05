@@ -1,11 +1,11 @@
 # Project State
 
-**Current Phase:** None
-**Last Updated:** 2026-02-20
+**Current Phase:** PHASE-34
+**Last Updated:** 2026-03-05
 
 ## Active Work
 
-(No active phases)
+PHASE-34: Terminal Cursor & Scroll Position Fixes (not_started)
 
 ## Completed Phases
 
