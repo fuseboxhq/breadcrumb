@@ -409,8 +409,14 @@ export function TerminalInstance({
             // via tab merge), replay the output buffer so the fresh xterm.js
             // restores the full terminal state — alternate screen mode, cursor
             // position, colors, scroll regions, etc.
+            // ACK callback ensures flow control applies to replay — without it,
+            // a large replay buffer (up to 100KB) bypasses backpressure and can
+            // overwhelm the parser, causing cursor state desync.
             if (result?.replayBuffer) {
-              terminal.write(result.replayBuffer);
+              const replayData = result.replayBuffer;
+              terminal.write(replayData, () => {
+                window.breadcrumbAPI?.ackTerminalData(sessionId, replayData.length);
+              });
             }
 
             // Sync PTY dimensions — handles the case where the session
@@ -497,6 +503,10 @@ export function TerminalInstance({
     // transitions into a single PTY resize (avoids SIGWINCH storms).
     // Horizontal resize is expensive (causes line reflow) so gets a longer
     // debounce for terminals with large buffers (VS Code pattern).
+    // IMPORTANT: cols and rows are always applied atomically to prevent
+    // dimension mismatch — previously rows were applied immediately while
+    // cols were debounced 100ms, creating a window where PTY sent cursor
+    // positioning sequences for old cols causing cursor-below-prompter.
     let horizontalResizeTimer: ReturnType<typeof setTimeout> | undefined;
     const handleResize = () => {
       clearTimeout(resizeTimer);
@@ -516,26 +526,52 @@ export function TerminalInstance({
           const rowsChanged = dims.rows !== terminal.rows;
           if (!colsChanged && !rowsChanged) return;
 
-          // Vertical resize is cheap — apply immediately
+          // Save scroll position before any resize — resize can trigger
+          // viewport sync that corrupts scroll position (especially during
+          // idle when ResizeObserver fires from CSS recalc/visibility changes).
+          const buf = terminal.buffer.active;
+          const savedViewportY = buf.viewportY;
+          const restoreScroll = () => {
+            requestAnimationFrame(() => {
+              if (destroyed) return;
+              const currentY = terminal.buffer.active.viewportY;
+              if (currentY !== savedViewportY) {
+                terminal.scrollLines(savedViewportY - currentY);
+              }
+            });
+          };
+
+          // Vertical-only resize is cheap — apply immediately
           if (rowsChanged && !colsChanged) {
             terminal.resize(dims.cols, dims.rows);
             window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+            restoreScroll();
             return;
           }
 
-          // Horizontal resize with large buffer — debounce to avoid expensive reflow
+          // Horizontal resize with large buffer — debounce the ENTIRE resize
+          // (both cols and rows together) to avoid dimension mismatch
           const bufferLength = terminal.buffer.normal.length;
           if (colsChanged && bufferLength > 200) {
             clearTimeout(horizontalResizeTimer);
-            // Apply row change immediately if needed
-            if (rowsChanged) {
-              terminal.resize(terminal.cols, dims.rows);
-              window.breadcrumbAPI?.resizeTerminal(sessionId, terminal.cols, dims.rows);
-            }
             horizontalResizeTimer = setTimeout(() => {
               if (destroyed) return;
-              terminal.resize(dims.cols, terminal.rows);
-              window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, terminal.rows);
+              // Re-read current scroll position at debounce-fire time
+              const deferredViewportY = terminal.buffer.active.viewportY;
+              // Re-read dimensions — container may have changed during debounce
+              const finalDims = fitAddon.proposeDimensions();
+              if (!finalDims || finalDims.cols <= 0 || finalDims.rows <= 0) return;
+              if (finalDims.cols === terminal.cols && finalDims.rows === terminal.rows) return;
+              terminal.resize(finalDims.cols, finalDims.rows);
+              window.breadcrumbAPI?.resizeTerminal(sessionId, finalDims.cols, finalDims.rows);
+              // Restore scroll position after resize async effects
+              requestAnimationFrame(() => {
+                if (destroyed) return;
+                const currentY = terminal.buffer.active.viewportY;
+                if (currentY !== deferredViewportY) {
+                  terminal.scrollLines(deferredViewportY - currentY);
+                }
+              });
             }, 100);
             return;
           }
@@ -543,6 +579,7 @@ export function TerminalInstance({
           // Small buffer or only horizontal — apply immediately
           terminal.resize(dims.cols, dims.rows);
           window.breadcrumbAPI?.resizeTerminal(sessionId, dims.cols, dims.rows);
+          restoreScroll();
         } catch { /* ignore */ }
       }, 80);
     };
@@ -575,26 +612,35 @@ export function TerminalInstance({
   }, [sessionId, workingDirectory]);
 
   // Refit + focus on activation — handles tab switches where the container
-  // was invisible. refresh() forces xterm to re-render its buffer content.
-  // Preserves scroll position to prevent viewport jumps when clicking into
-  // a pane (especially noticeable with long-running TUIs like Claude Code).
+  // was invisible. Preserves scroll position across fit() which queues an
+  // async viewport sync via queueSync(). The double-rAF ensures scroll
+  // restoration runs AFTER fit()'s deferred viewport update completes.
+  // NOTE: terminal.refresh() was intentionally removed — xterm.js re-renders
+  // automatically when the DOM becomes visible, and calling refresh() during
+  // active terminal.write() parsing can desync cursor position (the parser
+  // is mid-chunk and refresh renders stale cursor state).
   useEffect(() => {
     if (isActive) {
       requestAnimationFrame(() => {
         const terminal = terminalRef.current;
         if (terminal) {
-          // Save scroll position before operations that might cause a jump
           const buf = terminal.buffer.active;
           const savedViewportY = buf.viewportY;
 
-          terminal.refresh(0, terminal.rows - 1);
           fit();
           focusTerminal();
 
-          // Restore scroll position if fit/refresh caused a viewport jump
-          if (buf.viewportY !== savedViewportY) {
-            terminal.scrollLines(savedViewportY - buf.viewportY);
-          }
+          // Restore scroll position AFTER fit()'s async viewport sync completes.
+          // fit() → FitAddon.fit() → terminal.resize() → Viewport.queueSync()
+          // which schedules sync at next animation frame. We need a second rAF
+          // to run after that sync finishes.
+          requestAnimationFrame(() => {
+            if (!terminalRef.current) return;
+            const currentY = terminal.buffer.active.viewportY;
+            if (currentY !== savedViewportY) {
+              terminal.scrollLines(savedViewportY - currentY);
+            }
+          });
         }
       });
     }

@@ -50,11 +50,11 @@ Run `/bc:research` on each task to populate this section.
 
 | ID | Title | Status | Complexity |
 |----|-------|--------|------------|
-| breadcrumb-1yi.1 | Research: xterm.js scroll & viewport internals | pending | High |
-| breadcrumb-1yi.2 | Research: xterm.js cursor positioning pipeline | pending | High |
-| breadcrumb-1yi.3 | Fix scroll-to-top regression | pending | Medium |
-| breadcrumb-1yi.4 | Fix cursor-below-prompter regression | pending | Medium |
-| breadcrumb-1yi.5 | Fix related terminal UX bugs found during research | pending | Medium |
+| breadcrumb-1yi.1 | Research: xterm.js scroll & viewport internals | done | High |
+| breadcrumb-1yi.2 | Research: xterm.js cursor positioning pipeline | done | High |
+| breadcrumb-1yi.3 | Fix scroll-to-top regression | done | Medium |
+| breadcrumb-1yi.4 | Fix cursor-below-prompter regression | done | Medium |
+| breadcrumb-1yi.5 | Fix related terminal UX bugs found during research | done | Medium |
 
 ### Task Details
 
