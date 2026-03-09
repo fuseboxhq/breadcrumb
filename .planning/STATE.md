@@ -5,7 +5,7 @@
 
 ## Active Work
 
-PHASE-36: Agent Panel UX Overhaul — Premium Chat Experience (in_progress)
+PHASE-36: Agent Panel UX Overhaul — Premium Chat Experience (complete)
 PHASE-34: Terminal Cursor & Scroll Position Fixes (not_started)
 
 ## Completed Phases

@@ -1,6 +1,6 @@
 # Phase 36: Agent Panel UX Overhaul — Premium Chat Experience
 
-**Status:** in_progress
+**Status:** complete
 **Created:** 2026-03-09
 
 ## Objective
@@ -76,7 +76,7 @@ These arrive BEFORE the text content blocks in the same assistant turn.
 | 3 | Forward tool results through IPC and render in panel | done | High | - |
 | 4 | Redesign message flow: animations, scroll, optimistic updates | done | High | 1 |
 | 5 | Redesign approval cards and permission mode selector | done | Medium | 1 |
-| 6 | Add session history panel and conversation persistence | open | High | - |
+| 6 | Add session history panel and conversation persistence | done | High | - |
 | 7 | Polish: empty state, input improvements, copy buttons, error UX | done | Medium | 1, 4 |
 
 ## Technical Decisions

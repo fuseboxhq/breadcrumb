@@ -24,6 +24,9 @@ import {
   Clipboard,
   AlertCircle,
   RotateCcw,
+  Clock,
+  GitBranch,
+  X,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -51,6 +54,15 @@ interface ApprovalRequest {
 
 interface AgentPanelProps {
   sessionId: string;
+  cwd?: string;
+}
+
+interface SessionInfo {
+  sessionId: string;
+  summary: string;
+  lastModified: number;
+  firstPrompt?: string;
+  gitBranch?: string;
   cwd?: string;
 }
 
@@ -83,6 +95,18 @@ const SUGGESTED_PROMPTS = [
 
 // ── Utilities ──────────────────────────────────────────────────────────
 
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   const mins = Math.floor(seconds / 60);
@@ -113,6 +137,10 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [toolProgress, setToolProgress] = useState<string | null>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historySessions, setHistorySessions] = useState<SessionInfo[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [resumeTarget, setResumeTarget] = useState<{ id: string; summary: string } | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -122,6 +150,7 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
   const thinkingStartTime = useRef<number | null>(null);
   const inputHistory = useRef<string[]>([]);
   const historyIndex = useRef(-1);
+  const historyDropdownRef = useRef<HTMLDivElement>(null);
 
   // IntersectionObserver for smart auto-scroll
   useEffect(() => {
@@ -148,6 +177,32 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
     sentinelRef.current?.scrollIntoView({ behavior: "smooth" });
     setIsNearBottom(true);
   }, []);
+
+  // Load session history when dropdown opens
+  useEffect(() => {
+    if (!showHistory || !cwd) return;
+    setHistoryLoading(true);
+    window.breadcrumbAPI?.agent
+      ?.listSessions({ cwd, limit: 20 })
+      .then((result) => {
+        if (result?.success && result.sessions) {
+          setHistorySessions(result.sessions as SessionInfo[]);
+        }
+      })
+      .finally(() => setHistoryLoading(false));
+  }, [showHistory, cwd]);
+
+  // Close history dropdown on click outside
+  useEffect(() => {
+    if (!showHistory) return;
+    const handler = (e: MouseEvent) => {
+      if (historyDropdownRef.current && !historyDropdownRef.current.contains(e.target as Node)) {
+        setShowHistory(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showHistory]);
 
   // Subscribe to agent events
   useEffect(() => {
@@ -351,7 +406,18 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
 
     if (!sessionStarted.current) {
       sessionStarted.current = true;
-      const result = await api.start({ sessionId, prompt, cwd: cwd || "/", permissionMode });
+      const startOpts: Record<string, unknown> = {
+        sessionId,
+        prompt,
+        cwd: cwd || "/",
+        permissionMode,
+      };
+      // If resuming a previous session, include the resume ID
+      if (resumeTarget) {
+        startOpts.resume = resumeTarget.id;
+        setResumeTarget(null);
+      }
+      const result = await api.start(startOpts as Parameters<typeof api.start>[0]);
       if (!result.success) {
         setError(result.error || "Failed to start session");
         setIsRunning(false);
@@ -364,7 +430,7 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
         setIsRunning(false);
       }
     }
-  }, [input, isRunning, sessionId, cwd, permissionMode]);
+  }, [input, isRunning, sessionId, cwd, permissionMode, resumeTarget]);
 
   const handleInterrupt = useCallback(async () => {
     await window.breadcrumbAPI?.agent?.interrupt(sessionId);
@@ -382,6 +448,28 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
     setInput(prompt);
     inputRef.current?.focus();
   }, []);
+
+  const handleResumeSession = useCallback(
+    (session: SessionInfo) => {
+      // If there's an active session, terminate it first
+      if (sessionStarted.current) {
+        window.breadcrumbAPI?.agent?.terminate(sessionId);
+        sessionStarted.current = false;
+      }
+      // Reset state
+      setMessages([]);
+      setStreamingText("");
+      setStreamingThinking("");
+      setError(null);
+      setPendingApprovals([]);
+      setToolProgress(null);
+      // Set resume target — the next handleSend will use it
+      setResumeTarget({ id: session.sessionId, summary: session.summary });
+      setShowHistory(false);
+      inputRef.current?.focus();
+    },
+    [sessionId]
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -444,8 +532,91 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
             </div>
           )}
         </div>
-        <PermissionSelector value={permissionMode} onChange={handlePermissionChange} />
+        <div className="flex items-center gap-1.5">
+          {cwd && (
+            <div className="relative" ref={historyDropdownRef}>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className={`p-1.5 rounded-md transition-default ${
+                  showHistory
+                    ? "bg-accent/10 text-accent"
+                    : "text-foreground-muted hover:text-foreground-secondary hover:bg-muted/20"
+                }`}
+                title="Session history"
+              >
+                <Clock className="w-3.5 h-3.5" />
+              </button>
+              {showHistory && (
+                <div className="absolute top-full right-0 mt-1 w-80 bg-background-raised border border-border rounded-lg shadow-lg z-30 animate-fade-in">
+                  <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+                    <span className="text-xs font-medium text-foreground">Session History</span>
+                    <button
+                      onClick={() => setShowHistory(false)}
+                      className="p-0.5 rounded text-foreground-muted hover:text-foreground-secondary"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {historyLoading && (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-4 h-4 animate-spin text-foreground-muted" />
+                      </div>
+                    )}
+                    {!historyLoading && historySessions.length === 0 && (
+                      <p className="text-xs text-foreground-muted text-center py-6">
+                        No previous sessions
+                      </p>
+                    )}
+                    {!historyLoading &&
+                      historySessions.map((session) => (
+                        <button
+                          key={session.sessionId}
+                          onClick={() => handleResumeSession(session)}
+                          className="w-full text-left px-3 py-2.5 hover:bg-muted/20 transition-default border-b border-border last:border-0"
+                        >
+                          <p className="text-xs text-foreground font-medium truncate">
+                            {session.summary || session.firstPrompt || "Untitled session"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-2xs text-foreground-muted">
+                              {formatRelativeTime(session.lastModified)}
+                            </span>
+                            {session.gitBranch && (
+                              <span className="flex items-center gap-0.5 text-2xs text-foreground-muted">
+                                <GitBranch className="w-2.5 h-2.5" />
+                                {session.gitBranch}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <PermissionSelector value={permissionMode} onChange={handlePermissionChange} />
+        </div>
       </div>
+
+      {/* Resume banner */}
+      {resumeTarget && (
+        <div className="px-4 py-2 bg-accent/5 border-b border-accent/20 flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-accent" />
+            <span className="text-xs text-foreground-secondary">
+              Resuming: <span className="font-medium text-foreground">{resumeTarget.summary}</span>
+            </span>
+          </div>
+          <button
+            onClick={() => setResumeTarget(null)}
+            className="p-0.5 rounded text-foreground-muted hover:text-foreground-secondary"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* Messages area */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
