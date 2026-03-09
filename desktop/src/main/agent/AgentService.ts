@@ -283,7 +283,8 @@ export class AgentService extends EventEmitter {
     } catch (error) {
       this.emit("error", { sessionId, error: String(error) });
     } finally {
-      this.sessions.delete(sessionId);
+      // Don't delete the session — sendMessage needs the sdkSessionId
+      // to resume the conversation. Only terminate() should delete.
       this.emit("done", { sessionId });
     }
   }
