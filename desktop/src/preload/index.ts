@@ -110,6 +110,49 @@ export interface BreadcrumbAPI {
   // Skill sync
   syncSkills: (projectPath: string) => Promise<{ success: boolean; synced?: number; errors?: string[]; error?: string }>;
 
+  // Agent operations (Claude Code SDK)
+  agent: {
+    start: (config: {
+      sessionId: string;
+      prompt: string;
+      cwd: string;
+      permissionMode?: string;
+      resume?: string;
+      model?: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+    send: (payload: {
+      sessionId: string;
+      prompt: string;
+      permissionMode?: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+    interrupt: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+    terminate: (sessionId: string) => Promise<{ success: boolean; error?: string }>;
+    approve: (payload: {
+      toolUseID: string;
+      decision: "allow" | "deny";
+      message?: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+    setPermissionMode: (payload: {
+      sessionId: string;
+      mode: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+    listSessions: (payload: {
+      cwd: string;
+      limit?: number;
+    }) => Promise<{ success: boolean; sessions?: unknown[]; error?: string }>;
+    onMessage: (callback: (data: { sessionId: string; message: unknown }) => void) => () => void;
+    onApprovalRequest: (callback: (data: {
+      sessionId: string;
+      toolUseID: string;
+      toolName: string;
+      input: Record<string, unknown>;
+      decisionReason?: string;
+    }) => void) => () => void;
+    onError: (callback: (data: { sessionId: string; error: string }) => void) => () => void;
+    onDone: (callback: (data: { sessionId: string }) => void) => () => void;
+    onTerminated: (callback: (data: { sessionId: string }) => void) => () => void;
+  };
+
   // Browser operations (embedded WebContentsView)
   browser: {
     create: (browserId: string) => Promise<{ success: boolean; error?: string }>;
@@ -289,6 +332,70 @@ const api: BreadcrumbAPI = {
   // Skill sync
   syncSkills: (projectPath) =>
     ipcRenderer.invoke(IPC_CHANNELS.SKILLS_SYNC, projectPath),
+
+  // Agent operations
+  agent: {
+    start: (config) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_START, config),
+
+    send: (payload) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_SEND, payload),
+
+    interrupt: (sessionId) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_INTERRUPT, sessionId),
+
+    terminate: (sessionId) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_TERMINATE, sessionId),
+
+    approve: (payload) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_APPROVE, payload),
+
+    setPermissionMode: (payload) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_SET_PERMISSION_MODE, payload),
+
+    listSessions: (payload) =>
+      ipcRenderer.invoke(IPC_CHANNELS.AGENT_LIST_SESSIONS, payload),
+
+    onMessage: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { sessionId: string; message: unknown }) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.AGENT_MESSAGE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.AGENT_MESSAGE, handler);
+    },
+
+    onApprovalRequest: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: {
+        sessionId: string;
+        toolUseID: string;
+        toolName: string;
+        input: Record<string, unknown>;
+        decisionReason?: string;
+      }) => callback(data);
+      ipcRenderer.on(IPC_CHANNELS.AGENT_APPROVAL_REQUEST, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.AGENT_APPROVAL_REQUEST, handler);
+    },
+
+    onError: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { sessionId: string; error: string }) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.AGENT_ERROR, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.AGENT_ERROR, handler);
+    },
+
+    onDone: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { sessionId: string }) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.AGENT_DONE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.AGENT_DONE, handler);
+    },
+
+    onTerminated: (callback) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { sessionId: string }) =>
+        callback(data);
+      ipcRenderer.on(IPC_CHANNELS.AGENT_TERMINATED, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.AGENT_TERMINATED, handler);
+    },
+  },
 
   // Browser operations
   browser: {

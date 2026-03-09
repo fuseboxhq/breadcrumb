@@ -81,6 +81,22 @@ export const IPC_CHANNELS = {
   BROWSER_LOADING_CHANGE: "browser:loading-change",
   BROWSER_TITLE_CHANGE: "browser:title-change",
   BROWSER_ERROR: "browser:error",
+
+  // Agent channels (Claude Code SDK)
+  AGENT_START: "agent:start",
+  AGENT_SEND: "agent:send",
+  AGENT_INTERRUPT: "agent:interrupt",
+  AGENT_TERMINATE: "agent:terminate",
+  AGENT_APPROVE: "agent:approve",
+  AGENT_SET_PERMISSION_MODE: "agent:set-permission-mode",
+  AGENT_LIST_SESSIONS: "agent:list-sessions",
+
+  // Agent events (main → renderer)
+  AGENT_MESSAGE: "agent:message",
+  AGENT_APPROVAL_REQUEST: "agent:approval-request",
+  AGENT_ERROR: "agent:error",
+  AGENT_DONE: "agent:done",
+  AGENT_TERMINATED: "agent:terminated",
 } as const;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
