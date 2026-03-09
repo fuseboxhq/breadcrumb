@@ -6,7 +6,7 @@
 ## Active Work
 
 PHASE-34: Terminal Cursor & Scroll Position Fixes (not_started)
-PHASE-35: Claude Code SDK Agent Panel (not_started)
+PHASE-35: Claude Code SDK Agent Panel (in_progress) - 6 tasks
 
 ## Completed Phases
 

@@ -1,6 +1,6 @@
 # Phase 35: Claude Code SDK Agent Panel
 
-**Status:** not_started
+**Status:** in_progress
 **Beads Epic:** breadcrumb-4xr
 **Created:** 2026-03-09
 
@@ -55,7 +55,47 @@ The result is a custom, native-feeling agent experience with rich UI for streami
 
 ## Research Summary
 
-Run `/bc:plan PHASE-35` to research this phase and populate this section.
+**Overall Confidence:** HIGH
+**Research completed:** 2026-03-09
+
+See detailed research document: `.planning/research/PHASE-35.md`
+
+### Recommended Stack
+
+| Library | Version | Purpose | Confidence |
+|---------|---------|---------|------------|
+| @anthropic-ai/claude-agent-sdk | 0.2.71+ | Core SDK — query(), canUseTool, session mgmt | HIGH |
+| zod | ^3.24.1 | Required peer dependency for SDK | HIGH |
+
+### Key Findings
+
+- SDK spawns Claude Code CLI as subprocess, communicates via stdin/stdout JSON
+- Requires `ANTHROPIC_API_KEY` (no subscription/OAuth auth supported)
+- 18 SDKMessage types including stream_event, assistant, result, tool_progress, etc.
+- `canUseTool` callback receives toolName, input, options (with signal, toolUseID, agentID)
+- Session resume via `resume: sessionId` option, optional `forkSession: true` to branch
+- `Query.interrupt()` for stopping, `Query.close()` for forced termination
+
+### Don't Hand-Roll
+
+| Problem | Use Instead | Why |
+|---------|-------------|-----|
+| Parsing CLI output | SDK's typed SDKMessage events | CLI output is for humans; SDK gives structured types |
+| Tool execution loop | SDK's built-in tool execution | Handles Read/Write/Bash/Grep etc. out of the box |
+| Permission management | canUseTool callback + permissionMode | SDK provides structured permission flow |
+| Session persistence | SDK's resume option | Sessions automatically saved to disk |
+| Streaming text parsing | includePartialMessages + stream_event | Provides typed BetaRawMessageStreamEvent |
+
+### Pitfalls
+
+- **PATH propagation**: Electron GUI apps don't inherit shell env — set PATH explicitly or use `pathToClaudeCodeExecutable`
+- **API key required**: No subscription auth — must set `ANTHROPIC_API_KEY` env var
+- **Nested session blocking**: Clear `CLAUDECODE` env var to avoid "cannot launch inside another session"
+- **settingSources default**: Changed to `[]` in v0.2.x — must explicitly set `['project']` for CLAUDE.md loading
+
+### Design Guidance
+
+The `frontend-design` skill will be active during execution of UI tasks (tasks 4, 5, 6) in this phase.
 
 ## Recommended Approach
 
@@ -84,11 +124,16 @@ const session = query({
     cwd: projectPath,
     includePartialMessages: true,  // streaming
     permissionMode: selectedMode,
-    canUseTool: async (tool, input) => {
+    canUseTool: async (tool, input, { signal, toolUseID }) => {
       // Forward to renderer for user approval
       const decision = await ipcApprovalRequest(tool, input);
       return decision;
     },
+    env: {
+      ...process.env,
+      PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}`,
+      CLAUDECODE: undefined // Prevent nested session rejection
+    }
   }
 });
 
@@ -100,17 +145,25 @@ for await (const message of session) {
 
 ## Tasks
 
-| ID | Title | Status | Complexity |
-|----|-------|--------|------------|
-| - | No tasks yet | - | - |
-
-Run `/bc:plan PHASE-35` to break down this phase into tasks.
+| ID | Title | Status | Complexity | Dependencies |
+|----|-------|--------|------------|--------------|
+| breadcrumb-4xr.1 | Install Claude Agent SDK and configure Electron build | open | Low | - |
+| breadcrumb-4xr.2 | Build AgentService in main process | open | High | 4xr.1 |
+| breadcrumb-4xr.3 | Create agent IPC bridge and preload API | open | Medium | 4xr.2 |
+| breadcrumb-4xr.4 | Build AgentPanel React component with streaming output | open | High | 4xr.3 |
+| breadcrumb-4xr.5 | Add tool use visualization and approval UI | open | High | 4xr.4 |
+| breadcrumb-4xr.6 | Wire up Launch Claude button and session management | open | Medium | 4xr.5 |
 
 ## Technical Decisions
 
-- **SDK over CLI**: The SDK provides typed TypeScript events, built-in `canUseTool` callback for approval flows, and session resume — all of which we'd have to build manually with the CLI `stream-json` approach.
-- **No provider abstraction**: Unlike t3code's multi-provider adapter pattern, we're integrating Claude Code only. This avoids premature abstraction and keeps the codebase simple. Can be refactored later if needed.
-- **Main process hosting**: The SDK spawns a subprocess internally, so it must run in Electron's main process (not renderer). Events are forwarded to the renderer via IPC, matching the existing pattern used for terminals and browser panels.
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| SDK vs CLI | `@anthropic-ai/claude-agent-sdk` | Typed events, canUseTool callback, session resume built-in |
+| Provider abstraction | None (Claude Code only) | Avoids premature abstraction; can refactor later |
+| Process hosting | Electron main process | SDK spawns subprocess; needs Node.js APIs |
+| Auth method | ANTHROPIC_API_KEY env var | SDK policy requires API key, no subscription auth |
+| Environment | Explicit PATH + clear CLAUDECODE | Avoids Electron GUI app environment issues |
+| Settings | settingSources: ['project'] | Required to load CLAUDE.md from working directory |
 
 ## Completion Criteria
 
