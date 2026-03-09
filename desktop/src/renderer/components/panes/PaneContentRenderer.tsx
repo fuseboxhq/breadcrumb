@@ -2,6 +2,7 @@ import type { ContentPane, TerminalPaneData } from "../../store/appStore";
 import { TerminalInstance } from "../terminal/TerminalInstance";
 import { BrowserPanel } from "../browser/BrowserPanel";
 import { DiffViewer } from "../breadcrumb/DiffViewer";
+import { AgentPanel } from "../agent/AgentPanel";
 import { useAppStore } from "../../store/appStore";
 
 interface PaneContentRendererProps {
@@ -78,6 +79,12 @@ export function PaneContentRenderer({
           projectPath={pane.diffProjectPath}
           hash={pane.diffHash}
           onBack={() => useAppStore.getState().removePane(tabId, pane.id)}
+        />
+      );
+    case "agent":
+      return (
+        <AgentPanel
+          sessionId={pane.agentSessionId}
         />
       );
     default:

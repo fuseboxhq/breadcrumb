@@ -25,7 +25,7 @@ import {
 export type SidebarView = "explorer" | "terminals" | "breadcrumb" | "browser" | "extensions" | "settings";
 
 // Workspace tab types
-export type TabType = "terminal" | "welcome" | "diff" | "browser";
+export type TabType = "terminal" | "welcome" | "diff" | "browser" | "agent";
 
 export interface WorkspaceTab {
   id: string;
@@ -47,6 +47,8 @@ export interface WorkspaceTab {
   // Browser-specific
   browserId?: string;
   initialUrl?: string;
+  // Agent-specific
+  agentSessionId?: string;
 }
 
 // ─── Content Pane Types (discriminated union) ────────────────────────────────
@@ -84,7 +86,13 @@ export interface DiffPaneData {
   pinned?: boolean;
 }
 
-export type ContentPane = TerminalPaneData | BrowserPaneData | DiffPaneData;
+export interface AgentPaneData {
+  type: "agent";
+  id: string;
+  agentSessionId: string;
+}
+
+export type ContentPane = TerminalPaneData | BrowserPaneData | DiffPaneData | AgentPaneData;
 
 /** Backwards-compatible alias */
 export type TerminalPane = TerminalPaneData;
@@ -116,6 +124,9 @@ export function resolveLabel(pane: ContentPane, index: number): string {
   }
   if (pane.type === "diff") {
     return `Diff ${pane.diffHash.slice(0, 7)}`;
+  }
+  if (pane.type === "agent") {
+    return "Claude Code";
   }
   return `Pane ${index + 1}`;
 }
@@ -1091,7 +1102,7 @@ export const useAppStore = create<AppStore>()(
           }
         }
 
-        const validTabTypes: TabType[] = ["terminal", "welcome", "diff", "browser"];
+        const validTabTypes: TabType[] = ["terminal", "welcome", "diff", "browser", "agent"];
 
         // Restore tabs, filtering out any with invalid types
         state.tabs = snapshot.tabs

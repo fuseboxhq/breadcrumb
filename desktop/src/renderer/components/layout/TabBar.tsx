@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe, Pencil } from "lucide-react";
+import { X, Plus, Terminal, Zap, GitCompareArrows, Pin, Globe, Pencil, Sparkles } from "lucide-react";
 import { useAppStore, type TabType } from "../../store/appStore";
 import { useProjectsStore } from "../../store/projectsStore";
 import {
@@ -16,6 +16,7 @@ const TAB_ICONS: Record<TabType, typeof Terminal> = {
   welcome: Zap,
   diff: GitCompareArrows,
   browser: Globe,
+  agent: Sparkles,
 };
 
 export function TabBar() {

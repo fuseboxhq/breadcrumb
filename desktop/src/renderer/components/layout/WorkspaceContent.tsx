@@ -3,6 +3,7 @@ import { useProjectsStore } from "../../store/projectsStore";
 import { TerminalPanel } from "../terminal/TerminalPanel";
 import { DiffViewer } from "../breadcrumb/DiffViewer";
 import { BrowserPanel } from "../browser/BrowserPanel";
+import { AgentPanel } from "../agent/AgentPanel";
 import {
   Terminal,
   Zap,
@@ -57,6 +58,14 @@ export function WorkspaceContent() {
           projectPath={activeTab.diffProjectPath}
           hash={activeTab.diffHash}
           onBack={() => useAppStore.getState().removeTab(activeTab.id)}
+        />
+      )}
+      {activeTab && activeTab.type === "agent" && activeTab.agentSessionId && (
+        <AgentPanel
+          sessionId={activeTab.agentSessionId}
+          cwd={activeTab.projectId
+            ? projects.find((p) => p.id === activeTab.projectId)?.path
+            : undefined}
         />
       )}
       {!activeTab && <EmptyWorkspace />}
