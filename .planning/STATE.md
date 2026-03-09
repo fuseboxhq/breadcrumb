@@ -1,11 +1,12 @@
 # Project State
 
 **Current Phase:** PHASE-34
-**Last Updated:** 2026-03-05
+**Last Updated:** 2026-03-09
 
 ## Active Work
 
 PHASE-34: Terminal Cursor & Scroll Position Fixes (not_started)
+PHASE-35: Claude Code SDK Agent Panel (not_started)
 
 ## Completed Phases
 
