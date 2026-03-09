@@ -5,6 +5,15 @@ import {
   Sparkles,
   Loader2,
   ChevronDown,
+  FileEdit,
+  TerminalSquare,
+  Search,
+  FolderSearch,
+  Eye,
+  FileText,
+  Globe,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -52,6 +61,7 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
   const [permissionMode, setPermissionMode] = useState<PermissionMode>("default");
   const [pendingApprovals, setPendingApprovals] = useState<ApprovalRequest[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [toolProgress, setToolProgress] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -123,10 +133,18 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
         return;
       }
 
+      // Handle tool progress
+      if (msg.type === "tool_progress") {
+        const content = msg.content as string | undefined;
+        if (content) setToolProgress(content);
+        return;
+      }
+
       // Handle result
       if (msg.type === "result") {
         setIsRunning(false);
         setStreamingText("");
+        setToolProgress(null);
         return;
       }
 
@@ -308,6 +326,14 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
           </div>
         )}
 
+        {/* Tool progress indicator */}
+        {toolProgress && (
+          <div className="ml-7.5 flex items-center gap-2 px-3 py-1.5 text-2xs text-foreground-muted">
+            <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+            <span className="font-mono truncate">{toolProgress}</span>
+          </div>
+        )}
+
         {/* Pending approvals */}
         {pendingApprovals.map((approval) => (
           <ApprovalCard
@@ -397,6 +423,29 @@ function MessageBubble({ message }: { message: AgentMessage }) {
   );
 }
 
+// ── Tool Icons ─────────────────────────────────────────────────────────
+
+const TOOL_META: Record<string, { icon: typeof FileEdit; color: string; label: string }> = {
+  Read: { icon: Eye, color: "text-info", label: "Read File" },
+  Edit: { icon: FileEdit, color: "text-warning", label: "Edit File" },
+  Write: { icon: FileText, color: "text-warning", label: "Write File" },
+  Bash: { icon: TerminalSquare, color: "text-success", label: "Run Command" },
+  Grep: { icon: Search, color: "text-info", label: "Search Content" },
+  Glob: { icon: FolderSearch, color: "text-info", label: "Find Files" },
+  WebFetch: { icon: Globe, color: "text-accent", label: "Fetch URL" },
+  WebSearch: { icon: Globe, color: "text-accent", label: "Web Search" },
+};
+
+function getToolPreview(toolName: string, input: Record<string, unknown>): string | null {
+  if (toolName === "Bash" && input.command) return String(input.command);
+  if (toolName === "Read" && input.file_path) return String(input.file_path);
+  if (toolName === "Edit" && input.file_path) return String(input.file_path);
+  if (toolName === "Write" && input.file_path) return String(input.file_path);
+  if (toolName === "Grep" && input.pattern) return `/${input.pattern}/`;
+  if (toolName === "Glob" && input.pattern) return String(input.pattern);
+  return null;
+}
+
 // ── Tool Use Block ─────────────────────────────────────────────────────
 
 function ToolUseBlock({
@@ -407,6 +456,9 @@ function ToolUseBlock({
   input?: Record<string, unknown>;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const meta = toolName ? TOOL_META[toolName] : undefined;
+  const Icon = meta?.icon ?? TerminalSquare;
+  const preview = toolName && input ? getToolPreview(toolName, input) : null;
 
   return (
     <div className="ml-7.5 border border-border rounded-lg overflow-hidden">
@@ -415,9 +467,15 @@ function ToolUseBlock({
         className="w-full flex items-center gap-2 px-3 py-1.5 text-2xs text-foreground-secondary hover:bg-muted/20 transition-default"
       >
         <ChevronDown
-          className={`w-3 h-3 transition-transform ${expanded ? "" : "-rotate-90"}`}
+          className={`w-3 h-3 transition-transform shrink-0 ${expanded ? "" : "-rotate-90"}`}
         />
-        <span className="font-mono font-medium">{toolName || "Tool"}</span>
+        <Icon className={`w-3 h-3 shrink-0 ${meta?.color ?? "text-foreground-muted"}`} />
+        <span className="font-mono font-medium">{meta?.label ?? toolName ?? "Tool"}</span>
+        {preview && (
+          <span className="font-mono text-foreground-muted truncate max-w-[200px]">
+            {preview}
+          </span>
+        )}
       </button>
       {expanded && input && (
         <div className="px-3 py-2 border-t border-border bg-muted/10">
