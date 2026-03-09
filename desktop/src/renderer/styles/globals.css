@@ -367,6 +367,106 @@
   border-radius: 0;
 }
 
+/* ─── Syntax Highlighting (highlight.js tokens) ─── */
+/* GitHub Dark Dimmed palette — code blocks always use dark backgrounds */
+.hljs {
+  color: #adbac7;
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #768390;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag {
+  color: #f47067;
+}
+
+.hljs-string,
+.hljs-attr {
+  color: #96d0ff;
+}
+
+.hljs-number,
+.hljs-literal {
+  color: #6cb6ff;
+}
+
+.hljs-built_in,
+.hljs-type {
+  color: #dcbdfb;
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.class_ {
+  color: #dcbdfb;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  color: #f69d50;
+}
+
+.hljs-symbol,
+.hljs-bullet {
+  color: #6cb6ff;
+}
+
+.hljs-meta {
+  color: #768390;
+}
+
+.hljs-deletion {
+  color: #f47067;
+  background: rgba(244, 112, 103, 0.1);
+}
+
+.hljs-addition {
+  color: #57ab5a;
+  background: rgba(87, 171, 90, 0.1);
+}
+
+.hljs-regexp {
+  color: #96d0ff;
+}
+
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #6cb6ff;
+}
+
+.hljs-property {
+  color: #f69d50;
+}
+
+.hljs-tag,
+.hljs-name {
+  color: #8ddb8c;
+}
+
+.hljs-params {
+  color: #adbac7;
+}
+
+.hljs-section {
+  color: #6cb6ff;
+  font-weight: bold;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
 .diff-viewer-wrapper {
   font-size: 12px;
   line-height: 1.4;
