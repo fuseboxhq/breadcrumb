@@ -9,7 +9,8 @@ import fs from "fs";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: {
-      unpack: "**/node_modules/node-pty/**",
+      unpack:
+        "{**/node_modules/node-pty/**,**/node_modules/@anthropic-ai/claude-agent-sdk/**}",
     },
     name: "Breadcrumb",
     executableName: "breadcrumb",
@@ -28,7 +29,7 @@ const config: ForgeConfig = {
         fs.readFileSync(path.join(buildPath, "package.json"), "utf-8")
       );
       // Only install native dependencies that Vite marked as external
-      const nativeDeps = ["node-pty", "electron-store", "better-sqlite3"];
+      const nativeDeps = ["node-pty", "electron-store", "better-sqlite3", "@anthropic-ai/claude-agent-sdk"];
       const depsToInstall = nativeDeps.filter(
         (dep) => packageJson.dependencies?.[dep]
       );

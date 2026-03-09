@@ -17,6 +17,7 @@ export default defineConfig({
         "electron",
         "node-pty",
         "better-sqlite3",
+        "@anthropic-ai/claude-agent-sdk",
         /\.node$/,
       ],
     },
