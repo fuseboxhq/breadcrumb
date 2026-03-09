@@ -1,16 +1,24 @@
 import { EventEmitter } from "events";
-import {
-  query,
-  listSessions,
-  type Query,
-  type Options,
-  type SDKMessage,
-  type PermissionMode,
-  type PermissionResult,
-  type SDKSessionInfo,
-} from "@anthropic-ai/claude-agent-sdk";
+
+// ── Lazy-loaded SDK ───────────────────────────────────────────────────
+// The SDK ships as ESM-only (.mjs). Electron's main process is CJS, so
+// a static import gets compiled to require() which fails. Dynamic
+// import() works in both CJS and ESM contexts.
+
+let _sdk: typeof import("@anthropic-ai/claude-agent-sdk") | null = null;
+
+async function getSDK() {
+  if (!_sdk) {
+    _sdk = await import("@anthropic-ai/claude-agent-sdk");
+  }
+  return _sdk;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────
+
+// Re-declare the types we need so consumers don't import from the SDK directly
+export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "plan" | "dontAsk";
+export type PermissionResult = { behavior: "allow" } | { behavior: "deny"; message?: string };
 
 export interface AgentStartConfig {
   sessionId: string;
@@ -31,9 +39,9 @@ export interface AgentApprovalRequest {
 
 interface ActiveSession {
   id: string;
-  query: Query;
+  query: { close(): void; interrupt(): Promise<void>; setPermissionMode(mode: PermissionMode): Promise<void>; [Symbol.asyncIterator](): AsyncIterator<unknown> };
   cwd: string;
-  sdkSessionId?: string; // Claude Code's internal session ID
+  sdkSessionId?: string;
 }
 
 type PendingApproval = {
@@ -60,40 +68,39 @@ export class AgentService extends EventEmitter {
       return false;
     }
 
-    const options: Options = {
-      cwd: config.cwd,
-      includePartialMessages: true,
-      permissionMode: config.permissionMode ?? "default",
-      model: config.model,
-      settingSources: ["user", "project"],
-      systemPrompt: { type: "preset", preset: "claude_code" },
-      env: {
-        ...process.env,
-        // Electron GUI apps may not inherit shell PATH
-        PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH ?? ""}`,
-        // Prevent "cannot launch inside another Claude Code session"
-        CLAUDECODE: undefined,
-        CLAUDE_AGENT_SDK_CLIENT_APP: "breadcrumb-desktop/0.1.0",
-      },
-      canUseTool: (toolName, input, opts) =>
-        this.handleToolApproval(config.sessionId, toolName, input, opts),
-    };
-
-    if (config.resume) {
-      options.resume = config.resume;
-    }
-
     try {
-      const session = query({ prompt: config.prompt, options });
+      const sdk = await getSDK();
+
+      const options: Record<string, unknown> = {
+        cwd: config.cwd,
+        includePartialMessages: true,
+        permissionMode: config.permissionMode ?? "default",
+        model: config.model,
+        settingSources: ["user", "project"],
+        systemPrompt: { type: "preset", preset: "claude_code" },
+        env: {
+          ...process.env,
+          PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH ?? ""}`,
+          CLAUDECODE: undefined,
+          CLAUDE_AGENT_SDK_CLIENT_APP: "breadcrumb-desktop/0.1.0",
+        },
+        canUseTool: (toolName: string, input: Record<string, unknown>, opts: { signal: AbortSignal; toolUseID: string; decisionReason?: string }) =>
+          this.handleToolApproval(config.sessionId, toolName, input, opts),
+      };
+
+      if (config.resume) {
+        options.resume = config.resume;
+      }
+
+      const session = sdk.query({ prompt: config.prompt, options });
 
       this.sessions.set(config.sessionId, {
         id: config.sessionId,
-        query: session,
+        query: session as ActiveSession["query"],
         cwd: config.cwd,
       });
 
-      // Iterate the async generator in the background
-      this.consumeStream(config.sessionId, session);
+      this.consumeStream(config.sessionId, session as ActiveSession["query"]);
       return true;
     } catch (error) {
       this.emit("error", {
@@ -105,8 +112,7 @@ export class AgentService extends EventEmitter {
   }
 
   /**
-   * Send a follow-up message to an existing session by resuming it
-   * with a new prompt. The previous query must have finished.
+   * Send a follow-up message to an existing session by resuming it.
    */
   async sendMessage(
     sessionId: string,
@@ -127,7 +133,6 @@ export class AgentService extends EventEmitter {
     const sdkSessionId = existing.sdkSessionId;
     const cwd = existing.cwd;
 
-    // Clean up old query
     try {
       existing.query.close();
     } catch {
@@ -135,7 +140,6 @@ export class AgentService extends EventEmitter {
     }
     this.sessions.delete(sessionId);
 
-    // Start a new query that resumes the previous session
     return this.startSession({
       sessionId,
       prompt,
@@ -207,9 +211,10 @@ export class AgentService extends EventEmitter {
   async listSessions(
     cwd: string,
     limit = 10
-  ): Promise<SDKSessionInfo[]> {
+  ): Promise<unknown[]> {
     try {
-      return await listSessions({ dir: cwd, limit });
+      const sdk = await getSDK();
+      return await sdk.listSessions({ dir: cwd, limit });
     } catch {
       return [];
     }
@@ -222,7 +227,6 @@ export class AgentService extends EventEmitter {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
 
-    // Reject any pending approvals
     for (const [id, pending] of this.pendingApprovals) {
       if (pending.request.sessionId === sessionId) {
         pending.resolve({ behavior: "deny", message: "Session terminated" });
@@ -260,20 +264,17 @@ export class AgentService extends EventEmitter {
 
   // ── Private ────────────────────────────────────────────────────────
 
-  /**
-   * Consume the SDK's async generator and emit events for each message.
-   */
   private async consumeStream(
     sessionId: string,
-    session: Query
+    session: ActiveSession["query"]
   ): Promise<void> {
     try {
       for await (const message of session) {
-        // Capture the SDK session ID from the init message
-        if (message.type === "system" && "subtype" in message && message.subtype === "init") {
+        const msg = message as Record<string, unknown>;
+        if (msg.type === "system" && msg.subtype === "init") {
           const active = this.sessions.get(sessionId);
           if (active) {
-            active.sdkSessionId = (message as SDKMessage & { session_id?: string }).session_id;
+            active.sdkSessionId = msg.session_id as string | undefined;
           }
         }
 
@@ -287,10 +288,6 @@ export class AgentService extends EventEmitter {
     }
   }
 
-  /**
-   * Handle a tool approval request by forwarding it to the renderer
-   * and waiting for the user's decision.
-   */
   private handleToolApproval(
     sessionId: string,
     toolName: string,
@@ -313,7 +310,6 @@ export class AgentService extends EventEmitter {
       this.pendingApprovals.set(opts.toolUseID, { resolve, request });
       this.emit("approvalRequest", request);
 
-      // If the signal aborts, auto-deny
       opts.signal.addEventListener(
         "abort",
         () => {

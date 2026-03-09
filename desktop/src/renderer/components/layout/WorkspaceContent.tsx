@@ -61,12 +61,14 @@ export function WorkspaceContent() {
         />
       )}
       {activeTab && activeTab.type === "agent" && activeTab.agentSessionId && (
-        <AgentPanel
-          sessionId={activeTab.agentSessionId}
-          cwd={activeTab.projectId
-            ? projects.find((p) => p.id === activeTab.projectId)?.path
-            : undefined}
-        />
+        <div className="absolute inset-0">
+          <AgentPanel
+            sessionId={activeTab.agentSessionId}
+            cwd={activeTab.projectId
+              ? projects.find((p) => p.id === activeTab.projectId)?.path
+              : undefined}
+          />
+        </div>
       )}
       {!activeTab && <EmptyWorkspace />}
     </div>
