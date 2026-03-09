@@ -85,6 +85,7 @@ export function PaneContentRenderer({
       return (
         <AgentPanel
           sessionId={pane.agentSessionId}
+          cwd={workingDirectory}
         />
       );
     default:

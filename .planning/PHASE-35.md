@@ -1,6 +1,6 @@
 # Phase 35: Claude Code SDK Agent Panel
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-4xr
 **Created:** 2026-03-09
 
@@ -147,12 +147,12 @@ for await (const message of session) {
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-4xr.1 | Install Claude Agent SDK and configure Electron build | open | Low | - |
-| breadcrumb-4xr.2 | Build AgentService in main process | open | High | 4xr.1 |
-| breadcrumb-4xr.3 | Create agent IPC bridge and preload API | open | Medium | 4xr.2 |
-| breadcrumb-4xr.4 | Build AgentPanel React component with streaming output | open | High | 4xr.3 |
-| breadcrumb-4xr.5 | Add tool use visualization and approval UI | open | High | 4xr.4 |
-| breadcrumb-4xr.6 | Wire up Launch Claude button and session management | open | Medium | 4xr.5 |
+| breadcrumb-4xr.1 | Install Claude Agent SDK and configure Electron build | done | Low | - |
+| breadcrumb-4xr.2 | Build AgentService in main process | done | High | 4xr.1 |
+| breadcrumb-4xr.3 | Create agent IPC bridge and preload API | done | Medium | 4xr.2 |
+| breadcrumb-4xr.4 | Build AgentPanel React component with streaming output | done | High | 4xr.3 |
+| breadcrumb-4xr.5 | Add tool use visualization and approval UI | done | High | 4xr.4 |
+| breadcrumb-4xr.6 | Wire up Launch Claude button and session management | done | Medium | 4xr.5 |
 
 ## Technical Decisions
 
@@ -167,10 +167,10 @@ for await (const message of session) {
 
 ## Completion Criteria
 
-- [ ] Agent panel opens as a tab/panel in the desktop app
-- [ ] User can type a prompt and see Claude Code's streaming response rendered in real-time
-- [ ] Tool use is displayed (tool name, input) with approve/deny controls
-- [ ] Permission mode is selectable (default, accept edits, full access, plan, don't ask)
-- [ ] User can interrupt an active agent turn
-- [ ] Sessions can be resumed after closing and reopening the panel
-- [ ] Existing "Launch Claude" button opens the new agent panel instead of a terminal
+- [x] Agent panel opens as a tab/panel in the desktop app
+- [x] User can type a prompt and see Claude Code's streaming response rendered in real-time
+- [x] Tool use is displayed (tool name, input) with approve/deny controls
+- [x] Permission mode is selectable (default, accept edits, full access, plan, don't ask)
+- [x] User can interrupt an active agent turn
+- [x] Sessions can be resumed after closing and reopening the panel
+- [x] Existing "Launch Claude" button opens the new agent panel instead of a terminal

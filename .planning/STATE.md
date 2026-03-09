@@ -6,10 +6,10 @@
 ## Active Work
 
 PHASE-34: Terminal Cursor & Scroll Position Fixes (not_started)
-PHASE-35: Claude Code SDK Agent Panel (in_progress) - 6 tasks
 
 ## Completed Phases
 
+- PHASE-35: Claude Code SDK Agent Panel (complete) - 6/6 tasks done
 - PHASE-33: xterm.js Terminal Hardening (complete) - 4/4 tasks done
 - PHASE-32: Terminal & Planning Robustness (complete) - 6/6 tasks done
 - PHASE-31: Dynamic Extension UI Contributions (complete) - 6/6 tasks done

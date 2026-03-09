@@ -195,11 +195,11 @@ function ExplorerView() {
                       label="Launch Claude Code"
                       onSelect={() =>
                         addTab({
-                          id: `terminal-${Date.now()}`,
-                          type: "terminal",
-                          title: `Claude — ${project.name}`,
+                          id: `agent-${Date.now()}`,
+                          type: "agent",
+                          title: "Claude Code",
+                          agentSessionId: `agent-session-${Date.now()}`,
                           projectId: project.id,
-                          initialCommand: "claude\n",
                         })
                       }
                     />
@@ -286,11 +286,11 @@ function ExplorerView() {
                   <button
                     onClick={() =>
                       addTab({
-                        id: `terminal-${Date.now()}`,
-                        type: "terminal",
-                        title: `Claude — ${project.name}`,
+                        id: `agent-${Date.now()}`,
+                        type: "agent",
+                        title: "Claude Code",
+                        agentSessionId: `agent-session-${Date.now()}`,
                         projectId: project.id,
-                        initialCommand: "claude\n",
                       })
                     }
                     className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-warning hover:bg-warning/10 transition-default"
@@ -694,11 +694,11 @@ function TerminalsView() {
                         label="Launch Claude Code"
                         onSelect={() =>
                           addTab({
-                            id: `terminal-${Date.now()}`,
-                            type: "terminal",
-                            title: project ? `Claude — ${project.name}` : "Claude Code",
+                            id: `agent-${Date.now()}`,
+                            type: "agent",
+                            title: "Claude Code",
+                            agentSessionId: `agent-session-${Date.now()}`,
                             projectId: project?.id,
-                            initialCommand: "claude\n",
                           })
                         }
                       />

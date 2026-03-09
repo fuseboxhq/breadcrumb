@@ -218,10 +218,17 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
     }
   }, [tabId, storeRemovePane]);
 
-  // Launch Claude Code in a new pane within the current terminal tab
+  // Launch Claude Code as a dedicated agent tab
   const handleLaunchClaude = useCallback(() => {
-    storeAddPane(tabId, undefined, "claude\n");
-  }, [tabId, storeAddPane]);
+    const tab = useAppStore.getState().tabs.find((t) => t.id === tabId);
+    useAppStore.getState().addTab({
+      id: `agent-${Date.now()}`,
+      type: "agent",
+      title: "Claude Code",
+      agentSessionId: `agent-session-${Date.now()}`,
+      projectId: tab?.projectId,
+    });
+  }, [tabId]);
 
   // Focus rename input when it appears
   useEffect(() => {
