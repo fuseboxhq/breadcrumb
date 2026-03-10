@@ -499,7 +499,7 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
     historyIndex.current = -1;
     const el = e.target;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 192)}px`;
   }, []);
 
   const handlePermissionChange = useCallback(
@@ -618,8 +618,18 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
         </div>
       )}
 
-      {/* Messages area */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
+      {/* Messages area — click to focus input */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto relative"
+        onClick={(e) => {
+          // Focus input when clicking empty space (not buttons/links/text selections)
+          const target = e.target as HTMLElement;
+          if (!target.closest("button, a, pre, code, [data-no-focus]") && !window.getSelection()?.toString()) {
+            inputRef.current?.focus();
+          }
+        }}
+      >
         <div className="px-4 py-4 space-y-3">
           {/* Empty state */}
           {!hasContent && !isRunning && <EmptyState onPromptClick={handleSuggestedPrompt} />}
@@ -722,9 +732,9 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
             onKeyDown={handleKeyDown}
             placeholder={isRunning ? "Waiting for response..." : "Ask Claude Code anything..."}
             disabled={isRunning}
-            rows={1}
-            className="flex-1 resize-none bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-foreground-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 max-h-32 overflow-y-auto disabled:opacity-50 transition-default"
-            style={{ minHeight: "38px" }}
+            rows={3}
+            className="flex-1 resize-none bg-background border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 max-h-48 overflow-y-auto disabled:opacity-50 transition-default"
+            style={{ minHeight: "72px" }}
           />
           {isRunning ? (
             <button
