@@ -131,6 +131,7 @@ export interface BreadcrumbAPI {
       toolUseID: string;
       decision: "allow" | "deny";
       message?: string;
+      alwaysAllow?: boolean;
     }) => Promise<{ success: boolean; error?: string }>;
     setPermissionMode: (payload: {
       sessionId: string;
@@ -147,6 +148,7 @@ export interface BreadcrumbAPI {
       toolName: string;
       input: Record<string, unknown>;
       decisionReason?: string;
+      suggestions?: unknown[];
     }) => void) => () => void;
     onError: (callback: (data: { sessionId: string; error: string }) => void) => () => void;
     onDone: (callback: (data: { sessionId: string }) => void) => () => void;

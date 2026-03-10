@@ -50,6 +50,7 @@ interface ApprovalRequest {
   toolName: string;
   input: Record<string, unknown>;
   decisionReason?: string;
+  suggestions?: unknown[];
 }
 
 interface AgentPanelProps {
@@ -437,8 +438,19 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
   }, [sessionId]);
 
   const handleApproval = useCallback(
-    async (toolUseID: string, decision: "allow" | "deny") => {
-      await window.breadcrumbAPI?.agent?.approve({ toolUseID, decision });
+    async (toolUseID: string, decision: "allow" | "deny", alwaysAllow?: boolean) => {
+      try {
+        const result = await window.breadcrumbAPI?.agent?.approve({
+          toolUseID,
+          decision,
+          alwaysAllow,
+        });
+        if (result && !result.success) {
+          console.error("[AgentPanel] Approval failed:", result.error);
+        }
+      } catch (err) {
+        console.error("[AgentPanel] Approval IPC error:", err);
+      }
       setPendingApprovals((prev) => prev.filter((a) => a.toolUseID !== toolUseID));
     },
     []
@@ -683,6 +695,7 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
               key={approval.toolUseID}
               approval={approval}
               onApprove={() => handleApproval(approval.toolUseID, "allow")}
+              onAlwaysAllow={() => handleApproval(approval.toolUseID, "allow", true)}
               onDeny={() => handleApproval(approval.toolUseID, "deny")}
             />
           ))}
@@ -977,10 +990,12 @@ function ToolResultBlock({ content, isError }: { content: string; isError?: bool
 function ApprovalCard({
   approval,
   onApprove,
+  onAlwaysAllow,
   onDeny,
 }: {
   approval: ApprovalRequest;
   onApprove: () => void;
+  onAlwaysAllow: () => void;
   onDeny: () => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
@@ -989,7 +1004,7 @@ function ApprovalCard({
   const preview = getToolPreview(approval.toolName, approval.input);
 
   return (
-    <div className="ml-8 border border-warning/30 rounded-xl bg-warning/5 overflow-hidden animate-fade-in">
+    <div className="ml-8 border border-warning/30 rounded-xl bg-warning/5 overflow-hidden animate-fade-in" data-no-focus>
       <div className="px-4 py-3 flex items-start gap-3">
         <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center shrink-0">
           <Icon className="w-4 h-4 text-warning" />
@@ -1011,7 +1026,7 @@ function ApprovalCard({
             </p>
           )}
           <button
-            onClick={() => setShowDetails(!showDetails)}
+            onClick={(e) => { e.stopPropagation(); setShowDetails(!showDetails); }}
             className="mt-1 text-2xs text-foreground-muted hover:text-foreground-secondary transition-default"
           >
             {showDetails ? "Hide details" : "Show details"}
@@ -1029,15 +1044,22 @@ function ApprovalCard({
       )}
       <div className="flex border-t border-warning/20">
         <button
-          onClick={onDeny}
-          className="flex-1 py-2.5 text-sm font-medium text-foreground-secondary hover:bg-destructive/10 hover:text-destructive transition-default"
+          onClick={(e) => { e.stopPropagation(); onDeny(); }}
+          className="py-2.5 px-4 text-sm font-medium text-foreground-secondary hover:bg-destructive/10 hover:text-destructive transition-default cursor-pointer"
         >
           Deny
         </button>
+        <div className="flex-1" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onAlwaysAllow(); }}
+          className="py-2.5 px-4 text-sm font-medium text-foreground-muted hover:bg-accent/10 hover:text-accent transition-default cursor-pointer"
+        >
+          Always Allow
+        </button>
         <div className="w-px bg-warning/20" />
         <button
-          onClick={onApprove}
-          className="flex-1 py-2.5 text-sm font-medium text-success hover:bg-success/10 transition-default"
+          onClick={(e) => { e.stopPropagation(); onApprove(); }}
+          className="py-2.5 px-4 text-sm font-medium text-success hover:bg-success/10 transition-default cursor-pointer"
         >
           Allow
         </button>

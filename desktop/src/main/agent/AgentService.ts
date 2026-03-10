@@ -35,6 +35,7 @@ export interface AgentApprovalRequest {
   toolName: string;
   input: Record<string, unknown>;
   decisionReason?: string;
+  suggestions?: unknown[];
 }
 
 interface ActiveSession {
@@ -47,6 +48,7 @@ interface ActiveSession {
 type PendingApproval = {
   resolve: (result: PermissionResult) => void;
   request: AgentApprovalRequest;
+  suggestions?: unknown[];
 };
 
 // ── Service ────────────────────────────────────────────────────────────
@@ -171,7 +173,7 @@ export class AgentService extends EventEmitter {
   resolveApproval(
     toolUseID: string,
     decision: "allow" | "deny",
-    message?: string
+    options?: { message?: string; alwaysAllow?: boolean }
   ): boolean {
     const pending = this.pendingApprovals.get(toolUseID);
     if (!pending) return false;
@@ -179,9 +181,14 @@ export class AgentService extends EventEmitter {
     this.pendingApprovals.delete(toolUseID);
 
     if (decision === "allow") {
-      pending.resolve({ behavior: "allow" });
+      const result: PermissionResult = { behavior: "allow" };
+      // If "always allow", pass back the SDK's suggested permission updates
+      if (options?.alwaysAllow && pending.suggestions) {
+        (result as Record<string, unknown>).updatedPermissions = pending.suggestions;
+      }
+      pending.resolve(result);
     } else {
-      pending.resolve({ behavior: "deny", message: message ?? "User denied" });
+      pending.resolve({ behavior: "deny", message: options?.message ?? "User denied" });
     }
     return true;
   }
@@ -297,6 +304,7 @@ export class AgentService extends EventEmitter {
       signal: AbortSignal;
       toolUseID: string;
       decisionReason?: string;
+      suggestions?: unknown[];
     }
   ): Promise<PermissionResult> {
     return new Promise<PermissionResult>((resolve) => {
@@ -306,9 +314,10 @@ export class AgentService extends EventEmitter {
         toolName,
         input,
         decisionReason: opts.decisionReason,
+        suggestions: opts.suggestions,
       };
 
-      this.pendingApprovals.set(opts.toolUseID, { resolve, request });
+      this.pendingApprovals.set(opts.toolUseID, { resolve, request, suggestions: opts.suggestions });
       this.emit("approvalRequest", request);
 
       opts.signal.addEventListener(

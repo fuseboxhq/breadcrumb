@@ -93,13 +93,14 @@ export function registerAgentIPCHandlers(
         toolUseID: string;
         decision: "allow" | "deny";
         message?: string;
+        alwaysAllow?: boolean;
       }
     ) => {
       try {
         const ok = agentService.resolveApproval(
           payload.toolUseID,
           payload.decision,
-          payload.message
+          { message: payload.message, alwaysAllow: payload.alwaysAllow }
         );
         return { success: ok };
       } catch (error) {
