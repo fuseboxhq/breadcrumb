@@ -96,14 +96,17 @@ export function registerAgentIPCHandlers(
         alwaysAllow?: boolean;
       }
     ) => {
+      console.log("[agentIpc] AGENT_APPROVE received:", payload);
       try {
         const ok = agentService.resolveApproval(
           payload.toolUseID,
           payload.decision,
           { message: payload.message, alwaysAllow: payload.alwaysAllow }
         );
+        console.log("[agentIpc] AGENT_APPROVE result:", { ok, toolUseID: payload.toolUseID });
         return { success: ok };
       } catch (error) {
+        console.error("[agentIpc] AGENT_APPROVE error:", error);
         return { success: false, error: String(error) };
       }
     }

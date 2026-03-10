@@ -356,6 +356,7 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
     });
 
     const cleanupApproval = api.onApprovalRequest((data) => {
+      console.log("[AgentPanel] Approval request received:", { toolUseID: data.toolUseID, toolName: data.toolName, sessionId: data.sessionId, hasSuggestions: !!data.suggestions });
       if (data.sessionId !== sessionId) return;
       setPendingApprovals((prev) => [...prev, data]);
     });
@@ -439,18 +440,23 @@ export function AgentPanel({ sessionId, cwd }: AgentPanelProps) {
 
   const handleApproval = useCallback(
     async (toolUseID: string, decision: "allow" | "deny", alwaysAllow?: boolean) => {
+      console.log("[AgentPanel] handleApproval called:", { toolUseID, decision, alwaysAllow });
       try {
         const result = await window.breadcrumbAPI?.agent?.approve({
           toolUseID,
           decision,
           alwaysAllow,
         });
+        console.log("[AgentPanel] Approval IPC result:", result);
         if (result && !result.success) {
-          console.error("[AgentPanel] Approval failed:", result.error);
+          console.error("[AgentPanel] Approval failed — keeping card visible:", result.error);
+          return; // Don't remove the card if the IPC call failed
         }
       } catch (err) {
-        console.error("[AgentPanel] Approval IPC error:", err);
+        console.error("[AgentPanel] Approval IPC error — keeping card visible:", err);
+        return; // Don't remove the card on IPC error
       }
+      // Only remove from state after confirmed IPC success
       setPendingApprovals((prev) => prev.filter((a) => a.toolUseID !== toolUseID));
     },
     []
@@ -1044,21 +1050,24 @@ function ApprovalCard({
       )}
       <div className="flex border-t border-warning/20">
         <button
-          onClick={(e) => { e.stopPropagation(); onDeny(); }}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDeny(); }}
           className="py-2.5 px-4 text-sm font-medium text-foreground-secondary hover:bg-destructive/10 hover:text-destructive transition-default cursor-pointer"
         >
           Deny
         </button>
         <div className="flex-1" />
         <button
-          onClick={(e) => { e.stopPropagation(); onAlwaysAllow(); }}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onAlwaysAllow(); }}
           className="py-2.5 px-4 text-sm font-medium text-foreground-muted hover:bg-accent/10 hover:text-accent transition-default cursor-pointer"
         >
           Always Allow
         </button>
         <div className="w-px bg-warning/20" />
         <button
-          onClick={(e) => { e.stopPropagation(); onApprove(); }}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); e.preventDefault(); onApprove(); }}
           className="py-2.5 px-4 text-sm font-medium text-success hover:bg-success/10 transition-default cursor-pointer"
         >
           Allow

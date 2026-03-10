@@ -1,6 +1,6 @@
 # Phase 37: Agent Panel Bug Fixes
 
-**Status:** in_progress
+**Status:** complete
 **Beads Epic:** breadcrumb-qmn
 **Created:** 2026-03-09
 
@@ -69,10 +69,10 @@ Return `{ behavior: 'allow', updatedPermissions: options.suggestions }` to white
 
 | ID | Title | Status | Complexity | Dependencies |
 |----|-------|--------|------------|--------------|
-| breadcrumb-qmn.4 | Add diagnostic logging to approval IPC chain | open | Low | - |
-| breadcrumb-qmn.1 | Debug and fix Allow button approval flow | open | Medium | qmn.4 |
-| breadcrumb-qmn.2 | Fix Always Allow with SDK updatedPermissions | open | Medium | qmn.1 |
-| breadcrumb-qmn.3 | Fix approval state race condition | open | Medium | qmn.1 |
+| breadcrumb-qmn.4 | Add diagnostic logging to approval IPC chain | done | Low | - |
+| breadcrumb-qmn.1 | Debug and fix Allow button approval flow | done | Medium | qmn.4 |
+| breadcrumb-qmn.2 | Fix Always Allow with SDK updatedPermissions | done | Medium | qmn.1 |
+| breadcrumb-qmn.3 | Fix approval state race condition | done | Medium | qmn.1 |
 
 ## Technical Decisions
 

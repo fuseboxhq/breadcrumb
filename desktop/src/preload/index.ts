@@ -372,6 +372,7 @@ const api: BreadcrumbAPI = {
         toolName: string;
         input: Record<string, unknown>;
         decisionReason?: string;
+        suggestions?: unknown[];
       }) => callback(data);
       ipcRenderer.on(IPC_CHANNELS.AGENT_APPROVAL_REQUEST, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.AGENT_APPROVAL_REQUEST, handler);

@@ -18,7 +18,9 @@ async function getSDK() {
 
 // Re-declare the types we need so consumers don't import from the SDK directly
 export type PermissionMode = "default" | "acceptEdits" | "bypassPermissions" | "plan" | "dontAsk";
-export type PermissionResult = { behavior: "allow" } | { behavior: "deny"; message?: string };
+export type PermissionResult =
+  | { behavior: "allow"; updatedPermissions?: unknown[]; updatedInput?: Record<string, unknown> }
+  | { behavior: "deny"; message: string; interrupt?: boolean };
 
 export interface AgentStartConfig {
   sessionId: string;
@@ -86,7 +88,7 @@ export class AgentService extends EventEmitter {
           CLAUDECODE: undefined,
           CLAUDE_AGENT_SDK_CLIENT_APP: "breadcrumb-desktop/0.1.0",
         },
-        canUseTool: (toolName: string, input: Record<string, unknown>, opts: { signal: AbortSignal; toolUseID: string; decisionReason?: string }) =>
+        canUseTool: (toolName: string, input: Record<string, unknown>, opts: { signal: AbortSignal; toolUseID: string; decisionReason?: string; suggestions?: unknown[]; blockedPath?: string; agentID?: string }) =>
           this.handleToolApproval(config.sessionId, toolName, input, opts),
       };
 
@@ -175,19 +177,25 @@ export class AgentService extends EventEmitter {
     decision: "allow" | "deny",
     options?: { message?: string; alwaysAllow?: boolean }
   ): boolean {
+    console.log("[AgentService] resolveApproval called:", { toolUseID, decision, alwaysAllow: options?.alwaysAllow, pendingCount: this.pendingApprovals.size });
     const pending = this.pendingApprovals.get(toolUseID);
-    if (!pending) return false;
+    if (!pending) {
+      console.warn("[AgentService] No pending approval found for toolUseID:", toolUseID, "keys:", [...this.pendingApprovals.keys()]);
+      return false;
+    }
 
     this.pendingApprovals.delete(toolUseID);
 
     if (decision === "allow") {
       const result: PermissionResult = { behavior: "allow" };
-      // If "always allow", pass back the SDK's suggested permission updates
       if (options?.alwaysAllow && pending.suggestions) {
-        (result as Record<string, unknown>).updatedPermissions = pending.suggestions;
+        result.updatedPermissions = pending.suggestions;
+        console.log("[AgentService] Always-allow: attaching updatedPermissions:", pending.suggestions);
       }
+      console.log("[AgentService] Resolving approval with:", result);
       pending.resolve(result);
     } else {
+      console.log("[AgentService] Denying approval for:", toolUseID);
       pending.resolve({ behavior: "deny", message: options?.message ?? "User denied" });
     }
     return true;
@@ -307,6 +315,7 @@ export class AgentService extends EventEmitter {
       suggestions?: unknown[];
     }
   ): Promise<PermissionResult> {
+    console.log("[AgentService] handleToolApproval:", { sessionId, toolName, toolUseID: opts.toolUseID, hasSuggestions: !!opts.suggestions, decisionReason: opts.decisionReason });
     return new Promise<PermissionResult>((resolve) => {
       const request: AgentApprovalRequest = {
         sessionId,
