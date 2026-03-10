@@ -218,16 +218,13 @@ export function TerminalPanel({ tabId, workingDirectory, isTabActive = true }: T
     }
   }, [tabId, storeRemovePane]);
 
-  // Launch Claude Code as a dedicated agent tab
+  // Launch Claude Code as a split pane (tmux-style, side by side with terminal)
   const handleLaunchClaude = useCallback(() => {
-    const tab = useAppStore.getState().tabs.find((t) => t.id === tabId);
-    useAppStore.getState().addTab({
-      id: `agent-${Date.now()}`,
+    useAppStore.getState().addContentPane(tabId, {
       type: "agent",
-      title: "Claude Code",
+      id: `agent-pane-${Date.now()}`,
       agentSessionId: `agent-session-${Date.now()}`,
-      projectId: tab?.projectId,
-    });
+    }, "horizontal");
   }, [tabId]);
 
   // Focus rename input when it appears

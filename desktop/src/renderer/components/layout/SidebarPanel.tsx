@@ -193,15 +193,28 @@ function ExplorerView() {
                     <MenuItem
                       icon={<Sparkles className="w-3.5 h-3.5" />}
                       label="Launch Claude Code"
-                      onSelect={() =>
-                        addTab({
-                          id: `agent-${Date.now()}`,
-                          type: "agent",
-                          title: "Claude Code",
+                      onSelect={() => {
+                        const activeTabId = useAppStore.getState().activeTabId;
+                        const activeTab = activeTabId
+                          ? useAppStore.getState().tabs.find((t) => t.id === activeTabId)
+                          : null;
+                        const agentPane = {
+                          type: "agent" as const,
+                          id: `agent-pane-${Date.now()}`,
                           agentSessionId: `agent-session-${Date.now()}`,
-                          projectId: project.id,
-                        })
-                      }
+                        };
+                        if (activeTab && activeTab.type === "terminal") {
+                          useAppStore.getState().addContentPane(activeTabId!, agentPane, "horizontal");
+                        } else {
+                          addTab({
+                            id: `agent-${Date.now()}`,
+                            type: "agent",
+                            title: "Claude Code",
+                            agentSessionId: agentPane.agentSessionId,
+                            projectId: project.id,
+                          });
+                        }
+                      }}
                     />
                     {debugCommands.map((cmd) => (
                       <MenuItem
@@ -284,15 +297,28 @@ function ExplorerView() {
                     <span>New Terminal</span>
                   </button>
                   <button
-                    onClick={() =>
-                      addTab({
-                        id: `agent-${Date.now()}`,
-                        type: "agent",
-                        title: "Claude Code",
+                    onClick={() => {
+                      const activeTabId = useAppStore.getState().activeTabId;
+                      const activeTab = activeTabId
+                        ? useAppStore.getState().tabs.find((t) => t.id === activeTabId)
+                        : null;
+                      const agentPane = {
+                        type: "agent" as const,
+                        id: `agent-pane-${Date.now()}`,
                         agentSessionId: `agent-session-${Date.now()}`,
-                        projectId: project.id,
-                      })
-                    }
+                      };
+                      if (activeTab && activeTab.type === "terminal") {
+                        useAppStore.getState().addContentPane(activeTabId!, agentPane, "horizontal");
+                      } else {
+                        addTab({
+                          id: `agent-${Date.now()}`,
+                          type: "agent",
+                          title: "Claude Code",
+                          agentSessionId: agentPane.agentSessionId,
+                          projectId: project.id,
+                        });
+                      }
+                    }}
                     className="w-full flex items-center gap-2 px-2 py-1 rounded-md text-left text-2xs text-foreground-muted hover:text-warning hover:bg-warning/10 transition-default"
                   >
                     <Sparkles className="w-3 h-3" />
@@ -692,15 +718,28 @@ function TerminalsView() {
                       <MenuItem
                         icon={<Sparkles className="w-3.5 h-3.5" />}
                         label="Launch Claude Code"
-                        onSelect={() =>
-                          addTab({
-                            id: `agent-${Date.now()}`,
-                            type: "agent",
-                            title: "Claude Code",
+                        onSelect={() => {
+                          const currentActiveTabId = useAppStore.getState().activeTabId;
+                          const currentTab = currentActiveTabId
+                            ? useAppStore.getState().tabs.find((t) => t.id === currentActiveTabId)
+                            : null;
+                          const agentPane = {
+                            type: "agent" as const,
+                            id: `agent-pane-${Date.now()}`,
                             agentSessionId: `agent-session-${Date.now()}`,
-                            projectId: project?.id,
-                          })
-                        }
+                          };
+                          if (currentTab && currentTab.type === "terminal") {
+                            useAppStore.getState().addContentPane(currentActiveTabId!, agentPane, "horizontal");
+                          } else {
+                            addTab({
+                              id: `agent-${Date.now()}`,
+                              type: "agent",
+                              title: "Claude Code",
+                              agentSessionId: agentPane.agentSessionId,
+                              projectId: project?.id,
+                            });
+                          }
+                        }}
                       />
                     </>
                   }
