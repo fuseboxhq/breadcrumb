@@ -1,11 +1,11 @@
 # Project State
 
-**Current Phase:** PHASE-34
+**Current Phase:** PHASE-37
 **Last Updated:** 2026-03-09
 
 ## Active Work
 
-PHASE-37: Agent Panel Bug Fixes (not_started)
+PHASE-37: Agent Panel Bug Fixes (in_progress) - 4 tasks
 PHASE-36: Agent Panel UX Overhaul — Premium Chat Experience (complete)
 PHASE-34: Terminal Cursor & Scroll Position Fixes (not_started)
 
